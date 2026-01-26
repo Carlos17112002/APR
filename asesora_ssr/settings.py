@@ -100,32 +100,26 @@ BASES_DIR = os.path.join(BASE_DIR, 'bases')
 
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
+import os
+from dotenv import load_dotenv
+from urllib.parse import urlparse, parse_qsl
 
-if DATABASE_URL:
-    # Para producción en Render (PostgreSQL)
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-            engine='django.db.backends.postgresql'
-        )
-    }
-else:
-    # Para desarrollo local
-    DATABASES = {
+load_dotenv()
+
+# Replace the DATABASES section of your settings.py with this
+tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
+
+DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'APR'),           # Nombre de tu DB
-        'USER': os.environ.get('DB_USER', 'postgres'),      # Usuario
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'rental123'),      # Tu contraseña
-        'HOST': os.environ.get('DB_HOST', 'localhost'),     # Localhost
-        'PORT': os.environ.get('DB_PORT', '5433'),          # ¡PUERTO 5433!
-        'ATOMIC_REQUESTS': True,
+        'NAME': tmpPostgres.path.replace('/', ''),
+        'USER': tmpPostgres.username,
+        'PASSWORD': tmpPostgres.password,
+        'HOST': tmpPostgres.hostname,
+        'PORT': 5432,
+        'OPTIONS': dict(parse_qsl(tmpPostgres.query)),
     }
 }
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
