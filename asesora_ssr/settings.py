@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-at=_c_4sf)!-!#t4m+-4_=%s@nk^(f$5bmu0o03v%un@4_*xka
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*','https://venta-django.onrender.com']
+ALLOWED_HOSTS = ['*','https://apr-8nm9.onrender.com']
 
 
 
@@ -94,17 +94,33 @@ WSGI_APPLICATION = 'asesora_ssr.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 import os
+import dj_database_url
 
 BASES_DIR = os.path.join(BASE_DIR, 'bases')
 
-DATABASES = {
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Para producción en Render (PostgreSQL)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+            engine='django.db.backends.postgresql'
+        )
+    }
+else:
+    # Para desarrollo local
+    DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'asesora_principal',
-        'USER': 'root',
-        'PASSWORD': '17noviembre2002',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'APR'),           # Nombre de tu DB
+        'USER': os.environ.get('DB_USER', 'postgres'),      # Usuario
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'rental123'),      # Tu contraseña
+        'HOST': os.environ.get('DB_HOST', 'localhost'),     # Localhost
+        'PORT': os.environ.get('DB_PORT', '5433'),          # ¡PUERTO 5433!
         'ATOMIC_REQUESTS': True,
     }
 }
