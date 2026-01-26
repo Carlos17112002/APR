@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-at=_c_4sf)!-!#t4m+-4_=%s@nk^(f$5bmu0o03v%un@4_*xka
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*','https://venta-django.onrender.com']
 
 
 
