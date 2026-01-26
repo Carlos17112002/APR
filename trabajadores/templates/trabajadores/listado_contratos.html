@@ -1,66 +1,864 @@
 <!DOCTYPE html>
+{% load static humanize %}
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Contratos · {{ alias }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contratos Laborales · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857;
+            --primary-dark: #065f46;
+            --secondary: #2563eb;
+            --accent: #7c3aed;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+            border-radius: 16px;
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(4, 120, 87, 0.3);
+        }
+        
+        .table-row-hover:hover {
+            background: linear-gradient(90deg, rgba(240, 253, 244, 0.5) 0%, rgba(240, 253, 244, 0.3) 100%);
+            transform: translateX(4px);
+            transition: all 0.2s ease;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .status-active {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+        
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+        
+        .status-expired {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+        
+        .card-stat {
+            border-left: 4px solid;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card-stat:hover::before {
+            opacity: 1;
+        }
+        
+        .contract-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .chip-indefinido {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+        
+        .chip-plazo-fijo {
+            background: rgba(59, 130, 246, 0.15);
+            color: #2563eb;
+        }
+        
+        .chip-faena {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+        
+        .chip-otros {
+            background: rgba(139, 92, 246, 0.15);
+            color: #7c3aed;
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            transition: stroke-dashoffset 1s ease;
+        }
+        
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #f3f4f6;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-tag:hover {
+            background: #e5e7eb;
+        }
+        
+        .filter-tag.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .highlight-pulse {
+            animation: highlight-pulse 2s ease;
+        }
+        
+        @keyframes highlight-pulse {
+            0% { background-color: transparent; }
+            50% { background-color: rgba(240, 253, 244, 0.5); }
+            100% { background-color: transparent; }
+        }
+        
+        .btn-export {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+        
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn-recordatorios {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        }
+        
+        .btn-recordatorios:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(217, 119, 6, 0.3);
+        }
+        
+        .btn-reporte {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        }
+        
+        .btn-reporte:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="text-gray-800 antialiased">
 
-  <!-- Encabezado -->
-  <header class="bg-green-800 text-white py-5 shadow-md">
-    <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">📄 Contratos laborales · <span class="text-white/80">{{ alias }}</span></h1>
-      <a href="/contabilidad/{{ alias }}/libro/" class="text-sm hover:underline">⬅️ Volver al panel</a>
-    </div>
-  </header>
+    <!-- Encabezado -->
+    <header class="gradient-header text-white shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                        <i class="fas fa-file-contract text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Contratos Laborales</h1>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm opacity-90">{{ empresa.nombre }}</span>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full">{{ alias }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div class="hidden lg:block text-sm bg-white/10 px-4 py-2 rounded-lg">
+                        <span class="opacity-80">Activos:</span>
+                        <span class="font-semibold ml-1">{{ contratos_activos|default:"0" }}</span>
+                    </div>
+                    <a href="/contabilidad/{{ alias }}/libro/" 
+                       class="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-lg transition-all duration-200 group">
+                        <i class="fas fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+                        <span class="text-sm font-medium">Volver al Panel</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
 
-  <!-- Contenido principal -->
-  <main class="max-w-6xl mx-auto px-6 py-10 space-y-8">
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-    <!-- Botón crear contrato -->
-    <div class="flex justify-end">
-      <a href="/trabajadores/{{ alias }}/nuevo_contrato/" class="bg-green-700 text-white px-5 py-3 rounded-lg shadow hover:bg-green-800 transition text-sm flex items-center gap-2">
-        📝 Crear nuevo contrato
-      </a>
-    </div>
+        <!-- Acción principal y filtros -->
+        <div class="glass-panel p-6">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-1">Gestión de Contratos</h2>
+                    <p class="text-sm text-gray-500">Administre los contratos laborales de su empresa</p>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Filtros rápidos -->
+                    <div class="flex items-center space-x-2">
+                        <button class="filter-tag active" data-filter="all">
+                            <i class="fas fa-list"></i>
+                            Todos
+                        </button>
+                        <button class="filter-tag" data-filter="active">
+                            <i class="fas fa-check-circle"></i>
+                            Activos
+                        </button>
+                        <button class="filter-tag" data-filter="expiring">
+                            <i class="fas fa-clock"></i>
+                            Próximos a vencer
+                        </button>
+                        <button class="filter-tag" data-filter="with-pdf">
+                            <i class="fas fa-file-pdf"></i>
+                            Con PDF
+                        </button>
+                    </div>
+                    
+                    <!-- Botón crear -->
+                    <a href="/trabajadores/{{ alias }}/contratos/crear/" 
+                       class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center space-x-3 group">
+                        <i class="fas fa-file-contract group-hover:rotate-12 transition-transform"></i>
+                        <span>Nuevo Contrato</span>
+                    </a>
+                </div>
+            </div>
+        </div>
 
-    <!-- Tabla de contratos -->
-    <div class="overflow-x-auto bg-white rounded-xl shadow-md">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-200 text-gray-700 sticky top-0">
-          <tr>
-            <th class="px-6 py-3 text-left font-semibold">👤 Trabajador</th>
-            <th class="px-6 py-3 text-left font-semibold">💼 Cargo</th>
-            <th class="px-6 py-3 text-left font-semibold">📅 Inicio</th>
-            <th class="px-6 py-3 text-left font-semibold">📄 Tipo</th>
-            <th class="px-6 py-3 text-left font-semibold">📁 PDF</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          {% for contrato in contratos %}
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-3">{{ contrato.nombre }}</td>
-            <td class="px-6 py-3">{{ contrato.cargo }}</td>
-            <td class="px-6 py-3">{{ contrato.fecha_inicio }}</td>
-            <td class="px-6 py-3">{{ contrato.get_tipo_contrato_display }}</td>
-            <td class="px-6 py-3">
-              {% if contrato.documento_pdf %}
-                <a href="/trabajadores/{{ alias }}/contrato/{{ contrato.id }}/pdf/" class="text-blue-600 hover:underline">📄 Ver PDF</a>
-              {% else %}
-                <span class="text-gray-400">No generado</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" class="px-6 py-6 text-center text-gray-500">No hay contratos registrados.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="glass-panel card-stat border-l-green-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Contratos</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ total_contratos|default:"0" }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-file-contract text-green-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+                    {{ variacion_mensual|default:"0" }}% este mes
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-blue-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Activos</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ contratos_activos|default:"0" }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-user-check text-blue-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    {{ porcentaje_activos|default:"0" }}% del total
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-amber-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Próximos a Vencer</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ por_vencer|default:"0" }}</p>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-full">
+                        <i class="fas fa-clock text-amber-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    En los próximos 30 días
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-purple-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Con PDF Generado</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ con_pdf|default:"0" }}</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i class="fas fa-file-pdf text-purple-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    {{ porcentaje_pdf|default:"0" }}% digitalizados
+                </div>
+            </div>
+        </div>
 
-  </main>
+        <!-- Tabla de contratos -->
+        <div class="glass-panel overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-list-check text-green-600 mr-2"></i>
+                        Registro de Contratos
+                    </h3>
+                    <span class="text-sm text-gray-500">
+                        {{ contratos|length }} registros encontrados
+                    </span>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-user text-gray-400"></i>
+                                    <span>Trabajador</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-briefcase text-gray-400"></i>
+                                    <span>Cargo</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-calendar text-gray-400"></i>
+                                    <span>Período</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-file-alt text-gray-400"></i>
+                                    <span>Tipo</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-file-pdf text-gray-400"></i>
+                                    <span>Documento</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-cog text-gray-400"></i>
+                                    <span>Acciones</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100" id="contratosTableBody">
+                        {% for contrato in contratos %}
+                        <tr class="table-row-hover hover:bg-green-50/30 transition-all duration-200 {% if contrato.por_vencer_soon %}highlight-pulse{% endif %}"
+                            data-status="{% if contrato.esta_activo %}active{% else %}inactive{% endif %}"
+                            data-expiring="{% if contrato.por_vencer_soon %}true{% else %}false{% endif %}"
+                            data-pdf="{% if contrato.documento_pdf %}true{% else %}false{% endif %}">
+                            <!-- Trabajador -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                            <i class="fas fa-user text-green-600 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">{{ contrato.nombre }}</div>
+                                        <div class="text-xs text-gray-500">{{ contrato.rut_trabajador|default:"" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Cargo -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900">{{ contrato.cargo }}</div>
+                                <div class="text-xs text-gray-500">
+                                    <i class="fas fa-money-bill-wave mr-1"></i>
+                                    ${{ contrato.sueldo_base|default:"0"|intcomma }}
+                                </div>
+                            </td>
+                            
+                            <!-- Período -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ contrato.fecha_inicio|date:"d/m/Y" }}
+                                    {% if contrato.fecha_termino %}
+                                        - {{ contrato.fecha_termino|date:"d/m/Y" }}
+                                    {% else %}
+                                        - Indefinido
+                                    {% endif %}
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {% if contrato.esta_activo %}
+                                        <span class="status-badge status-active">
+                                            <i class="fas fa-check-circle"></i>
+                                            Activo
+                                        </span>
+                                    {% elif contrato.por_vencer_soon %}
+                                        <span class="status-badge status-pending">
+                                            <i class="fas fa-clock"></i>
+                                            Próximo a vencer
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge status-expired">
+                                            <i class="fas fa-times-circle"></i>
+                                            Vencido
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <!-- Tipo -->
+                            <td class="px-6 py-4">
+                                {% if contrato.tipo_contrato == "indefinido" %}
+                                    <span class="contract-chip chip-indefinido">
+                                        <i class="fas fa-infinity mr-1"></i>
+                                        Indefinido
+                                    </span>
+                                {% elif contrato.tipo_contrato == "plazo_fijo" %}
+                                    <span class="contract-chip chip-plazo-fijo">
+                                        <i class="fas fa-calendar-alt mr-1"></i>
+                                        Plazo Fijo
+                                    </span>
+                                {% elif contrato.tipo_contrato == "faena" %}
+                                    <span class="contract-chip chip-faena">
+                                        <i class="fas fa-hard-hat mr-1"></i>
+                                        Por Faena
+                                    </span>
+                                {% else %}
+                                    <span class="contract-chip chip-otros">
+                                        <i class="fas fa-question-circle mr-1"></i>
+                                        {{ contrato.tipo_contrato|title }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Documento -->
+                            <td class="px-6 py-4">
+                                {% if contrato.documento_pdf %}
+                                    <a href="/trabajadores/{{ alias }}/contrato/{{ contrato.id }}/" 
+                                       class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors group"
+                                       target="_blank">
+                                        <div class="bg-blue-100 group-hover:bg-blue-200 p-2 rounded-lg transition-colors">
+                                            <i class="fas fa-file-pdf text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium">Ver PDF</span>
+                                            <div class="text-xs text-gray-500">Documento firmado</div>
+                                        </div>
+                                    </a>
+                                {% else %}
+                                    <div class="flex items-center space-x-3 text-gray-400">
+                                        <div class="bg-gray-100 p-2 rounded-lg">
+                                            <i class="fas fa-file-exclamation"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm">No generado</span>
+                                            <div class="text-xs">Pendiente de firma</div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Acciones -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <a href="/trabajadores/{{ alias }}/contrato/{{ contrato.id }}/editar/" 
+                                       class="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                       title="Editar contrato">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="/trabajadores/{{ alias }}/contrato/{{ contrato.id }}/" 
+                                       class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                       title="Ver/Generar PDF">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    <form action="/trabajadores/{{ alias }}/contrato/{{ contrato.id }}/eliminar/" 
+                                          method="POST" 
+                                          class="inline"
+                                          onsubmit="return confirm('¿Está seguro de eliminar este contrato?');">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Eliminar contrato">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center space-y-3">
+                                    <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                                        <i class="fas fa-file-contract text-green-400 text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-medium text-gray-700">No hay contratos registrados</h4>
+                                        <p class="text-gray-500 mt-1">Comience creando un nuevo contrato</p>
+                                    </div>
+                                    <a href="/trabajadores/{{ alias }}/contratos/crear/" 
+                                       class="btn-primary mt-4 px-6 py-2 rounded-lg">
+                                        <i class="fas fa-plus mr-2"></i>
+                                        Crear primer contrato
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Footer de la tabla -->
+            {% if contratos %}
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div class="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
+                    <div>
+                        Mostrando <span class="font-semibold text-gray-700">{{ contratos|length }}</span> contratos
+                    </div>
+                    <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+                        <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors" id="prevPage">
+                            <i class="fas fa-chevron-left mr-1"></i>
+                            Anterior
+                        </button>
+                        <span class="text-gray-700">Página <span id="currentPage">1</span> de <span id="totalPages">1</span></span>
+                        <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors" id="nextPage">
+                            Siguiente
+                            <i class="fas fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Acciones masivas -->
+        <div class="glass-panel p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Acciones Masivas</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- En la sección de Acciones Masivas -->
+                    <a href="{% url 'exportar_contratos' alias %}" 
+                    class="flex items-center justify-center space-x-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors group btn-export">
+                        <div class="bg-blue-100 group-hover:bg-blue-200 p-3 rounded-lg transition-colors">
+                            <i class="fas fa-file-export text-blue-600"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium text-gray-800">Exportar a Excel</div>
+                            <div class="text-sm text-gray-500">Todos los contratos</div>
+                        </div>
+                    </a>
+                
+                <a href="/trabajadores/{{ alias }}/contratos/recordatorios/" 
+                   class="flex items-center justify-center space-x-3 p-4 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 transition-colors group btn-recordatorios">
+                    <div class="bg-amber-100 group-hover:bg-amber-200 p-3 rounded-lg transition-colors">
+                        <i class="fas fa-bell text-amber-600"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-800">Recordatorios Vencimiento</div>
+                        <div class="text-sm text-gray-500">Próximos a vencer</div>
+                    </div>
+                </a>
+                
+                <a href="/trabajadores/{{ alias }}/contratos/reporte/" 
+                   class="flex items-center justify-center space-x-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 transition-colors group btn-reporte">
+                    <div class="bg-purple-100 group-hover:bg-purple-200 p-3 rounded-lg transition-colors">
+                        <i class="fas fa-chart-bar text-purple-600"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-800">Reporte de Contratos</div>
+                        <div class="text-sm text-gray-500">Análisis por tipo</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Resumen de tipos de contrato -->
+        <div class="glass-panel p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribución por Tipo</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                        <i class="fas fa-infinity text-green-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500">Indefinidos</div>
+                        <div class="font-semibold text-gray-800">{{ indefinidos|default:"0" }}</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-blue-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500">Plazo Fijo</div>
+                        <div class="font-semibold text-gray-800">{{ plazo_fijo|default:"0" }}</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg">
+                    <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                        <i class="fas fa-hard-hat text-amber-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500">Por Faena</div>
+                        <div class="font-semibold text-gray-800">{{ por_obra|default:"0" }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gráfico simple de distribución -->
+            <div class="mt-6 pt-6 border-t border-gray-100">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Distribución porcentual</span>
+                </div>
+                <div class="flex h-4 bg-gray-200 rounded-full overflow-hidden">
+                    {% if total_contratos > 0 %}
+                    <div class="bg-green-500" style="width: {{ indefinidos|default:0|floatformat:0 }}%"></div>
+                    <div class="bg-blue-500" style="width: {{ plazo_fijo|default:0|floatformat:0 }}%"></div>
+                    <div class="bg-amber-500" style="width: {{ por_obra|default:0|floatformat:0 }}%"></div>
+                    {% endif %}
+                </div>
+                <div class="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>Indefinidos: {{ indefinidos|default:"0" }} ({{ indefinidos|default:0|floatformat:1 }}%)</span>
+                    <span>Plazo Fijo: {{ plazo_fijo|default:"0" }} ({{ plazo_fijo|default:0|floatformat:1 }}%)</span>
+                    <span>Por Faena: {{ por_obra|default:"0" }} ({{ por_obra|default:0|floatformat:1 }}%)</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Sistema de Contratos
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fas fa-shield-alt mr-1"></i> Cumplimiento legal</span>
+                <span><i class="fas fa-clock mr-1"></i> Actualizado: {{ hoy|date:"d/m/Y" }}</span>
+                <span class="text-green-600 font-medium">
+                    <i class="fas fa-circle text-xs mr-1"></i>
+                    {{ total_contratos|default:"0" }} contratos registrados
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Animaciones de entrada
+        document.addEventListener('DOMContentLoaded', function() {
+            // Efecto de aparición para las tarjetas
+            const cards = document.querySelectorAll('.glass-panel');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+            
+            // Filtros rápidos
+            const filterTags = document.querySelectorAll('.filter-tag');
+            filterTags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const filterType = this.getAttribute('data-filter');
+                    
+                    // Actualizar clase activa
+                    filterTags.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Filtrar tabla
+                    filterTable(filterType);
+                });
+            });
+            
+            // Inicializar paginación
+            initPagination();
+        });
+        
+        function filterTable(filterType) {
+            const rows = document.querySelectorAll('#contratosTableBody tr[data-status]');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let showRow = true;
+                
+                if (filterType === 'active') {
+                    showRow = row.getAttribute('data-status') === 'active';
+                } else if (filterType === 'expiring') {
+                    showRow = row.getAttribute('data-expiring') === 'true';
+                } else if (filterType === 'with-pdf') {
+                    showRow = row.getAttribute('data-pdf') === 'true';
+                }
+                // Si filterType es 'all', mostrar todas
+                
+                if (showRow) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Actualizar contador
+            document.querySelector('.text-sm.text-gray-500 span:last-child').textContent = visibleCount;
+            updatePagination();
+        }
+        
+        // Funciones para paginación
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        
+        function initPagination() {
+            const rows = document.querySelectorAll('#contratosTableBody tr[data-status]');
+            if (rows.length > rowsPerPage) {
+                document.getElementById('totalPages').textContent = Math.ceil(rows.length / rowsPerPage);
+                showPage(1);
+                
+                // Agregar event listeners a botones de paginación
+                document.getElementById('prevPage').addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        showPage(currentPage - 1);
+                    }
+                });
+                
+                document.getElementById('nextPage').addEventListener('click', () => {
+                    const totalPages = Math.ceil(rows.length / rowsPerPage);
+                    if (currentPage < totalPages) {
+                        showPage(currentPage + 1);
+                    }
+                });
+            } else {
+                // Ocultar controles de paginación si no son necesarios
+                document.querySelector('.flex.items-center.space-x-4').style.display = 'none';
+            }
+        }
+        
+        function showPage(page) {
+            const rows = document.querySelectorAll('#contratosTableBody tr[data-status]');
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            
+            rows.forEach((row, index) => {
+                if (index >= start && index < end) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            currentPage = page;
+            document.getElementById('currentPage').textContent = page;
+            
+            // Actualizar estado de botones
+            document.getElementById('prevPage').disabled = page === 1;
+            document.getElementById('nextPage').disabled = page === Math.ceil(rows.length / rowsPerPage);
+        }
+        
+        function updatePagination() {
+            const visibleRows = document.querySelectorAll('#contratosTableBody tr[data-status]:not([style*="display: none"])');
+            if (visibleRows.length > rowsPerPage) {
+                document.getElementById('totalPages').textContent = Math.ceil(visibleRows.length / rowsPerPage);
+                showPage(1);
+            } else {
+                // Mostrar todas las filas visibles
+                visibleRows.forEach(row => row.style.display = '');
+                document.querySelector('.flex.items-center.space-x-4').style.display = 'none';
+            }
+        }
+        
+        // Formatear números con separadores de miles
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+        
+        // Aplicar formato a todos los montos de sueldo
+        document.querySelectorAll('.text-xs.text-gray-500').forEach(el => {
+            if (el.textContent.includes('$')) {
+                const match = el.textContent.match(/\$(\d+)/);
+                if (match) {
+                    const formatted = formatNumber(match[1]);
+                    el.textContent = el.textContent.replace(match[0], '$' + formatted);
+                }
+            }
+        });
+    </script>
+
 </body>
 </html>

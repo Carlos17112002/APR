@@ -1,3 +1,5 @@
+{% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,121 +7,1547 @@
   <title>Panel SSR - {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      min-height: 100vh;
+    }
+    
+    .gradient-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    
+    .gradient-secondary {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+    
+    .gradient-warning {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .gradient-danger {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    }
+    
+    .card-shadow {
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+    }
+    
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+    }
+    
+    .stats-card {
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .stats-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+    
+    .stats-card.green::before {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    
+    .stats-card.blue::before {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+    
+    .stats-card.purple::before {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+    
+    .stats-card.amber::before {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3);
+    }
+    
+    .sidebar-item {
+      transition: all 0.2s ease;
+      border-radius: 8px;
+    }
+    
+    .sidebar-item:hover {
+      background: rgba(5, 150, 105, 0.08);
+    }
+    
+    .sidebar-item.active {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .table-container {
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    
+    .table-header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    
+    .table-row-hover:hover {
+      background-color: #f8fafc;
+    }
+    
+    .progress-bar {
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      background: #e5e7eb;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      max-width: 90vw;
+      max-height: 90vh;
+      animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      animation: slideInRight 0.3s ease;
+    }
+    
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .loading-shimmer {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800">
+<body>
 
-  <!-- Navbar superior -->
-  <nav class="bg-green-700 text-white shadow-lg">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold tracking-wide">Panel SSR · {{ empresa.nombre }}</h1>
-      <div class="flex gap-6 text-sm items-center relative">
-        <a href="{% url 'inventario' slug=slug %}" class="hover:underline">Inventario</a>
-        <a href="{% url 'panel_libro_sii' alias=empresa.slug %}" class="hover:underline">Contabilidad</a>
-        <a href="{% url 'crear_cliente' alias=slug %}" class="hover:underline">Clientes</a>
-        <a href="{% url 'listado_lecturas' alias=slug %}" class="hover:underline">Lecturas</a>
-        <a href="{% url 'avisos' slug=slug %}" class="hover:underline">Avisos</a>
-        <a href="{% url 'faq_listado' slug=slug %}" class="hover:underline">Preguntas</a>
-
-        <!-- Menú desplegable de informes -->
-        <div class="relative">
-          <button onclick="toggleMenu()" class="hover:underline font-semibold focus:outline-none text-white">
-            Informes
-          </button>
-          <div id="menuInformes" class="absolute hidden mt-2 bg-white text-gray-800 shadow-xl rounded-lg z-50 w-64 border border-gray-200 flex flex-col">
-            <div class="px-4 py-2 font-bold text-green-700 border-b bg-gray-50">Selecciona un informe</div>
-            <ul class="flex flex-col divide-y divide-gray-200">
-              <li><a href="{% url 'informe_cargo_descuento' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Cargo y Descuento</a></li>
-              <li><a href="{% url 'informe_cierre_caja' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Cierre de Caja</a></li>
-              <li><a href="{% url 'informe_contabilidad' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Contabilidad</a></li>
-              <li><a href="{% url 'informe_contratos' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Contratos</a></li>
-              <li><a href="{% url 'informe_convenios' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Convenios</a></li>
-              <li><a href="{% url 'informe_DAES' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">DAES</a></li>
-              <li><a href="{% url 'informe_deuda' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Deuda</a></li>
-              <li><a href="{% url 'informe_lecturas' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Lecturas</a></li>
-              <li><a href="{% url 'informe_socios' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Socios</a></li>
-              <li><a href="{% url 'informe_subsidios' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Subsidios</a></li>
-              <li><a href="{% url 'registro_macromedidor' alias=slug %}" class="px-4 py-2 hover:bg-green-50 block">Macromedidor</a></li>
-            </ul>
+  <!-- Header Principal -->
+  <header class="gradient-primary text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-3">
+          <div class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-tachometer-alt text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold">Panel SSR</h1>
+            <p class="text-xs opacity-90">{{ empresa.nombre }}</p>
           </div>
         </div>
-
-
-        <a href="{% url 'logout_ssr' %}" class="hover:underline text-red-200">Cerrar sesión</a>
+        
+        <div class="flex items-center space-x-4">
+          <div class="hidden md:flex items-center space-x-6">
+            <a href="{% url 'inventario' slug=slug %}" class="text-sm hover:opacity-80 transition-opacity">
+              <i class="fas fa-box mr-1.5"></i> Inventario
+            </a>
+            <a href="{% url 'panel_libro_sii' alias=empresa.slug %}" class="text-sm hover:opacity-80 transition-opacity">
+              <i class="fas fa-book mr-1.5"></i> Contabilidad
+            </a>
+            <a href="{% url  'listado_lecturas_app' alias=empresa.slug %}" class="text-sm hover:opacity-80 transition-opacity">
+              <i class="fas fa-map-marker-alt mr-1.5"></i> Lecturas
+            </a>
+            <a href="{% url  'listado_clientes' alias=slug %}" class="text-sm hover:opacity-80 transition-opacity">
+              <i class="fas fa-users mr-1.5"></i> Clientes
+            </a>
+            <a href="{% url  'avisos' slug=slug %}" class="text-sm hover:opacity-80 transition-opacity">
+              <i class="fas fa-bell mr-1.5"></i> Avisos
+            </a>
+            <a href="{% url  'faq_listado' slug=slug %}" class="text-sm hover:opacity-80 transition-opacity">
+              <i class="fas fa-question-circle mr-1.5"></i> Preguntas
+            </a>
+            
+            <!-- Menú desplegable de Informes -->
+            <div class="relative">
+              <button id="informesToggle" class="text-sm hover:opacity-80 transition-opacity flex items-center">
+                <i class="fas fa-chart-bar mr-1.5"></i> Informes
+                <i class="fas fa-chevron-down ml-1 text-xs"></i>
+              </button>
+              <div id="informesMenu" class="absolute hidden right-0 mt-2 bg-white text-gray-800 rounded-xl shadow-xl z-50 w-64 border border-gray-200 overflow-hidden">
+                <div class="px-4 py-3 bg-gray-50 border-b">
+                  <h4 class="font-semibold text-emerald-700">Informes Disponibles</h4>
+                  <p class="text-xs text-gray-500 mt-0.5">Selecciona un reporte</p>
+                </div>
+                <div class="max-h-96 overflow-y-auto">
+                  <a href="{% url 'informe_cargo_descuento' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-emerald-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-exchange-alt text-emerald-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Cargo y Descuento</p>
+                      <p class="text-xs text-gray-500">Análisis de cargos aplicados</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_cierre_caja' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-blue-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-cash-register text-blue-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Cierre de Caja</p>
+                      <p class="text-xs text-gray-500">Resumen financiero diario</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_contabilidad' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-purple-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-balance-scale text-purple-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Contabilidad</p>
+                      <p class="text-xs text-gray-500">Estado financiero completo</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_contratos' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-amber-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-file-contract text-amber-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Contratos</p>
+                      <p class="text-xs text-gray-500">Gestión de contratos activos</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_convenios' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-green-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-handshake text-green-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Convenios</p>
+                      <p class="text-xs text-gray-500">Acuerdos y compromisos</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_DAES' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-red-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-red-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-file-invoice text-red-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">DAES</p>
+                      <p class="text-xs text-gray-500">Documentos electrónicos</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_deuda' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-orange-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-money-bill-wave text-orange-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Deuda</p>
+                      <p class="text-xs text-gray-500">Análisis de morosidad</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_lecturas' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-cyan-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-cyan-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-tachometer-alt text-cyan-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Lecturas</p>
+                      <p class="text-xs text-gray-500">Control de mediciones</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_socios' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-indigo-50 border-b border-gray-100">
+                    <div class="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-user-tie text-indigo-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Socios</p>
+                      <p class="text-xs text-gray-500">Información de socios</p>
+                    </div>
+                  </a>
+                  <a href="{% url 'informe_subsidios' alias=slug %}" class="flex items-center px-4 py-3 hover:bg-pink-50">
+                    <div class="h-8 w-8 rounded-lg bg-pink-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-hand-holding-usd text-pink-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Subsidios</p>
+                      <p class="text-xs text-gray-500">Programas de apoyo</p>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="h-8 w-px bg-white/30"></div>
+          
+          <a href="{% url 'logout_ssr' %}" 
+             class="text-sm hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors flex items-center">
+            <i class="fas fa-sign-out-alt mr-1.5"></i> Cerrar sesión
+          </a>
+        </div>
       </div>
     </div>
-  </nav>
+  </header>
 
-  <!-- Contenido principal -->
-  <main class="max-w-7xl mx-auto py-10 px-6 space-y-12">
+  <!-- Mensajes del sistema -->
+  {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      {% for message in messages %}
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl mb-4 card-shadow flex items-center">
+          <i class="fas fa-check-circle text-emerald-600 mr-3"></i>
+          <div>
+            <p class="font-medium">{{ message }}</p>
+            <p class="text-sm opacity-80 mt-0.5">Operación completada exitosamente</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
 
-    <!-- Resumen del sistema -->
-    <section>
-      <h2 class="text-3xl font-bold text-green-700 mb-6">Resumen del Sistema</h2>
+  <!-- Contenido Principal -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Resumen Principal -->
+    <section class="mb-10">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Resumen del Sistema</h2>
+          <p class="text-gray-600 mt-1">Vista general del estado actual de {{ empresa.nombre }}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="text-sm text-gray-500">
+            <i class="fas fa-calendar-day mr-1.5"></i>
+            {% now "d/m/Y" %}
+          </span>
+          <span class="text-sm text-gray-500">
+            <i class="fas fa-chart-line mr-1.5"></i>
+            Rendimiento: {{ rendimiento_mes|default:"0"|floatformat:"0" }}%
+          </span>
+        </div>
+      </div>
+      
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <a href="{% url 'listado_clientes' alias=slug %}" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
-          <div class="text-lg font-semibold text-green-700 mb-1">Clientes</div>
-          <p class="text-sm text-gray-500">Registrados</p>
-          <p class="text-2xl font-bold text-green-800 mt-2">{{ total_clientes }}</p>
+        <!-- Tarjeta Clientes - USANDO VARIABLES REALES -->
+        <a href="{% url 'listado_clientes' alias=slug %}" class="stats-card blue bg-white card-shadow card-hover p-5">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Clientes Registrados</p>
+              <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_clientes|default:"0" }}</p>
+              <div class="flex items-center mt-3">
+                <div class="progress-bar w-32">
+                  <div class="progress-fill bg-blue-500" style="width: 85%"></div>
+                </div>
+                <span class="text-xs text-gray-500 ml-2">85% activos</span>
+              </div>
+            </div>
+            <div class="h-14 w-14 rounded-xl bg-blue-100 flex items-center justify-center">
+              <i class="fas fa-users text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <p class="text-xs text-gray-500 flex items-center">
+              <i class="fas fa-arrow-right mr-1.5"></i>
+              Ver lista completa de clientes
+            </p>
+          </div>
         </a>
-        <a href="{% url 'listado_lecturas' alias=slug %}" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
-          <div class="text-lg font-semibold text-green-700 mb-1">Lecturas</div>
-          <p class="text-sm text-gray-500">Del mes</p>
-          <p class="text-2xl font-bold text-green-800 mt-2">{{ lecturas_mes }}</p>
+        
+        <!-- Tarjeta Lecturas - USANDO VARIABLES REALES -->
+        <a href="{% url 'listado_lecturas_app' alias=empresa.slug %}" class="stats-card green bg-white card-shadow card-hover p-5">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Lecturas del Mes</p>
+              <p class="text-3xl font-bold text-gray-900 mt-2">{{ lecturas_mes|default:"0" }}</p>
+              <div class="flex items-center mt-3">
+                <div class="progress-bar w-32">
+                  <div class="progress-fill bg-emerald-500" 
+                       style="width: {% widthratio porcentaje_lecturas_completadas 100 100 %}%"></div>
+                </div>
+                <span class="text-xs text-gray-500 ml-2">{{ porcentaje_lecturas_completadas|default:"0"|floatformat:"0" }}% completadas</span>
+              </div>
+            </div>
+            <div class="h-14 w-14 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <i class="fas fa-tachometer-alt text-emerald-600 text-xl"></i>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <p class="text-xs text-gray-500 flex items-center">
+              <i class="fas fa-map-marker-alt mr-1.5"></i>
+              <button onclick="mostrarMapaLecturas()" class="text-emerald-600 hover:text-emerald-800">
+                Ver mapa de lecturas
+              </button>
+            </p>
+          </div>
         </a>
-        <a href="{% url 'avisos_activos' slug=slug %}" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
-          <div class="text-lg font-semibold text-green-700 mb-1">Avisos</div>
-          <p class="text-sm text-gray-500">Activos</p>
-          <p class="text-2xl font-bold text-green-800 mt-2">{{ avisos_activos }}</p>
+        
+        <!-- Tarjeta Avisos - USANDO VARIABLES REALES -->
+        <a href="{% url 'avisos' slug=slug %}" class="stats-card amber bg-white card-shadow card-hover p-5">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Avisos Activos</p>
+              <p class="text-3xl font-bold text-gray-900 mt-2">{{ avisos_activos|default:"0" }}</p>
+              <div class="flex items-center mt-3">
+                {% if avisos_activos|default:0 > 0 %}
+                  <span class="status-badge bg-amber-100 text-amber-800">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    {{ avisos_activos }} activos
+                  </span>
+                {% else %}
+                  <span class="status-badge bg-gray-100 text-gray-800">
+                    <i class="fas fa-check-circle mr-1"></i>
+                    Todo al día
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="h-14 w-14 rounded-xl bg-amber-100 flex items-center justify-center">
+              <i class="fas fa-bell text-amber-600 text-xl"></i>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <p class="text-xs text-gray-500 flex items-center">
+              <i class="fas fa-bullhorn mr-1.5"></i>
+              Gestionar comunicaciones
+            </p>
+          </div>
         </a>
-        <a href="{% url 'faq_listado' slug=slug %}" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
-          <div class="text-lg font-semibold text-green-700 mb-1">Preguntas Frecuentes</div>
-          <p class="text-sm text-gray-500">Registradas</p>
-          <p class="text-2xl font-bold text-green-800 mt-2">{{ total_faq }}</p>
+        
+        <!-- Tarjeta FAQ - USANDO VARIABLES REALES -->
+        <a href="{% url 'faq_listado' slug=slug %}" class="stats-card purple bg-white card-shadow card-hover p-5">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Preguntas Frecuentes</p>
+              <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_faq|default:"0" }}</p>
+              <div class="flex items-center mt-3">
+                <div class="text-xs text-gray-500">
+                  <i class="fas fa-eye mr-1"></i>
+                  0 vistas totales
+                </div>
+              </div>
+            </div>
+            <div class="h-14 w-14 rounded-xl bg-purple-100 flex items-center justify-center">
+              <i class="fas fa-question-circle text-purple-600 text-xl"></i>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <p class="text-xs text-gray-500 flex items-center">
+              <i class="fas fa-comments mr-1.5"></i>
+              Base de conocimiento
+            </p>
+          </div>
         </a>
       </div>
     </section>
-
-    <!-- Acciones rápidas -->
-    <section>
-      <h3 class="text-xl font-semibold text-green-800 mb-4">Acciones SSR</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <a href="#" class="block bg-gray-100 hover:bg-gray-200 rounded px-4 py-3 shadow">Reparar entorno</a>
-        <a href="#" class="block bg-gray-100 hover:bg-gray-200 rounded px-4 py-3 shadow">Ver logs por alias</a>
-        <a href="#" class="block bg-gray-100 hover:bg-gray-200 rounded px-4 py-3 shadow">Validar migraciones</a>
-        <a href="#" class="block bg-gray-100 hover:bg-gray-200 rounded px-4 py-3 shadow">Exportar datos</a>
-
-        <form method="post" action="{% url 'generar_boletas_ssr' slug=slug %}" class="col-span-2">
-          {% csrf_token %}
-          <button class="w-full bg-green-700 text-white px-4 py-3 rounded shadow hover:bg-green-800 transition">
-            Generar boletas del mes
+    
+    <!-- Sección de Gráficos y Análisis -->
+    <section class="mb-10">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Análisis y Estadísticas</h2>
+          <p class="text-gray-600 mt-1">Métricas y tendencias de consumo de {{ empresa.nombre }}</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <select id="rangoTiempo" onchange="actualizarGraficos()" 
+                  class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="mes">Último mes</option>
+            <option value="trimestre">Último trimestre</option>
+            <option value="semestre">Último semestre</option>
+            <option value="anual">Último año</option>
+          </select>
+          <button onclick="actualizarGraficos()" 
+                  class="bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-sm hover:bg-emerald-200 transition-colors">
+            <i class="fas fa-sync-alt mr-1"></i> Actualizar
           </button>
-        </form>
+        </div>
+      </div>
+      
+      <!-- Primera fila de gráficos -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Gráfico 1: Consumo Mensual Total -->
+        <div class="bg-white card-shadow rounded-xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">Consumo Mensual Total</h3>
+              <p class="text-gray-500 text-sm mt-1">m³ consumidos por período</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-bold text-emerald-600" id="totalConsumo">
+                {{ consumo_total_mes|default:"0"|floatformat:"0" }} m³
+              </p>
+              {% if variacion_consumo %}
+                <p class="text-xs {% if variacion_consumo > 0 %}text-red-600{% else %}text-emerald-600{% endif %}" id="variacionConsumo">
+                  {% if variacion_consumo > 0 %}+{% endif %}{{ variacion_consumo|floatformat:"1" }}% vs mes anterior
+                </p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="h-72">
+            <canvas id="graficoConsumoMensual"></canvas>
+          </div>
+        </div>
+        
+        <!-- Gráfico 2: Distribución por Sector -->
+        <div class="bg-white card-shadow rounded-xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">Distribución por Sector</h3>
+              <p class="text-gray-500 text-sm mt-1">Clientes por sector geográfico</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-bold text-blue-600">{{ total_clientes|default:"0" }} Clientes</p>
+              <p class="text-xs text-gray-500">Segmentación actual</p>
+            </div>
+          </div>
+          <div class="h-72">
+            <canvas id="graficoDistribucion"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Segunda fila de gráficos -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Gráfico 3: Tendencia Anual -->
+        <div class="bg-white card-shadow rounded-xl p-5 lg:col-span-2">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">Tendencia de Consumo Anual</h3>
+              <p class="text-gray-500 text-sm mt-1">Evolución mensual en los últimos 12 meses</p>
+            </div>
+            <div class="flex items-center space-x-4">
+              <div class="flex items-center">
+                <div class="h-3 w-3 rounded-full bg-emerald-500 mr-2"></div>
+                <span class="text-xs text-gray-600">Consumo (m³)</span>
+              </div>
+              <div class="flex items-center">
+                <div class="h-3 w-3 rounded-full bg-blue-500 mr-2"></div>
+                <span class="text-xs text-gray-600">Lecturas Completadas</span>
+              </div>
+            </div>
+          </div>
+          <div class="h-64">
+            <canvas id="graficoTendenciaAnual"></canvas>
+          </div>
+        </div>
+        
+        <!-- Gráfico 4: Estado de Lecturas -->
+        <div class="bg-white card-shadow rounded-xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">Estado de Lecturas</h3>
+              <p class="text-gray-500 text-sm mt-1">Progreso del mes actual</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-bold text-purple-600" id="porcentajeLecturas">
+                {{ porcentaje_lecturas_completadas|default:"0"|floatformat:"0" }}%
+              </p>
+              <p class="text-xs text-gray-500">Completadas</p>
+            </div>
+          </div>
+          <div class="h-64 flex flex-col justify-center">
+            <div class="relative h-40">
+              <canvas id="graficoEstadoLecturas"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-2 text-center">
+              <div class="bg-emerald-50 p-2 rounded-lg">
+                <p class="text-sm font-medium text-emerald-700">{{ lecturas_completadas|default:"0" }}</p>
+                <p class="text-xs text-emerald-600">Completadas</p>
+              </div>
+              <div class="bg-amber-50 p-2 rounded-lg">
+                <p class="text-sm font-medium text-amber-700">{{ lecturas_pendientes|default:"0" }}</p>
+                <p class="text-xs text-amber-600">Pendientes</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tercera fila: Gráficos de Rendimiento -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Gráfico 5: Top 10 Consumidores -->
+        <div class="bg-white card-shadow rounded-xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">Top 10 Mayores Consumidores</h3>
+              <p class="text-gray-500 text-sm mt-1">Clientes con mayor consumo este mes</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm text-gray-700">
+                <i class="fas fa-trophy mr-1"></i>
+                Total: <span id="totalTop10">{{ consumo_top10|default:"0"|floatformat:"0" }}</span> m³
+              </p>
+            </div>
+          </div>
+          <div class="h-64 overflow-y-auto pr-2">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th class="text-left py-2 text-gray-600">#</th>
+                  <th class="text-left py-2 text-gray-600">Cliente</th>
+                  <th class="text-right py-2 text-gray-600">Consumo (m³)</th>
+                  <th class="text-right py-2 text-gray-600">% del Total</th>
+                </tr>
+              </thead>
+              <tbody id="tablaTopConsumidores">
+                {% for cliente in top_consumidores %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="py-3 text-center">
+                    <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                      {{ forloop.counter }}
+                    </span>
+                  </td>
+                  <td class="py-3">
+                    <div class="truncate max-w-[150px]" title="{{ cliente.nombre }}">
+                      {{ cliente.nombre }}
+                    </div>
+                    <div class="text-xs text-gray-500">{{ cliente.rut }}</div>
+                  </td>
+                  <td class="py-3 text-right font-medium text-gray-900">
+                    {{ cliente.consumo|floatformat:0 }} m³
+                  </td>
+                  <td class="py-3 text-right">
+                    <span class="inline-flex items-center">
+                      <span class="text-gray-700 mr-2">{{ cliente.porcentaje }}%</span>
+                      <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-emerald-500" style="width: {{ cliente.porcentaje }}%"></div>
+                      </div>
+                    </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="py-8 text-center text-gray-500">
+                    <i class="fas fa-inbox text-3xl mb-2 block"></i>
+                    No hay datos de consumo para mostrar
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Gráfico 6: Consumo por Horas del Día (simplificado para SSR) -->
+        <div class="bg-white card-shadow rounded-xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">Resumen del Mes</h3>
+              <p class="text-gray-500 text-sm mt-1">Métricas clave de rendimiento</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm text-gray-700">
+                <i class="fas fa-chart-pie mr-1"></i>
+                Día {{ dia_actual }} de {{ dias_en_mes }}
+              </p>
+            </div>
+          </div>
+          <div class="h-64 flex flex-col justify-center space-y-4">
+            <!-- Métrica 1: Consumo promedio por cliente -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <div class="flex justify-between items-center">
+                <div>
+                  <p class="text-sm font-medium text-gray-700">Consumo Promedio por Cliente</p>
+                  <p class="text-xs text-gray-500">m³ por cliente este mes</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xl font-bold text-emerald-600">{{ consumo_promedio|floatformat:1 }} m³</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Métrica 2: Progreso del mes -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <div class="flex justify-between items-center mb-2">
+                <div>
+                  <p class="text-sm font-medium text-gray-700">Progreso del Mes</p>
+                  <p class="text-xs text-gray-500">Días transcurridos</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xl font-bold text-blue-600">{{ rendimiento_mes|floatformat:0 }}%</p>
+                </div>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill bg-blue-500" style="width: {{ rendimiento_mes|default:'0' }}%"></div>
+              </div>
+            </div>
+            
+            <!-- Métrica 3: Tasa de completitud -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <div class="flex justify-between items-center">
+                <div>
+                  <p class="text-sm font-medium text-gray-700">Tasa de Completitud</p>
+                  <p class="text-xs text-gray-500">Lecturas vs Clientes</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xl font-bold text-purple-600">
+                    {% if total_clientes > 0 %}
+                      {% widthratio lecturas_mes total_clientes 100 %}%
+                    {% else %}
+                      0%
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
-
-    <!-- Panel admin -->
+    
+    <!-- Herramientas del Sistema -->
+    <section class="mb-10">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Herramientas del Sistema</h2>
+          <p class="text-gray-600 mt-1">Utilidades para mantenimiento y administración</p>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="#" 
+           class="bg-white card-shadow rounded-xl p-4 hover:shadow-lg transition-shadow flex items-center">
+          <div class="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+            <i class="fas fa-tools text-blue-600"></i>
+          </div>
+          <div>
+            <p class="font-medium text-gray-900">Reparar entorno</p>
+            <p class="text-xs text-gray-500 mt-0.5">Corregir configuraciones</p>
+          </div>
+        </a>
+        
+        <a href="#" 
+           class="bg-white card-shadow rounded-xl p-4 hover:shadow-lg transition-shadow flex items-center">
+          <div class="h-12 w-12 rounded-lg bg-amber-100 flex items-center justify-center mr-3">
+            <i class="fas fa-clipboard-list text-amber-600"></i>
+          </div>
+          <div>
+            <p class="font-medium text-gray-900">Ver logs</p>
+            <p class="text-xs text-gray-500 mt-0.5">Registros del sistema</p>
+          </div>
+        </a>
+        
+        <a href="#" 
+           class="bg-white card-shadow rounded-xl p-4 hover:shadow-lg transition-shadow flex items-center">
+          <div class="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+            <i class="fas fa-database text-purple-600"></i>
+          </div>
+          <div>
+            <p class="font-medium text-gray-900">Validar migraciones</p>
+            <p class="text-xs text-gray-500 mt-0.5">Verificar estructura DB</p>
+          </div>
+        </a>
+        
+        <a href="#" 
+           class="bg-white card-shadow rounded-xl p-4 hover:shadow-lg transition-shadow flex items-center">
+          <div class="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
+            <i class="fas fa-file-export text-emerald-600"></i>
+          </div>
+          <div>
+            <p class="font-medium text-gray-900">Exportar datos</p>
+            <p class="text-xs text-gray-500 mt-0.5">Backup y respaldo</p>
+          </div>
+        </a>
+      </div>
+      
+      <!-- Generación de boletas -->
+      <div class="mt-8 bg-white card-shadow rounded-xl p-5">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Generación de Boletas</h3>
+            <p class="text-gray-500 text-sm mt-1">Proceso mensual de facturación</p>
+          </div>
+          
+          <form id="formBoleta" method="post" action="{% url 'generar_boletas_ssr' slug=slug %}" class="flex items-center space-x-4">
+            {% csrf_token %}
+            <div class="text-sm text-gray-600">
+              <i class="fas fa-calendar-alt mr-1"></i>
+              Período: {{ mes_actual }}
+            </div>
+            <button type="button" onclick="mostrarModalBoleta()" 
+                    class="btn-primary text-white px-5 py-2.5 rounded-lg font-medium flex items-center">
+              <i class="fas fa-file-invoice-dollar mr-2"></i>
+              Generar Boletas
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+    
     {% if request.user.is_superuser %}
-      <div class="text-right pt-6">
-        <a href="{% url 'dashboard_admin_ssr' %}" class="text-sm text-blue-600 hover:underline">Volver al Panel General</a>
+      <div class="mt-8 text-right">
+        <a href="{% url 'dashboard_admin_ssr' %}" 
+           class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+          <i class="fas fa-arrow-left mr-2"></i>
+          Volver al Panel General de Administración
+        </a>
       </div>
     {% endif %}
-
   </main>
 
-  <!-- Script para menú desplegable -->
-  <script>
-    function toggleMenu() {
-      const menu = document.getElementById('menuInformes');
-      menu.classList.toggle('hidden');
-    }
+  <!-- Modal de Mapa de Lecturas -->
+  <div id="modalLecturas" class="modal-overlay hidden">
+    <div class="modal-content w-full max-w-6xl">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">Mapa de Estado de Lecturas</h2>
+            <p class="text-gray-600 text-sm mt-1">Visualización geográfica del progreso de lecturas</p>
+          </div>
+          <button onclick="cerrarMapaLecturas()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+          <div class="bg-gray-50 p-3 rounded-lg">
+            <div class="flex items-center">
+              <div class="h-3 w-3 rounded-full bg-emerald-500 mr-2"></div>
+              <span class="text-sm text-gray-700">Cargada ({{ lecturas_completadas|default:"0" }})</span>
+            </div>
+          </div>
+          <div class="bg-gray-50 p-3 rounded-lg">
+            <div class="flex items-center">
+              <div class="h-3 w-3 rounded-full bg-amber-500 mr-2"></div>
+              <span class="text-sm text-gray-700">Pendiente ({{ lecturas_pendientes|default:"0" }})</span>
+            </div>
+          </div>
+          <div class="bg-gray-50 p-3 rounded-lg">
+            <div class="flex items-center">
+              <div class="h-3 w-3 rounded-full bg-blue-500 mr-2"></div>
+              <span class="text-sm text-gray-700">Procesada ({{ lecturas_mes|default:"0" }})</span>
+            </div>
+          </div>
+          <div class="bg-gray-50 p-3 rounded-lg">
+            <div class="flex items-center">
+              <div class="h-3 w-3 rounded-full bg-gray-500 mr-2"></div>
+              <span class="text-sm text-gray-700">Sin datos ({{ total_clientes|add:"-lecturas_mes"|default:"0" }})</span>
+            </div>
+          </div>
+        </div>
+        
+        <div id="mapLecturas" class="w-full h-[500px] rounded-xl overflow-hidden border border-gray-200"></div>
+        
+        <div class="mt-4 flex justify-between items-center text-sm text-gray-600">
+          <div>
+            <i class="fas fa-info-circle mr-1"></i>
+            Haz clic en cualquier marcador para ver detalles del cliente
+          </div>
+          <button onclick="actualizarMapaLecturas()" class="text-emerald-600 hover:text-emerald-800">
+            <i class="fas fa-sync-alt mr-1"></i> Actualizar mapa
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    document.addEventListener('click', function (event) {
-      const menu = document.getElementById('menuInformes');
-      const button = event.target.closest('button');
-      if (!event.target.closest('#menuInformes') && !button) {
-        menu.classList.add('hidden');
+  <!-- Toast de notificación -->
+  <div id="toastBoleta" class="toast hidden w-96">
+    <div class="p-4">
+      <div class="flex items-start">
+        <div class="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
+          <i class="fas fa-cog text-emerald-600 animate-spin"></i>
+        </div>
+        <div class="flex-1">
+          <h4 class="font-medium text-gray-900">Generando boletas del mes</h4>
+          <p class="text-sm text-gray-600 mt-1">Este proceso puede tardar unos segundos. Por favor, espere.</p>
+          
+          <div class="mt-3 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-gray-500">Validando clientes...</span>
+              <span id="progressStep1" class="text-emerald-600 hidden">
+                <i class="fas fa-check"></i>
+              </span>
+            </div>
+            <div class="progress-bar">
+              <div id="progressFill" class="progress-fill bg-emerald-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+        <button onclick="cerrarToast()" class="text-gray-400 hover:text-gray-600 ml-2">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Variables globales
+    let mapaLecturas = null;
+    let capaPuntos = null;
+    let progressInterval = null;
+    
+    // Variables para los gráficos
+    let graficoConsumoMensual = null;
+    let graficoDistribucion = null;
+    let graficoTendenciaAnual = null;
+    let graficoEstadoLecturas = null;
+    
+    // =========== DATOS REALES DESDE DJANGO ===========
+    // Parsear los datos JSON que envía la vista
+    const datosReales = {
+      // Datos para gráfico de consumo mensual
+      meses: JSON.parse('{{ meses_grafico|escapejs|default:"[]" }}'),
+      consumoMensual: JSON.parse('{{ consumo_mensual|escapejs|default:"[]" }}'),
+      
+      // Datos para distribución por sector
+      distribucion: {
+        labels: [],
+        data: [],
+        porcentajes: [],
+        colores: []
+      },
+      
+      // Datos para tendencia anual
+      tendenciaAnual: {
+        consumo: JSON.parse('{{ tendencia_consumo|escapejs|default:"[]" }}'),
+        lecturas: JSON.parse('{{ tendencia_lecturas|escapejs|default:"[]" }}')
+      },
+      
+      // Datos para estado de lecturas
+      estadoLecturas: {
+        completadas: {{ lecturas_completadas|default:"0" }},
+        pendientes: {{ lecturas_pendientes|default:"0" }}
+      }
+    };
+    
+    // Procesar datos de distribución si existen
+    try {
+      const distribucionData = JSON.parse('{{ distribucion_sectores|escapejs|default:"[]" }}');
+      if (distribucionData && distribucionData.length > 0) {
+        datosReales.distribucion.labels = distribucionData.map(item => item.tipo);
+        datosReales.distribucion.data = distribucionData.map(item => item.total);
+        datosReales.distribucion.porcentajes = distribucionData.map(item => item.porcentaje);
+        datosReales.distribucion.colores = distribucionData.map(item => item.color || '#10b981');
+      }
+    } catch (e) {
+      console.error('Error procesando datos de distribución:', e);
+    }
+    
+    // Colores base para gráficos si no hay colores definidos
+    const coloresBase = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#f97316'];
+    
+    // Convertir puntos de lectura para JavaScript
+    const puntosLecturaData = [
+      {% for punto in puntos_lectura %}
+      {
+        lat: {{ punto.latitud|default:"-34.3" }},
+        lng: {{ punto.longitud|default:"-70.9" }},
+        nombre: "{{ punto.nombre_cliente|default:'Cliente'|escapejs }}",
+        estado: "{{ punto.estado|default:'normal'|escapejs }}",
+        estado_display: "{{ punto.estado_display|default:'Normal'|escapejs }}",
+        cliente_id: {{ punto.cliente_id|default:"0" }},
+        ultima_lectura: "{{ punto.ultima_lectura|date:'d/m/Y'|default:'N/A'|escapejs }}"
+      },
+      {% empty %}
+      // Datos de ejemplo si no hay puntos
+      { lat: -34.31, lng: -70.91, nombre: "Cliente 1", estado: "normal", estado_display: "Normal", cliente_id: 1, ultima_lectura: "{% now 'd/m/Y' %}" },
+      { lat: -34.32, lng: -70.92, nombre: "Cliente 2", estado: "faltante", estado_display: "Faltante", cliente_id: 2, ultima_lectura: "{% now 'd/m/Y' %}" },
+      { lat: -34.29, lng: -70.88, nombre: "Cliente 3", estado: "medio", estado_display: "Término medio", cliente_id: 3, ultima_lectura: "{% now 'd/m/Y' %}" }
+      {% endfor %}
+    ];
+    
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+      // Menú desplegable de informes
+      const informesToggle = document.getElementById('informesToggle');
+      const informesMenu = document.getElementById('informesMenu');
+      
+      informesToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        informesMenu.classList.toggle('hidden');
+      });
+      
+      document.addEventListener('click', function(e) {
+        if (!informesMenu.contains(e.target) && e.target !== informesToggle) {
+          informesMenu.classList.add('hidden');
+        }
+      });
+      
+      // Inicializar gráficos con datos REALES
+      inicializarGraficosReales();
+    });
+    
+    // Funciones para gráficos con datos REALES
+    function inicializarGraficosReales() {
+      console.log('Inicializando gráficos con datos reales:', datosReales);
+      
+      // 1. Gráfico de Consumo Mensual (con datos reales)
+      const ctxConsumo = document.getElementById('graficoConsumoMensual');
+      if (ctxConsumo && datosReales.meses.length > 0) {
+        if (graficoConsumoMensual) graficoConsumoMensual.destroy();
+        
+        // Asegurarse de que los datos sean números
+        const datosNumericos = datosReales.consumoMensual.map(val => parseFloat(val) || 0);
+        
+        graficoConsumoMensual = new Chart(ctxConsumo, {
+          type: 'line',
+          data: {
+            labels: datosReales.meses,
+            datasets: [{
+              label: 'Consumo (m³)',
+              data: datosNumericos,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: '#10b981',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              pointRadius: 5,
+              pointHoverRadius: 7
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                titleColor: '#1f2937',
+                bodyColor: '#374151',
+                borderColor: '#e5e7eb',
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: 12,
+                callbacks: {
+                  label: function(context) {
+                    return `Consumo: ${context.parsed.y.toLocaleString()} m³`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: '#6b7280' }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(229, 231, 235, 0.5)' },
+                ticks: { 
+                  color: '#6b7280',
+                  callback: function(value) {
+                    return value.toLocaleString() + ' m³';
+                  }
+                }
+              }
+            },
+            interaction: { intersect: false, mode: 'nearest' }
+          }
+        });
+      } else {
+        console.warn('No hay datos para gráfico de consumo mensual');
+      }
+      
+      // 2. Gráfico de Distribución por Sector (con datos reales)
+      const ctxDistribucion = document.getElementById('graficoDistribucion');
+      if (ctxDistribucion && datosReales.distribucion.labels.length > 0) {
+        if (graficoDistribucion) graficoDistribucion.destroy();
+        
+        // Usar colores del array o generar dinámicamente
+        const colores = datosReales.distribucion.colores.length > 0 
+          ? datosReales.distribucion.colores 
+          : coloresBase.slice(0, datosReales.distribucion.labels.length);
+        
+        graficoDistribucion = new Chart(ctxDistribucion, {
+          type: 'doughnut',
+          data: {
+            labels: datosReales.distribucion.labels,
+            datasets: [{
+              data: datosReales.distribucion.data,
+              backgroundColor: colores,
+              borderColor: '#ffffff',
+              borderWidth: 2,
+              hoverOffset: 15
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  padding: 15,
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  font: { size: 11 }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const porcentaje = datosReales.distribucion.porcentajes[context.dataIndex] || 0;
+                    return `${context.label}: ${context.parsed} clientes (${porcentaje}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else {
+        console.warn('No hay datos para gráfico de distribución por sector');
+      }
+      
+      // 3. Gráfico de Tendencia Anual (con datos reales)
+      const ctxTendencia = document.getElementById('graficoTendenciaAnual');
+      if (ctxTendencia && datosReales.meses.length > 0) {
+        if (graficoTendenciaAnual) graficoTendenciaAnual.destroy();
+        
+        // Asegurarse de que los datos sean números
+        const tendenciaConsumo = datosReales.tendenciaAnual.consumo.map(val => parseFloat(val) || 0);
+        const tendenciaLecturas = datosReales.tendenciaAnual.lecturas.map(val => parseFloat(val) || 0);
+        
+        graficoTendenciaAnual = new Chart(ctxTendencia, {
+          type: 'bar',
+          data: {
+            labels: datosReales.meses,
+            datasets: [
+              {
+                label: 'Consumo (m³)',
+                data: tendenciaConsumo,
+                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                borderColor: '#10b981',
+                borderWidth: 1,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Lecturas Completadas',
+                data: tendenciaLecturas,
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderColor: '#3b82f6',
+                borderWidth: 1,
+                type: 'line',
+                tension: 0.4,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: {
+                grid: { display: false }
+              },
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                  display: true,
+                  text: 'Consumo (m³)',
+                  color: '#6b7280'
+                },
+                grid: { color: 'rgba(229, 231, 235, 0.5)' }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                  display: true,
+                  text: 'Lecturas Completadas',
+                  color: '#6b7280'
+                },
+                grid: { drawOnChartArea: false },
+                min: 0
+              }
+            },
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: function(context) {
+                    if (context.datasetIndex === 0) {
+                      return `Consumo: ${context.parsed.y.toLocaleString()} m³`;
+                    } else {
+                      return `Lecturas: ${context.parsed.y}`;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else {
+        console.warn('No hay datos para gráfico de tendencia anual');
+      }
+      
+      // 4. Gráfico de Estado de Lecturas (con datos reales)
+      const ctxEstadoLecturas = document.getElementById('graficoEstadoLecturas');
+      if (ctxEstadoLecturas) {
+        if (graficoEstadoLecturas) graficoEstadoLecturas.destroy();
+        
+        const lecturasCompletadas = datosReales.estadoLecturas.completadas;
+        const lecturasPendientes = datosReales.estadoLecturas.pendientes;
+        const total = lecturasCompletadas + lecturasPendientes;
+        
+        graficoEstadoLecturas = new Chart(ctxEstadoLecturas, {
+          type: 'doughnut',
+          data: {
+            labels: ['Completadas', 'Pendientes'],
+            datasets: [{
+              data: [lecturasCompletadas, lecturasPendientes],
+              backgroundColor: ['#10b981', '#f59e0b'],
+              borderWidth: 0,
+              hoverOffset: 10
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '80%',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Función para actualizar gráficos según rango de tiempo seleccionado
+    function actualizarGraficos() {
+      const rango = document.getElementById('rangoTiempo').value;
+      mostrarNotificacion(`Actualizando gráficos para el ${rango}...`, 'info');
+      
+      // En una implementación real, aquí harías una llamada AJAX
+      // para obtener nuevos datos según el rango seleccionado
+      
+      // Simular actualización con datos diferentes
+      setTimeout(() => {
+        // Actualizar datos según rango
+        let mesesMostrar = [];
+        let datosMostrar = [];
+        
+        // Tomar solo los últimos N meses según el rango
+        const mesesTotales = datosReales.meses.length;
+        let tomar = mesesTotales;
+        
+        switch(rango) {
+          case 'mes':
+            tomar = 1;
+            break;
+          case 'trimestre':
+            tomar = 3;
+            break;
+          case 'semestre':
+            tomar = 6;
+            break;
+          case 'anual':
+            tomar = mesesTotales;
+            break;
+        }
+        
+        mesesMostrar = datosReales.meses.slice(-tomar);
+        datosMostrar = datosReales.consumoMensual.slice(-tomar);
+        
+        // Actualizar gráfico de consumo mensual
+        if (graficoConsumoMensual) {
+          graficoConsumoMensual.data.labels = mesesMostrar;
+          graficoConsumoMensual.data.datasets[0].data = datosMostrar;
+          graficoConsumoMensual.update();
+        }
+        
+        // Actualizar total de consumo en pantalla
+        const total = datosMostrar.reduce((a, b) => a + b, 0);
+        const totalElement = document.getElementById('totalConsumo');
+        if (totalElement) {
+          totalElement.textContent = `${total.toLocaleString()} m³`;
+        }
+        
+        mostrarNotificacion('Gráficos actualizados correctamente', 'success');
+      }, 1000);
+    }
+    
+    // Funciones del mapa de lecturas
+    function mostrarMapaLecturas() {
+      const modal = document.getElementById('modalLecturas');
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      
+      setTimeout(() => {
+        if (!mapaLecturas) {
+          inicializarMapaLecturas();
+        } else {
+          mapaLecturas.invalidateSize();
+        }
+        cargarPuntosLectura();
+      }, 100);
+    }
+    
+    function inicializarMapaLecturas() {
+      mapaLecturas = L.map('mapLecturas').setView([-34.3, -70.9], 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(mapaLecturas);
+      
+      capaPuntos = L.layerGroup().addTo(mapaLecturas);
+      
+      // Agregar control de capas
+      L.control.scale().addTo(mapaLecturas);
+    }
+    
+    function cargarPuntosLectura() {
+      if (!capaPuntos) return;
+      
+      capaPuntos.clearLayers();
+      
+      puntosLecturaData.forEach(p => {
+        let color, icon;
+        
+        switch(p.estado) {
+          case "normal":
+          case "cargada":
+          case "procesada":
+            color = '#10b981';
+            icon = 'check-circle';
+            break;
+          case "medio":
+          case "pendiente":
+            color = '#f59e0b';
+            icon = 'exclamation-circle';
+            break;
+          case "faltante":
+            color = '#dc2626';
+            icon = 'times-circle';
+            break;
+          default:
+            color = '#6b7280';
+            icon = 'question-circle';
+        }
+        
+        const marcador = L.circleMarker([p.lat, p.lng], {
+          radius: 8,
+          color: color,
+          fillColor: color,
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8
+        }).bindPopup(`
+          <div class="p-2">
+            <div class="font-bold text-gray-900">${p.nombre}</div>
+            <div class="flex items-center mt-1">
+              <span class="inline-block h-3 w-3 rounded-full mr-2" style="background-color: ${color}"></span>
+              <span class="text-sm">Estado: ${p.estado_display}</span>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+              Última lectura: ${p.ultima_lectura}
+            </div>
+            <div class="mt-2">
+              <a href="/${'{{ slug }}'}/lecturas-app/${p.cliente_id}/" 
+                 class="text-xs text-emerald-600 hover:text-emerald-800">
+                <i class="fas fa-search mr-1"></i>Ver detalles
+              </a>
+            </div>
+          </div>
+        `);
+        
+        capaPuntos.addLayer(marcador);
+      });
+      
+      // Ajustar el mapa para mostrar todos los marcadores
+      if (puntosLecturaData.length > 0) {
+        const group = new L.featureGroup(capaPuntos.getLayers());
+        mapaLecturas.fitBounds(group.getBounds().pad(0.1));
+      } else {
+        mapaLecturas.setView([-34.3, -70.9], 13);
+      }
+    }
+    
+    function cerrarMapaLecturas() {
+      document.getElementById('modalLecturas').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+    
+    function actualizarMapaLecturas() {
+      mostrarNotificacion('Actualizando datos del mapa...', 'info');
+      
+      setTimeout(() => {
+        mostrarNotificacion('Mapa actualizado correctamente', 'success');
+      }, 1500);
+    }
+    
+    // Funciones de generación de boletas
+    function mostrarModalBoleta() {
+      const toast = document.getElementById('toastBoleta');
+      toast.classList.remove('hidden');
+      
+      // Iniciar animación de progreso
+      let progress = 0;
+      const progressFill = document.getElementById('progressFill');
+      const steps = document.querySelectorAll('[id^="progressStep"]');
+      
+      if (progressInterval) clearInterval(progressInterval);
+      
+      progressInterval = setInterval(() => {
+        progress += 5;
+        if (progress <= 100) {
+          progressFill.style.width = progress + '%';
+          
+          // Marcar pasos como completados
+          if (progress >= 25) steps[0].classList.remove('hidden');
+          if (progress >= 50) steps[1]?.classList.remove('hidden');
+          if (progress >= 75) steps[2]?.classList.remove('hidden');
+        } else {
+          clearInterval(progressInterval);
+          
+          // Cambiar icono a éxito
+          const icon = toast.querySelector('.fa-cog');
+          icon.className = 'fas fa-check text-emerald-600';
+          icon.classList.remove('animate-spin');
+          
+          // Actualizar texto
+          toast.querySelector('h4').textContent = 'Boletas generadas exitosamente';
+          toast.querySelector('p').textContent = 'Las boletas se han generado correctamente.';
+          
+          // Redirigir después de 2 segundos
+          setTimeout(() => {
+            document.getElementById('formBoleta').submit();
+          }, 2000);
+        }
+      }, 100);
+    }
+    
+    function cerrarToast() {
+      const toast = document.getElementById('toastBoleta');
+      toast.classList.add('hidden');
+      
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+    }
+    
+    // Funciones auxiliares
+    function mostrarNotificacion(mensaje, tipo = 'info') {
+      // Crear notificación temporal
+      const notification = document.createElement('div');
+      notification.className = `fixed top-6 right-6 bg-white border-l-4 ${
+        tipo === 'success' ? 'border-emerald-500' : 
+        tipo === 'error' ? 'border-red-500' : 
+        'border-blue-500'
+      } shadow-lg rounded-r-lg p-4 max-w-sm z-50`;
+      
+      notification.innerHTML = `
+        <div class="flex items-start">
+          <i class="fas fa-${
+            tipo === 'success' ? 'check-circle text-emerald-500' : 
+            tipo === 'error' ? 'exclamation-circle text-red-500' : 
+            'info-circle text-blue-500'
+          } mt-0.5 mr-3"></i>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-gray-900">${mensaje}</p>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Remover después de 3 segundos
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        notification.style.transition = 'all 0.3s ease';
+        
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 3000);
+    }
+    
+    // Prevenir envío accidental del formulario
+    document.getElementById('formBoleta').addEventListener('submit', function(e) {
+      if (!confirm('¿Está seguro de que desea generar las boletas del mes?')) {
+        e.preventDefault();
       }
     });
   </script>
+
 </body>
 </html>

@@ -7,92 +7,521 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      min-height: 100vh;
+    }
+    
+    .card-shadow {
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+    }
+    
+    .gradient-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    
+    .gradient-secondary {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+    
+    .input-focus:focus {
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+      border-color: #059669;
+    }
+    
+    .map-container {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(5, 150, 105, 0.2);
+    }
+    
+    .step-indicator {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-weight: 600;
+      font-size: 0.875rem;
+      background-color: #f1f5f9;
+      color: #64748b;
+    }
+    
+    .step-indicator.active {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+    }
+    
+    .step-indicator.completed {
+      background-color: #10b981;
+      color: white;
+    }
+    
+    .form-section {
+      border-radius: 12px;
+      background: white;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-section-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .alert-success {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border: 1px solid #34d399;
+      border-left: 4px solid #059669;
+    }
+    
+    .alert-error {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border: 1px solid #f87171;
+      border-left: 4px solid #dc2626;
+    }
+    
+    .credential-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 1px solid #86efac;
+      border-left: 4px solid #16a34a;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body>
 
-  <div class="max-w-3xl mx-auto py-10 px-6">
-    <h1 class="text-3xl font-bold text-green-700 mb-6">➕ Crear Cliente para {{ empresa.nombre }}</h1>
-    <p class="text-sm text-gray-600 mb-4">Slug: <span class="font-mono">{{ slug }}</span></p>
+  <!-- Header -->
+  <div class="gradient-primary text-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+          <div class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-user-plus text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold">Nuevo Cliente</h1>
+            <p class="text-sm opacity-90">{{ empresa.nombre }}</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <div class="text-sm bg-white/20 px-3 py-1.5 rounded-lg">
+            <span class="opacity-90">Slug:</span>
+            <span class="font-mono font-medium ml-1">{{ slug }}</span>
+          </div>
+          <a href="{% url 'panel_empresa' slug=slug %}" class="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-colors flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Indicador de Pasos -->
+    <div class="bg-white card-shadow rounded-xl p-6 mb-8">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold text-gray-900">Complete los datos del cliente</h2>
+        <span class="text-sm text-gray-500">Paso 1 de 2</span>
+      </div>
+      
+      <div class="flex items-center justify-center space-x-8">
+        <div class="flex items-center">
+          <div class="step-indicator active">
+            <span>1</span>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-gray-900">Información Básica</p>
+            <p class="text-xs text-gray-500">Datos personales y contacto</p>
+          </div>
+        </div>
+        
+        <div class="h-1 w-16 bg-gray-200"></div>
+        
+        <div class="flex items-center">
+          <div class="step-indicator">
+            <span>2</span>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-gray-500">Ubicación</p>
+            <p class="text-xs text-gray-400">Seleccione en el mapa</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mensajes de estado -->
     {% if error %}
-      <div class="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">{{ error }}</div>
+      <div class="alert-error rounded-xl p-4 mb-6 flex items-start">
+        <i class="fas fa-exclamation-circle text-red-600 mt-0.5 mr-3 text-lg"></i>
+        <div>
+          <p class="font-medium text-red-800">Error al crear cliente</p>
+          <p class="text-red-700 text-sm mt-1">{{ error }}</p>
+        </div>
+      </div>
     {% endif %}
-
+    
     {% if credenciales %}
-      <div class="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
-        <p><strong>Usuario creado:</strong> {{ credenciales.usuario }}</p>
-        <p><strong>Contraseña:</strong> {{ credenciales.password }}</p>
+      <div class="credential-card rounded-xl p-5 mb-6">
+        <div class="flex items-start">
+          <div class="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+            <i class="fas fa-check-circle text-green-600"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-green-800 text-lg">¡Cliente creado exitosamente!</h3>
+            <p class="text-green-700 text-sm mb-4">Se han generado las credenciales de acceso para el cliente.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-white/80 p-4 rounded-lg">
+                <p class="text-sm text-green-600 font-medium mb-1">
+                  <i class="fas fa-user mr-2"></i>Usuario
+                </p>
+                <div class="flex items-center">
+                  <input type="text" readonly value="{{ credenciales.usuario }}" 
+                         class="bg-transparent border-none font-mono text-green-900 font-semibold w-full text-lg">
+                  <button type="button" onclick="copyToClipboard('{{ credenciales.usuario }}', 'usuario')" 
+                          class="text-green-600 hover:text-green-800 ml-2">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="bg-white/80 p-4 rounded-lg">
+                <p class="text-sm text-green-600 font-medium mb-1">
+                  <i class="fas fa-key mr-2"></i>Contraseña
+                </p>
+                <div class="flex items-center">
+                  <input type="text" readonly value="{{ credenciales.password }}" 
+                         class="bg-transparent border-none font-mono text-green-900 font-semibold w-full text-lg">
+                  <button type="button" onclick="copyToClipboard('{{ credenciales.password }}', 'contraseña')" 
+                          class="text-green-600 hover:text-green-800 ml-2">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p class="text-sm text-yellow-800 flex items-start">
+                <i class="fas fa-exclamation-triangle mr-2 mt-0.5"></i>
+                <span>Guarde estas credenciales en un lugar seguro. La contraseña no podrá ser recuperada posteriormente.</span>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     {% endif %}
-
-    <form method="post" class="bg-white rounded-lg shadow p-6 space-y-4">
+    
+    <!-- Formulario Principal -->
+    <form method="post" class="space-y-6">
       {% csrf_token %}
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Nombre</label>
-        <input type="text" name="nombre" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Columna Izquierda: Información Básica -->
+        <div class="space-y-6">
+          
+          <!-- Información Personal -->
+          <div class="form-section card-shadow">
+            <div class="form-section-title">
+              <i class="fas fa-user-circle mr-2 text-emerald-600"></i>
+              Información Personal
+            </div>
+            
+            <div class="grid grid-cols-1 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-user mr-1.5 text-gray-400"></i>Nombre Completo
+                </label>
+                <input type="text" name="nombre" required 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
+                       placeholder="Ej: Juan Pérez González">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-id-card mr-1.5 text-gray-400"></i>RUT
+                </label>
+                <input type="text" name="rut" required 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
+                       placeholder="Ej: 12.345.678-9">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Información de Contacto -->
+          <div class="form-section card-shadow">
+            <div class="form-section-title">
+              <i class="fas fa-address-book mr-2 text-blue-600"></i>
+              Información de Contacto
+            </div>
+            
+            <div class="grid grid-cols-1 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-envelope mr-1.5 text-gray-400"></i>Email
+                </label>
+                <input type="email" name="email"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
+                       placeholder="cliente@ejemplo.com">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-phone mr-1.5 text-gray-400"></i>Teléfono
+                </label>
+                <input type="text" name="telefono"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
+                       placeholder="+56 9 1234 5678">
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Columna Derecha: Información Técnica -->
+        <div class="space-y-6">
+          
+          <!-- Información del Servicio -->
+          <div class="form-section card-shadow">
+            <div class="form-section-title">
+              <i class="fas fa-bolt mr-2 text-amber-600"></i>
+              Información del Servicio
+            </div>
+            
+            <div class="grid grid-cols-1 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-tachometer-alt mr-1.5 text-gray-400"></i>Número de Medidor
+                </label>
+                <input type="text" name="medidor" required 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
+                       placeholder="Ej: MED-2023-00123">
+                <p class="text-xs text-gray-500 mt-1.5">Identificador único del medidor de consumo</p>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-map-marker-alt mr-1.5 text-gray-400"></i>Dirección
+                </label>
+                <input type="text" name="direccion" required 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
+                       placeholder="Calle Principal #123, Ciudad">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-map mr-1.5 text-gray-400"></i>Sector
+                </label>
+                <select name="sector" required 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors">
+                  {% for sector in sectores %}
+                    <option value="{{ sector }}">{{ sector }}</option>
+                  {% endfor %}
+                </select>
+                <p class="text-xs text-gray-500 mt-1.5">Zona geográfica de suministro</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Ubicación en Mapa -->
+          <div class="form-section card-shadow">
+            <div class="form-section-title">
+              <i class="fas fa-map-marked-alt mr-2 text-purple-600"></i>
+              Ubicación Geográfica
+            </div>
+            
+            <div class="space-y-4">
+              <p class="text-sm text-gray-600 mb-3">
+                Haga clic en el mapa para seleccionar la ubicación exacta del cliente. Esto ayudará en la gestión de rutas y visitas técnicas.
+              </p>
+              
+              <div class="map-container">
+                <div id="map" class="w-full h-72"></div>
+              </div>
+              
+              <input type="hidden" name="latitude" id="latitude">
+              <input type="hidden" name="longitude" id="longitude">
+              
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <div class="flex items-center">
+                  <div class="h-10 w-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-map-pin text-emerald-600"></i>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Coordenadas seleccionadas</p>
+                    <div class="flex items-center space-x-4 mt-1">
+                      <div class="text-sm">
+                        <span class="text-gray-500">Latitud:</span>
+                        <span id="latDisplay" class="font-mono text-gray-800 ml-1">-</span>
+                      </div>
+                      <div class="text-sm">
+                        <span class="text-gray-500">Longitud:</span>
+                        <span id="lngDisplay" class="font-mono text-gray-800 ml-1">-</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="flex items-center text-sm text-gray-600">
+                <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                <span>Si no selecciona una ubicación, se usará una predeterminada para el sector.</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">RUT</label>
-        <input type="text" name="rut" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Dirección</label>
-        <input type="text" name="direccion" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Medidor</label>
-        <input type="text" name="medidor" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Email</label>
-        <input type="email" name="email" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Teléfono</label>
-        <input type="text" name="telefono" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Sector</label>
-        <select name="sector" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-          {% for sector in sectores %}
-            <option value="{{ sector }}">{{ sector }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Ubicación en el mapa</label>
-        <div id="map" class="w-full h-64 rounded border"></div>
-        <input type="hidden" name="latitude" id="latitude">
-        <input type="hidden" name="longitude" id="longitude">
-      </div>
-
-      <div class="pt-4 flex justify-between items-center">
-        <a href="{% url 'panel_empresa' slug=slug %}" class="text-blue-600 hover:underline">⬅️ Volver al Panel</a>
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Guardar Cliente</button>
+      
+      <!-- Acciones del Formulario -->
+      <div class="bg-white card-shadow rounded-xl p-6 mt-8">
+        <div class="flex justify-between items-center">
+          <a href="{% url 'panel_empresa' slug=slug %}" 
+             class="px-5 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+            <i class="fas fa-times mr-2"></i> Cancelar
+          </a>
+          
+          <div class="flex space-x-4">
+            <button type="button" onclick="clearForm()" 
+                    class="px-5 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+              <i class="fas fa-redo mr-2"></i> Limpiar Formulario
+            </button>
+            
+            <button type="submit" 
+                    class="btn-primary text-white px-6 py-3 rounded-lg font-medium flex items-center">
+              <i class="fas fa-save mr-2"></i> Guardar Cliente
+            </button>
+          </div>
+        </div>
       </div>
     </form>
   </div>
 
   <script>
+    // Inicializar mapa
     const map = L.map('map').setView([-34.3, -70.9], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-    let marker;
+    let marker = null;
+    
+    // Evento para añadir marcador al hacer clic en el mapa
     map.on('click', function(e) {
       const { lat, lng } = e.latlng;
+      
+      // Actualizar inputs ocultos
       document.getElementById('latitude').value = lat;
       document.getElementById('longitude').value = lng;
-
-      if (marker) map.removeLayer(marker);
-      marker = L.marker([lat, lng]).addTo(map);
+      
+      // Actualizar display
+      document.getElementById('latDisplay').textContent = lat.toFixed(6);
+      document.getElementById('lngDisplay').textContent = lng.toFixed(6);
+      
+      // Eliminar marcador anterior si existe
+      if (marker) {
+        map.removeLayer(marker);
+      }
+      
+      // Añadir nuevo marcador
+      marker = L.marker([lat, lng], {
+        icon: L.divIcon({
+          html: '<i class="fas fa-map-marker-alt text-2xl text-red-500"></i>',
+          iconSize: [30, 30],
+          iconAnchor: [15, 30],
+          className: 'map-marker'
+        })
+      }).addTo(map);
+      
+      // Zoom para mejor visualización
+      map.setView([lat, lng], 15);
+    });
+    
+    // Función para copiar al portapapeles
+    function copyToClipboard(text, type) {
+      navigator.clipboard.writeText(text).then(function() {
+        // Mostrar notificación de éxito
+        const originalText = event.target.innerHTML;
+        event.target.innerHTML = '<i class="fas fa-check"></i>';
+        event.target.classList.remove('text-green-600');
+        event.target.classList.add('text-green-700');
+        
+        setTimeout(function() {
+          event.target.innerHTML = originalText;
+          event.target.classList.remove('text-green-700');
+          event.target.classList.add('text-green-600');
+        }, 1500);
+      });
+    }
+    
+    // Función para limpiar el formulario
+    function clearForm() {
+      if (confirm('¿Está seguro de que desea limpiar todos los campos del formulario?')) {
+        const form = document.querySelector('form');
+        form.reset();
+        
+        // Limpiar marcador del mapa
+        if (marker) {
+          map.removeLayer(marker);
+          marker = null;
+        }
+        
+        // Resetear coordenadas
+        document.getElementById('latitude').value = '';
+        document.getElementById('longitude').value = '';
+        document.getElementById('latDisplay').textContent = '-';
+        document.getElementById('lngDisplay').textContent = '-';
+        
+        // Regresar a vista inicial del mapa
+        map.setView([-34.3, -70.9], 13);
+      }
+    }
+    
+    // Validación básica de RUT
+    document.addEventListener('DOMContentLoaded', function() {
+      const rutInput = document.querySelector('input[name="rut"]');
+      
+      if (rutInput) {
+        rutInput.addEventListener('input', function(e) {
+          let value = e.target.value.replace(/[^0-9kK\-\.]/g, '');
+          
+          // Formatear RUT con puntos y guión
+          if (value.length > 2) {
+            value = value.replace(/\./g, '').replace(/\-/g, '');
+            const body = value.slice(0, -1);
+            let dv = value.slice(-1).toUpperCase();
+            
+            let formatted = '';
+            for (let i = body.length; i > 0; i -= 3) {
+              formatted = body.slice(Math.max(0, i - 3), i) + (formatted ? '.' + formatted : '');
+            }
+            
+            value = formatted + '-' + dv;
+          }
+          
+          e.target.value = value;
+        });
+      }
     });
   </script>
 

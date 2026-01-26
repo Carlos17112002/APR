@@ -5,86 +5,538 @@
   <title>Panel General SSR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      font-family: 'Inter', sans-serif;
+    }
+    .gradient-header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    }
+    .status-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .status-active {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .status-inactive {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+    .status-pending {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(29, 78, 216, 0.2);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .btn-success:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    .btn-warning:hover {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    }
+    .btn-apps {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+    .btn-apps:hover {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(124, 58, 237, 0.2);
+    }
+    .stats-card {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 1rem;
+      border: 1px solid #e2e8f0;
+    }
+    .top-nav-link {
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+      padding-bottom: 0.5rem;
+    }
+    .top-nav-link:hover {
+      color: #059669;
+      border-bottom-color: #059669;
+    }
+    .top-nav-link.active {
+      color: #059669;
+      border-bottom-color: #059669;
+      font-weight: 600;
+    }
+    .app-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .app-active {
+      background: linear-gradient(135deg, #a5f3fc 0%, #22d3ee 100%);
+      color: #155e75;
+    }
+    .app-inactive {
+      background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%);
+      color: #4b5563;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
-
-  <!-- Header -->
-  <header class="bg-green-700 text-white shadow">
-    <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-      <h1 class="text-2xl font-bold tracking-wide">Panel General SSR</h1>
-      <div class="flex gap-4">
-        <a href="{% url 'crear_empresa' %}" class="bg-white text-green-700 px-4 py-2 rounded hover:bg-green-100 shadow-sm text-sm font-medium">
-          Nueva Empresa
-        </a>
-        <a href="{% url 'logout_ssr' %}" class="text-sm text-red-200 hover:underline">Cerrar sesión</a>
+<body class="gradient-bg text-gray-800 min-h-screen">
+  <!-- Header Principal -->
+  <header class="gradient-header text-white shadow-lg">
+    <div class="px-6 py-4">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center">
+            <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center mr-3">
+              <i class="fas fa-shield-alt text-white"></i>
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight">Sistema SSR - Panel General</h1>
+              <p class="text-emerald-100 text-sm mt-1">Gestión centralizada de empresas y recursos</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex flex-col md:flex-row items-start md:items-center space-y-3 md:space-y-0 md:space-x-4">
+          <div class="flex items-center space-x-2">
+            <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+              <span class="font-semibold">AD</span>
+            </div>
+            <div class="hidden md:block">
+              <p class="font-medium">Administrador</p>
+              <p class="text-xs text-emerald-200">Sesión activa</p>
+            </div>
+          </div>
+          
+          <div class="flex flex-wrap gap-2">
+            <!-- Botón Apps Móviles - NUEVO -->
+            <a href="{% url 'apps_moviles:panel_apps_moviles' %}" 
+               class="btn-apps text-white px-4 py-2.5 rounded-lg font-medium hover:shadow-lg transition-all flex items-center text-sm">
+              <i class="fas fa-mobile-alt mr-2"></i> Apps Móviles
+            </a>
+            
+            <a href="{% url 'crear_empresa' %}" 
+               class="btn-success text-white px-4 py-2.5 rounded-lg font-medium hover:shadow-lg transition-all flex items-center text-sm">
+              <i class="fas fa-plus mr-2"></i> Nueva APR
+            </a>
+            
+            <a href="{% url 'logout_ssr' %}" 
+               class="bg-white/10 hover:bg-white/20 px-4 py-2.5 rounded-lg font-medium flex items-center transition-colors text-sm">
+              <i class="fas fa-sign-out-alt mr-2"></i> Salir
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </header>
-
-  <!-- Main -->
-  <main class="max-w-7xl mx-auto py-10 px-6 space-y-10">
-
-    <!-- Empresas -->
-    <section>
-      <h2 class="text-xl font-semibold text-gray-700 mb-6">Empresas registradas</h2>
-
+  
+  <!-- Contenido Principal -->
+  <main class="px-4 md:px-6 py-6 max-w-7xl mx-auto">
+    <!-- Barra de Estadísticas MEJORADA -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div class="stats-card p-5 flex items-center">
+        <div class="mr-4">
+          <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+            <i class="fas fa-building text-blue-600"></i>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500">Empresas Totales</p>
+          <p class="text-2xl font-bold text-gray-800">{{ empresas_con_estado|length }}</p>
+        </div>
+      </div>
+      
+      <div class="stats-card p-5 flex items-center">
+        <div class="mr-4">
+          <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+            <i class="fas fa-check-circle text-green-600"></i>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500">Bases Activas</p>
+          <p class="text-2xl font-bold text-gray-800">{{ empresas_con_estado|length|default:0 }}</p>
+        </div>
+      </div>
+      
+      <div class="stats-card p-5 flex items-center">
+        <div class="mr-4">
+          <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500">Alias Faltantes</p>
+          <p class="text-2xl font-bold text-gray-800">0</p>
+        </div>
+      </div>
+      
+      <div class="stats-card p-5 flex items-center">
+        <div class="mr-4">
+          <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+            <i class="fas fa-user-shield text-purple-600"></i>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500">Admins Creados</p>
+          <p class="text-2xl font-bold text-gray-800">{{ empresas_con_estado|length|default:0 }}</p>
+        </div>
+      </div>
+      
+      <!-- NUEVA: Estadística de Apps Móviles -->
+      <div class="stats-card p-5 flex items-center">
+        <div class="mr-4">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
+            <i class="fas fa-mobile-alt text-purple-600"></i>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500">Apps Generadas</p>
+          <p class="text-2xl font-bold text-gray-800" id="apps-generadas">Cargando...</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Panel de Información MEJORADO -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- Panel principal -->
+      <div class="bg-emerald-50 rounded-xl border border-emerald-100 p-5 col-span-2">
+        <div class="flex items-start">
+          <i class="fas fa-info-circle text-emerald-500 mt-1 mr-3 text-lg"></i>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-emerald-800">Panel General de Empresas</p>
+            <p class="text-sm text-emerald-700 mt-1">Gestione todas las empresas registradas en el sistema SSR desde esta vista unificada. Desde aquí puede crear nuevas empresas, acceder a sus paneles, crear administradores y eliminar empresas cuando sea necesario.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Panel Apps Móviles -->
+      <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 p-5">
+        <div class="flex items-start">
+          <i class="fas fa-mobile-alt text-purple-500 mt-1 mr-3 text-lg"></i>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-purple-800">Apps Móviles por Empresa</p>
+            <p class="text-sm text-purple-700 mt-1">Gestione apps móviles personalizadas para cada empresa. Cada app incluye: colores personalizados, logo, sectores y configuración específica.</p>
+            <div class="mt-3">
+              <a href="{% url 'apps_moviles:panel_apps_moviles' %}" 
+                 class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-medium transition-all">
+                <i class="fas fa-rocket mr-2"></i> Ir a Apps Móviles
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sección de Empresas -->
+    <section class="mb-10">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">Empresas Registradas</h2>
+          <p class="text-gray-600 mt-1">Gestiona todas las empresas del sistema SSR</p>
+        </div>
+        <div class="flex items-center space-x-2 w-full md:w-auto">
+          <div class="relative flex-1 md:flex-none">
+            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            <input type="text" placeholder="Buscar empresa..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <i class="fas fa-filter text-gray-600"></i>
+          </button>
+          <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <i class="fas fa-sort text-gray-600"></i>
+          </button>
+        </div>
+      </div>
+      
+      {% if empresas_con_estado %}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for empresa, estado in empresas_con_estado %}
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition p-6 flex flex-col justify-between border border-gray-200">
-          <!-- Info básica -->
-          <div class="mb-4">
-            <h3 class="text-lg font-bold text-green-700">{{ empresa.nombre }}</h3>
-            <p class="text-xs text-gray-500">Slug: <span class="font-mono">{{ empresa.slug }}</span></p>
-            <p class="text-xs text-gray-500">Alta: {{ empresa.fecha_creacion|date:"d/m/Y" }}</p>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 card-hover">
+          <!-- Header de la tarjeta MEJORADO -->
+          <div class="p-6 border-b border-gray-100">
+            <div class="flex justify-between items-start">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start">
+                  <div class="w-10 h-10 rounded-lg {% if empresa.app_generada %}bg-gradient-to-r from-purple-100 to-pink-100{% else %}bg-gray-100{% endif %} flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fas {% if empresa.app_generada %}fa-mobile-alt text-purple-600{% else %}fa-building text-gray-600{% endif %}"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-lg font-bold text-gray-800 truncate">{{ empresa.nombre }}</h3>
+                    <div class="flex items-center mt-2 flex-wrap gap-2">
+                      <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        <i class="fas fa-hashtag mr-1"></i>{{ empresa.slug }}
+                      </span>
+                      <span class="text-xs text-gray-500">
+                        <i class="far fa-calendar-alt mr-1"></i>{{ empresa.fecha_creacion|date:"d/m/Y" }}
+                      </span>
+                      {% if empresa.app_generada %}
+                      <span class="app-badge app-active">
+                        <i class="fas fa-mobile-alt mr-1"></i>App
+                      </span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex space-x-1 ml-2">
+                <div class="w-2 h-2 rounded-full {% if estado.base_creada %}bg-green-500{% else %}bg-red-500{% endif %}" title="Base de datos"></div>
+                <div class="w-2 h-2 rounded-full {% if estado.alias_registrado %}bg-green-500{% else %}bg-yellow-500{% endif %}" title="Alias"></div>
+                <div class="w-2 h-2 rounded-full {% if empresa.app_generada %}bg-purple-500{% else %}bg-gray-400{% endif %}" title="App Móvil"></div>
+              </div>
+            </div>
           </div>
-
-          <!-- Estados -->
-          <div class="grid grid-cols-2 gap-2 text-xs mb-4">
-            <div class="bg-gray-100 rounded px-2 py-1 text-center">
-              Base: {% if estado.base_creada %}
-                <span class="text-green-600 font-semibold">Activa</span>
+          
+          <!-- Estados MEJORADO -->
+          <div class="p-6 border-b border-gray-100">
+            <div class="grid grid-cols-3 gap-3">
+              <div class="text-center">
+                <p class="text-xs text-gray-500 mb-1">Base Datos</p>
+                {% if estado.base_creada %}
+                <span class="status-badge status-active">
+                  <i class="fas fa-check mr-1"></i> Activa
+                </span>
+                {% else %}
+                <span class="status-badge status-inactive">
+                  <i class="fas fa-times mr-1"></i> Inactiva
+                </span>
+                {% endif %}
+              </div>
+              <div class="text-center">
+                <p class="text-xs text-gray-500 mb-1">Alias</p>
+                {% if estado.alias_registrado %}
+                <span class="status-badge status-active">
+                  <i class="fas fa-check mr-1"></i> OK
+                </span>
+                {% else %}
+                <span class="status-badge status-pending">
+                  <i class="fas fa-exclamation mr-1"></i> Falta
+                </span>
+                {% endif %}
+              </div>
+              <div class="text-center">
+                <p class="text-xs text-gray-500 mb-1">App Móvil</p>
+                {% if empresa.app_generada %}
+                <span class="status-badge status-active">
+                  <i class="fas fa-mobile-alt mr-1"></i> Sí
+                </span>
+                {% else %}
+                <span class="status-badge status-inactive">
+                  <i class="fas fa-times mr-1"></i> No
+                </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          <!-- Acciones MEJORADAS -->
+          <div class="p-6 space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <a href="{% url 'panel_empresa' empresa.slug %}" class="btn-primary text-white py-2.5 rounded-lg font-medium flex items-center justify-center">
+                <i class="fas fa-tachometer-alt mr-2"></i> Panel
+              </a>
+              
+              {% if empresa.app_generada %}
+              <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-2.5 rounded-lg font-medium flex items-center justify-center">
+                <i class="fas fa-mobile-alt mr-2"></i> App
+              </a>
               {% else %}
-                <span class="text-red-600 font-semibold">Inactiva</span>
+              <a href="{% url 'apps_moviles:generar_app_empresa' empresa.slug %}" class="bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-white py-2.5 rounded-lg font-medium flex items-center justify-center">
+                <i class="fas fa-plus mr-2"></i> Crear App
+              </a>
               {% endif %}
             </div>
-            <div class="bg-gray-100 rounded px-2 py-1 text-center">
-              Alias: {% if estado.alias_registrado %}
-                <span class="text-green-600 font-semibold">Registrado</span>
-              {% else %}
-                <span class="text-yellow-600 font-semibold">Faltante</span>
-              {% endif %}
+            
+            <div class="grid grid-cols-2 gap-3">
+              <a href="{% url 'crear_admin_empresa' empresa.slug %}" class="bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center">
+                <i class="fas fa-user-plus mr-2"></i> Admin
+              </a>
+              
+              <a href="{% url 'panel_contable' empresa.slug %}" class="btn-warning text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center">
+                <i class="fas fa-calculator mr-2"></i> Contabilidad
+              </a>
             </div>
-          </div>
-
-          <!-- Acciones -->
-          <div class="space-y-2">
-            <a href="{% url 'panel_empresa' empresa.slug %}" class="block w-full text-center bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-sm font-medium">
-              Panel SSR
-            </a>
-            <a href="{% url 'crear_admin_empresa' empresa.slug %}" class="block w-full text-center bg-purple-600 text-white py-2 rounded hover:bg-purple-700 text-sm font-medium">
-              Crear Admin
-            </a>
-            <a href="{% url 'panel_contable' empresa.slug %}" class="block w-full text-center bg-yellow-500 text-white py-2 rounded hover:bg-yellow-600 text-sm font-medium">
-              Contabilidad
-            </a>
-            <form method="post" action="{% url 'eliminar_empresa' empresa.slug %}" onsubmit="return confirm('¿Eliminar esta empresa? Esta acción no se puede deshacer.')">
+            
+            <form method="post" action="{% url 'eliminar_empresa' empresa.slug %}" onsubmit="return confirm('¿Está seguro de eliminar esta empresa? Esta acción no se puede deshacer y eliminará todos los datos asociados.')">
               {% csrf_token %}
-              <button type="submit" class="w-full text-center bg-red-600 text-white py-2 rounded hover:bg-red-700 text-sm font-medium">
-                Eliminar Empresa
+              <button type="submit" class="btn-danger text-white py-2.5 rounded-lg font-medium w-full flex items-center justify-center">
+                <i class="fas fa-trash-alt mr-2"></i> Eliminar
               </button>
             </form>
           </div>
         </div>
-        {% empty %}
-        <div class="col-span-full text-center text-gray-500">
-          <p>No hay empresas registradas.</p>
-        </div>
         {% endfor %}
       </div>
+      {% else %}
+      <div class="bg-white rounded-xl shadow-sm p-8 md:p-12 text-center">
+        <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+          <i class="fas fa-building text-gray-400 text-2xl md:text-3xl"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">No hay empresas registradas</h3>
+        <p class="text-gray-500 mb-6">Comience registrando una nueva empresa en el sistema SSR.</p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <a href="{% url 'crear_empresa' %}" class="inline-flex items-center px-6 py-3 btn-success text-white rounded-lg font-medium">
+            <i class="fas fa-plus mr-2"></i> Crear Empresa
+          </a>
+          <a href="{% url 'panel_apps_moviles' %}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium">
+            <i class="fas fa-mobile-alt mr-2"></i> Ver Apps Móviles
+          </a>
+        </div>
+      </div>
+      {% endif %}
     </section>
-
-   
+    
+    <!-- Footer MEJORADO -->
+    <footer class="mt-12 pt-6 border-t border-gray-200">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="text-gray-500 text-sm mb-4 md:mb-0 text-center md:text-left">
+          <p>Sistema SSR © 2023 - Panel Administrativo v2.1.4</p>
+          <p class="mt-1">Gestión centralizada de empresas y recursos</p>
+        </div>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-emerald-600" title="Documentación">
+            <i class="fas fa-book"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-emerald-600" title="Soporte">
+            <i class="fas fa-question-circle"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-emerald-600" title="Configuración">
+            <i class="fas fa-cog"></i>
+          </a>
+          <a href="{% url 'apps_moviles:panel_apps_moviles' %}" class="text-gray-400 hover:text-purple-600" title="Apps Móviles">
+            <i class="fas fa-mobile-alt"></i>
+          </a>
+        </div>
+      </div>
+    </footer>
   </main>
 
+  <script>
+    // Confirmación mejorada para eliminación
+    document.querySelectorAll('form[onsubmit]').forEach(form => {
+      const originalOnsubmit = form.onsubmit;
+      form.onsubmit = function(e) {
+        e.preventDefault();
+        
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+          <div class="bg-white rounded-xl max-w-md w-full p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mr-4">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-gray-800">Confirmar Eliminación</h3>
+                <p class="text-sm text-gray-600">Esta acción no se puede deshacer</p>
+              </div>
+            </div>
+            
+            <p class="text-gray-700 mb-6">¿Está seguro de que desea eliminar esta empresa? Se eliminarán todos los datos asociados, incluidos usuarios, registros contables y configuraciones.</p>
+            
+            <div class="flex justify-end space-x-3">
+              <button type="button" id="cancel-btn" class="px-5 py-2.5 border border-gray-300 rounded-lg font-medium hover:bg-gray-50">Cancelar</button>
+              <button type="button" id="confirm-btn" class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700">Eliminar Empresa</button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+          document.body.removeChild(modal);
+        });
+        
+        document.getElementById('confirm-btn').addEventListener('click', () => {
+          originalOnsubmit.call(form, e);
+          document.body.removeChild(modal);
+        });
+      };
+    });
+    
+    // Calcular apps generadas dinámicamente
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        // Contar empresas con app_generada = true
+        const empresasConApp = document.querySelectorAll('.app-badge.app-active');
+        const totalApps = empresasConApp.length;
+        document.getElementById('apps-generadas').textContent = totalApps;
+        
+        // Actualizar color según cantidad
+        const appsElement = document.getElementById('apps-generadas');
+        if (totalApps === 0) {
+          appsElement.classList.add('text-gray-600');
+        } else {
+          appsElement.classList.add('text-purple-600');
+        }
+      } catch (error) {
+        console.log('Error contando apps:', error);
+      }
+      
+      // Navegación activa
+      document.querySelectorAll('.top-nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          document.querySelectorAll('.top-nav-link').forEach(item => {
+            item.classList.remove('active');
+          });
+          this.classList.add('active');
+        });
+      });
+      
+      // Búsqueda en tiempo real
+      const searchInput = document.querySelector('input[placeholder="Buscar empresa..."]');
+      if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+          const searchTerm = e.target.value.toLowerCase();
+          const empresas = document.querySelectorAll('.grid > div'); // Selecciona las tarjetas de empresas
+          
+          empresas.forEach(empresa => {
+            const nombre = empresa.querySelector('h3').textContent.toLowerCase();
+            const slug = empresa.querySelector('.text-xs.bg-gray-100').textContent.toLowerCase();
+            
+            if (nombre.includes(searchTerm) || slug.includes(searchTerm)) {
+              empresa.style.display = 'block';
+            } else {
+              empresa.style.display = 'none';
+            }
+          });
+        });
+      }
+    });
+  </script>
 </body>
 </html>

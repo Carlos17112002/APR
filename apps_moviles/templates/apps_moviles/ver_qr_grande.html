@@ -1,0 +1,140 @@
+<!-- templates/apps_moviles/ver_qr_grande.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-0">{{ page_title }}</h4>
+            <p class="text-muted">Empresa con muchos clientes - Descarga especial</p>
+        </div>
+    </div>
+
+    <!-- Alert especial -->
+    <div class="alert alert-info mb-4">
+        <h5><i class="bi bi-building"></i> {{ empresa.nombre }}</h5>
+        <p class="mb-2">
+            <strong>{{ total_clientes }} clientes</strong> en 
+            <strong>{{ total_sectores }} sectores</strong>
+        </p>
+        <p class="mb-0">{{ mensaje_especial }}</p>
+    </div>
+
+    <div class="row">
+        <!-- QR Code -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Código QR</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ qr_url }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 300px;">
+                    <p class="text-muted mb-0">
+                        Escanee este código con la app móvil<br>
+                        <small>{{ qr_data_length }} caracteres</small>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Información técnica -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="bi bi-info-circle"></i> Información técnica</h6>
+                    <ul class="mb-0">
+                        <li>Tipo: {{ tipo_descarga|title }}</li>
+                        <li>Token: <code>{{ token|truncatechars:20 }}</code></li>
+                        <li>URL: <small>{{ download_url|truncatechars:50 }}</small></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Instrucciones de uso</h5>
+                </div>
+                <div class="card-body">
+                    {% if tipo_descarga == 'completa' %}
+                    <h6>Descarga completa</h6>
+                    <ol>
+                        <li>La app descargará todos los {{ total_clientes }} clientes de una vez</li>
+                        <li>Puede tomar varios minutos dependiendo de la conexión</li>
+                        <li>Se recomienda usar WiFi</li>
+                        <li>La app mostrará progreso durante la descarga</li>
+                    </ol>
+                    
+                    {% elif tipo_descarga == 'segmentada' %}
+                    <h6>Descarga segmentada</h6>
+                    <ol>
+                        <li>La app descargará los clientes en segmentos</li>
+                        <li>Cada segmento contiene aproximadamente 200 clientes</li>
+                        <li>Total de segmentos: {{ segmentos|length }}</li>
+                        <li>La descarga será en segundo plano</li>
+                        <li>Puede usar la app mientras se descargan los datos</li>
+                    </ol>
+                    
+                    <h6 class="mt-4">Segmentos de descarga:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Segmento</th>
+                                    <th>Clientes</th>
+                                    <th>Tamaño aprox.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for segmento in segmentos %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ segmento.tamaño }} clientes</td>
+                                    <td>{{ segmento.tamaño|multiply:2|add:50 }} KB</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Nota:</strong> Para esta empresa, el QR contiene un token de acceso
+                        y la app descargará los datos desde el servidor.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="bi bi-download"></i> Descargas manuales</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{{ download_url }}" class="btn btn-primary" target="_blank">
+                            <i class="bi bi-download"></i> Descargar configuración
+                        </a>
+                        <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver al panel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug info (solo para admin) -->
+    {% if request.user.is_superuser %}
+    <div class="card mt-4">
+        <div class="card-header bg-dark text-white">
+            <h6 class="mb-0">Debug Info</h6>
+        </div>
+        <div class="card-body">
+            <pre class="mb-0"><code>{{ qr_data_preview }}</code></pre>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

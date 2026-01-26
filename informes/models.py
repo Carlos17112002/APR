@@ -30,20 +30,3 @@ class LibroContable(models.Model):
 
 from django.db import models
 
-class ContratoLaboral(models.Model):
-    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE)
-    trabajador = models.ForeignKey('trabajadores.Trabajador', on_delete=models.CASCADE)
-    cargo = models.CharField(max_length=100)
-    fecha_inicio = models.DateField()
-    fecha_termino = models.DateField(null=True, blank=True)
-    sueldo_base = models.DecimalField(max_digits=10, decimal_places=2)
-    estado = models.CharField(max_length=20, choices=[('vigente', 'Vigente'), ('finalizado', 'Finalizado')], default='vigente')
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-fecha_inicio']
-        verbose_name = 'Contrato Laboral'
-        verbose_name_plural = 'Contratos Laborales'
-
-    def __str__(self):
-        return f"{self.trabajador.nombre} · {self.cargo}"

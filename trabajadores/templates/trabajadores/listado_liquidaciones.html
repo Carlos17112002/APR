@@ -1,80 +1,554 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Liquidaciones · {{ alias }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquidaciones · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857;
+            --primary-dark: #065f46;
+            --secondary: #3b82f6;
+            --accent: #8b5cf6;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+            border-radius: 16px;
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s ease;
+            color: white;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(4, 120, 87, 0.3);
+        }
+        
+        .table-row-hover:hover {
+            background: linear-gradient(90deg, rgba(240, 253, 244, 0.5) 0%, rgba(240, 253, 244, 0.3) 100%);
+            transform: translateX(4px);
+            transition: all 0.2s ease;
+        }
+        
+        .status-badge {
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-paid {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+        
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+        
+        .input-modern {
+            background: white;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .input-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.1);
+            outline: none;
+        }
+        
+        .select-modern {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        
+        .card-stat {
+            border-left: 4px solid;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card-stat:hover::before {
+            opacity: 1;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="text-gray-800 antialiased">
 
-  <!-- Encabezado -->
-  <header class="bg-green-800 text-white py-5 shadow-md">
-    <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">📋 Liquidaciones · <span class="text-white/80">{{ alias }}</span></h1>
-      <a href="/contabilidad/{{ alias }}/libro/" class="text-sm hover:underline">⬅️ Volver al panel</a>
-    </div>
-  </header>
+    <!-- Encabezado -->
+    <header class="gradient-header text-white shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                        <i class="fas fa-file-invoice-dollar text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Gestión de Liquidaciones</h1>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm opacity-90">{{ empresa.nombre }}</span>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full">{{ alias }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div class="hidden lg:block text-sm bg-white/10 px-4 py-2 rounded-lg">
+                        <span class="opacity-80">Período actual:</span>
+                        <span class="font-semibold ml-1">{{ filtro_mes|default:"Todos" }}</span>
+                    </div>
+                    <a href="/contabilidad/{{ alias }}/libro/" 
+                       class="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-lg transition-all duration-200 group">
+                        <i class="fas fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+                        <span class="text-sm font-medium">Volver al Panel</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
 
-  <!-- Contenido principal -->
-  <main class="max-w-6xl mx-auto px-6 py-10 space-y-8">
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-    <!-- Filtros -->
-    <form method="get" class="bg-white p-4 rounded shadow flex flex-wrap items-center gap-4">
-      <div>
-        <label for="mes" class="text-sm font-medium text-gray-700">📅 Mes:</label>
-        <input type="month" name="mes" id="mes" value="{{ filtro_mes }}" class="border px-3 py-2 rounded w-40">
-      </div>
-      <div>
-        <label for="trabajador" class="text-sm font-medium text-gray-700">👤 Trabajador:</label>
-        <select name="trabajador" id="trabajador" class="border px-3 py-2 rounded w-48">
-          <option value="">Todos</option>
-          {% for t in trabajadores %}
-            <option value="{{ t.id }}" {% if t.id|stringformat:"s" == filtro_trabajador %}selected{% endif %}>{{ t.nombre }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 text-sm">
-        🔍 Filtrar
-      </button>
-      <a href="/trabajadores/{{ alias }}/crear_liquidacion/" class="ml-auto bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 text-sm">
-        ➕ Crear nueva liquidación
-      </a>
-    </form>
+        <!-- Panel de filtros -->
+        <div class="glass-panel p-6">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-1">Filtrar Liquidaciones</h2>
+                    <p class="text-sm text-gray-500">Busque y filtre por trabajador y período</p>
+                </div>
+                
+                <form method="get" class="flex-1 max-w-2xl">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Mes -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-calendar-alt text-gray-400 mr-2"></i>
+                                Mes
+                            </label>
+                            <input type="month" name="mes" id="mes" value="{{ filtro_mes }}" 
+                                   class="w-full input-modern rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        </div>
+                        
+                        <!-- Trabajador -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-user text-gray-400 mr-2"></i>
+                                Trabajador
+                            </label>
+                            <select name="trabajador" id="trabajador" 
+                                    class="w-full input-modern select-modern rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">Todos los trabajadores</option>
+                                {% for t in trabajadores %}
+                                    <option value="{{ t.id }}" {% if t.id|stringformat:"s" == filtro_trabajador %}selected{% endif %}>
+                                        {{ t.nombre }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="flex items-end space-x-3">
+                            <button type="submit" 
+                                    class="btn-primary flex-1 px-5 py-2.5 rounded-lg font-medium flex items-center justify-center space-x-2">
+                                <i class="fas fa-search"></i>
+                                <span>Buscar</span>
+                            </button>
+                            
+                            <a href="/trabajadores/{{ alias }}/liquidaciones/crear/" 
+                               class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors">
+                                <i class="fas fa-plus"></i>
+                                <span class="hidden sm:inline">Nueva</span>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-    <!-- Tabla de liquidaciones -->
-    <div class="overflow-x-auto bg-white rounded-xl shadow-md">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-200 text-gray-700 sticky top-0">
-          <tr>
-            <th class="px-6 py-3 text-left font-semibold">👤 Trabajador</th>
-            <th class="px-6 py-3 text-left font-semibold">📅 Mes</th>
-            <th class="px-6 py-3 text-left font-semibold">💰 Total líquido</th>
-            <th class="px-6 py-3 text-left font-semibold">📁 PDF</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          {% for liquidacion in liquidaciones %}
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-3">{{ liquidacion.trabajador.nombre }}</td>
-            <td class="px-6 py-3">{{ liquidacion.mes }}</td>
-            <td class="px-6 py-3 font-semibold text-green-700">${{ liquidacion.liquido_pagado }}</td>
-            <td class="px-6 py-3">
-              {% if liquidacion.documento_pdf %}
-                <a href="/trabajadores/{{ alias }}/liquidacion/{{ liquidacion.id }}/pdf/" class="text-blue-600 hover:underline">📄 Ver PDF</a>
-              {% else %}
-                <span class="text-gray-400">No generado</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="4" class="px-6 py-6 text-center text-gray-500">No hay liquidaciones registradas.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+        <!-- Estadísticas rápidas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="glass-panel card-stat border-l-blue-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Liquidaciones</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ total_liquidaciones }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-file-invoice text-blue-600 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-green-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Pagado</p>
+                        <p class="text-2xl font-bold text-gray-800">${{ total_pagado|default:"0" }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-dollar-sign text-green-600 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-purple-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Promedio por Liq.</p>
+                        <p class="text-2xl font-bold text-gray-800">${{ promedio_liquidacion|default:"0" }}</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i class="fas fa-chart-line text-purple-600 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-amber-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Trabajadores Activos</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ total_trabajadores|default:"0" }}</p>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-full">
+                        <i class="fas fa-users text-amber-600 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  </main>
+        <!-- Tabla de liquidaciones -->
+        <div class="glass-panel overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-list-check text-green-600 mr-2"></i>
+                        Registro de Liquidaciones
+                    </h3>
+                    <span class="text-sm text-gray-500">
+                        {{ total_liquidaciones }} registros encontrados
+                    </span>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-user text-gray-400"></i>
+                                    <span>Trabajador</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-calendar text-gray-400"></i>
+                                    <span>Período</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-money-bill-wave text-gray-400"></i>
+                                    <span>Total Líquido</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-file-pdf text-gray-400"></i>
+                                    <span>Documento</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-cog text-gray-400"></i>
+                                    <span>Acciones</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for liquidacion in liquidaciones %}
+                        <tr class="table-row-hover hover:bg-green-50/30 transition-all duration-200">
+                            <!-- Trabajador -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                            <i class="fas fa-user text-green-600 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">{{ liquidacion.trabajador.nombre }}</div>
+                                        <div class="text-xs text-gray-500">{{ liquidacion.trabajador.rut }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Período -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900">{{ liquidacion.mes }}</div>
+                                <div class="text-xs text-gray-500">
+                                    Generada: {{ liquidacion.fecha_generacion|date:"d/m/Y" }}
+                                </div>
+                            </td>
+                            
+                            <!-- Total Líquido -->
+                            <td class="px-6 py-4">
+                                <div class="text-lg font-bold text-green-700">
+                                    ${{ liquidacion.liquido_pagado }}
+                                </div>
+                                {% if liquidacion.liquido_pagado > 500000 %}
+                                    <span class="status-badge status-paid">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Completa
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-pending">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        Mínima
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Documento -->
+                            <td class="px-6 py-4">
+                                {% if liquidacion.documento_pdf %}
+                                    <a href="/trabajadores/{{ alias }}/liquidacion/{{ liquidacion.id }}/pdf/" 
+                                       class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors group">
+                                        <div class="bg-blue-100 group-hover:bg-blue-200 p-2 rounded-lg transition-colors">
+                                            <i class="fas fa-file-pdf text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium">Ver PDF</span>
+                                            <div class="text-xs text-gray-500">Descargar documento</div>
+                                        </div>
+                                    </a>
+                                {% else %}
+                                    <div class="flex items-center space-x-3 text-gray-400">
+                                        <div class="bg-gray-100 p-2 rounded-lg">
+                                            <i class="fas fa-file-exclamation"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm">No generado</span>
+                                            <div class="text-xs">Pendiente de creación</div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Acciones -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <a href="/trabajadores/{{ alias }}/liquidacion/{{ liquidacion.id }}/editar/" 
+                                       class="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                       title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="/trabajadores/{{ alias }}/liquidacion/{{ liquidacion.id }}/pdf/" 
+                                       class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                       title="Generar PDF">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    <a href="/trabajadores/{{ alias }}/liquidacion/{{ liquidacion.id }}/enviar/" 
+                                       class="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                       title="Enviar por email">
+                                        <i class="fas fa-envelope"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center space-y-3">
+                                    <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                                        <i class="fas fa-inbox text-gray-400 text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-medium text-gray-700">No hay liquidaciones</h4>
+                                        <p class="text-gray-500 mt-1">Comience creando una nueva liquidación</p>
+                                    </div>
+                                    <a href="/trabajadores/{{ alias }}/crear_liquidacion/" 
+                                       class="btn-primary mt-4 px-6 py-2 rounded-lg">
+                                        <i class="fas fa-plus mr-2"></i>
+                                        Crear primera liquidación
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Footer de la tabla -->
+            {% if liquidaciones %}
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div class="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
+                    <div>
+                        Mostrando <span class="font-semibold text-gray-700">{{ total_liquidaciones }}</span> liquidaciones
+                    </div>
+                    <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+                        <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors">
+                            <i class="fas fa-chevron-left mr-1"></i>
+                            Anterior
+                        </button>
+                        <span class="text-gray-700">Página 1 de 1</span>
+                        <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors">
+                            Siguiente
+                            <i class="fas fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="glass-panel p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Acciones Masivas</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button class="flex items-center justify-center space-x-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors group">
+                    <div class="bg-blue-100 group-hover:bg-blue-200 p-3 rounded-lg transition-colors">
+                        <i class="fas fa-file-export text-blue-600"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-800">Exportar a Excel</div>
+                        <div class="text-sm text-gray-500">Todos los registros</div>
+                    </div>
+                </button>
+                
+                <button class="flex items-center justify-center space-x-3 p-4 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 transition-colors group">
+                    <div class="bg-green-100 group-hover:bg-green-200 p-3 rounded-lg transition-colors">
+                        <i class="fas fa-envelope text-green-600"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-800">Enviar Recordatorio</div>
+                        <div class="text-sm text-gray-500">A todos los trabajadores</div>
+                    </div>
+                </button>
+                
+                <button class="flex items-center justify-center space-x-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 transition-colors group">
+                    <div class="bg-purple-100 group-hover:bg-purple-200 p-3 rounded-lg transition-colors">
+                        <i class="fas fa-chart-bar text-purple-600"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-800">Generar Reporte</div>
+                        <div class="text-sm text-gray-500">Análisis mensual</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Sistema de Liquidaciones
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fas fa-shield-alt mr-1"></i> Seguro</span>
+                <span><i class="fas fa-clock mr-1"></i> Actualizado: {{ "hoy" }}</span>
+                <span class="text-green-600 font-medium">
+                    <i class="fas fa-circle text-xs mr-1"></i>
+                    {{ total_liquidaciones }} liquidaciones registradas
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Animaciones de entrada
+        document.addEventListener('DOMContentLoaded', function() {
+            // Efecto de aparición para las tarjetas
+            const cards = document.querySelectorAll('.glass-panel');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+            
+            // Efecto hover en filas de tabla
+            const rows = document.querySelectorAll('.table-row-hover');
+            rows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateX(8px)';
+                });
+                
+                row.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateX(0)';
+                });
+            });
+        });
+    </script>
+
 </body>
 </html>

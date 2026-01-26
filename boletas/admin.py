@@ -1,12 +1,26 @@
-from django.contrib import admin
-
-# Register your models here.
-# boletas/admin.py
+# boletas/admin.py - VERSIÓN MÍNIMA
 from django.contrib import admin
 from .models import Boleta
 
-@admin.register(Boleta)
 class BoletaAdmin(admin.ModelAdmin):
-    list_display = ['cliente', 'periodo', 'consumo', 'monto', 'pagada']
-    list_filter = ['pagada', 'periodo']
-    search_fields = ['cliente__nombre', 'cliente__rut']
+    # SOLUCIÓN: Elimina 'pagada' completamente
+    list_display = [
+        'id', 
+        'cliente', 
+        'periodo', 
+        'total', 
+        'fecha_emision', 
+        'fecha_vencimiento',
+        'estado',
+        'empresa_slug'
+    ]
+    
+    list_filter = [
+        'estado',
+        'empresa_slug',
+        'fecha_emision'
+    ]
+    
+    search_fields = ['cliente__nombre', 'periodo']
+
+admin.site.register(Boleta, BoletaAdmin)

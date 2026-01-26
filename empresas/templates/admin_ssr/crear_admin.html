@@ -9,7 +9,7 @@
 <body class="bg-gray-50 text-gray-800 font-sans">
 
   <div class="max-w-xl mx-auto py-10 px-6">
-    <h1 class="text-3xl font-bold text-green-700 mb-6">👤 Crear Admin para <span class="font-mono">{{ slug }}</span></h1>
+    <h1 class="text-3xl font-bold text-green-700 mb-6">Crear Admin para <span class="font-mono">{{ slug }}</span></h1>
 
     <form method="post" class="bg-white rounded-lg shadow p-6 space-y-4">
       {% csrf_token %}
@@ -25,7 +25,7 @@
       </div>
 
       <div class="pt-4 flex justify-between items-center">
-        <a href="{% url 'dashboard_admin_ssr' %}" class="text-blue-600 hover:underline">⬅️ Volver al Panel</a>
+        <a href="{% url 'dashboard_admin_ssr' %}" class="text-blue-600 hover:underline">Volver al Panel</a>
         <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Crear Admin</button>
       </div>
     </form>

@@ -10,5 +10,7 @@ urlpatterns = [
     path('<slug:alias>/libros/', views.lista_libros_sii, name='lista_libros_sii'),
     path('<slug:alias>/libro/<int:libro_id>/revisar/', views.revisar_libro_sii, name='revisar_libro_sii'),
     path('<slug:alias>/libro/<int:libro_id>/eliminar/', views.eliminar_libro_sii, name='eliminar_libro_sii'),
+   
+    
 
 ]

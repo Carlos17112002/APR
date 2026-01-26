@@ -1,126 +1,811 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Libros SII subidos · {{ alias }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libros SII · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857;
+            --primary-dark: #065f46;
+            --secondary: #2563eb;
+            --accent: #7c3aed;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+            border-radius: 16px;
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(4, 120, 87, 0.3);
+        }
+        
+        .table-row-hover:hover {
+            background: linear-gradient(90deg, rgba(240, 253, 244, 0.5) 0%, rgba(240, 253, 244, 0.3) 100%);
+            transform: translateX(4px);
+            transition: all 0.2s ease;
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .status-uploaded {
+            background: rgba(59, 130, 246, 0.15);
+            color: #1d4ed8;
+        }
+        
+        .status-processing {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+        
+        .status-validated {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+        
+        .status-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+        
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #f3f4f6;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-tag:hover {
+            background: #e5e7eb;
+        }
+        
+        .filter-tag.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .type-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .type-compra {
+            background: rgba(59, 130, 246, 0.15);
+            color: #2563eb;
+        }
+        
+        .type-venta {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+        
+        .type-retenciones {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+        
+        .type-ingreso_retenciones {
+            background: rgba(139, 92, 246, 0.15);
+            color: #7c3aed;
+        }
+        
+        .card-stat {
+            border-left: 4px solid;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card-stat:hover::before {
+            opacity: 1;
+        }
+        
+        .input-modern {
+            background: white;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .input-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.1);
+            outline: none;
+        }
+        
+        .select-modern {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="text-gray-800 antialiased">
 
-  <!-- Encabezado -->
-  <header class="bg-green-700 text-white py-4 shadow">
-    <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">📁 Libros SII subidos · {{ alias }}</h1>
-      <a href="/contabilidad/{{ alias }}/libro/" class="text-sm hover:underline">⬅️ Volver al panel</a>
-    </div>
-  </header>
+    <!-- Encabezado -->
+    <header class="gradient-header text-white shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                        <i class="fas fa-book text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Libros Contables SII</h1>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm opacity-90">{{ empresa.nombre }}</span>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full">{{ alias }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div class="hidden lg:block text-sm bg-white/10 px-4 py-2 rounded-lg">
+                        <span class="opacity-80">Total libros:</span>
+                        <span class="font-semibold ml-1">{{ total_libros|default:"0" }}</span>
+                    </div>
+                    <a href="/contabilidad/{{ alias }}/libro/" 
+                       class="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-lg transition-all duration-200 group">
+                        <i class="fas fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+                        <span class="text-sm font-medium">Volver al Panel</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
 
-  <!-- Filtros -->
-  <main class="max-w-6xl mx-auto px-4 py-10 space-y-8">
-    <form method="get" class="bg-white p-4 rounded-lg shadow flex flex-wrap gap-4 items-end">
-      <div>
-        <label class="block text-sm font-medium">Mes</label>
-        <select name="mes" class="border px-3 py-2 rounded w-32">
-        <option value="">Todos</option>
-        {% for m in meses %}
-            <option value="{{ m }}" {% if request.GET.mes == m|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
-        {% endfor %}
-        </select>
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium">Año</label>
-        <input type="number" name="año" value="{{ request.GET.año }}" class="border px-3 py-2 rounded w-32">
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium">Tipo</label>
-        <select name="tipo" class="border px-3 py-2 rounded w-40">
-          <option value="">Todos</option>
-          <option value="compra" {% if request.GET.tipo == "compra" %}selected{% endif %}>Compra</option>
-          <option value="venta" {% if request.GET.tipo == "venta" %}selected{% endif %}>Venta</option>
-          <option value="retenciones" {% if request.GET.tipo == "retenciones" %}selected{% endif %}>Retenciones</option>
-          <option value="ingreso_retenciones" {% if request.GET.tipo == "ingreso_retenciones" %}selected{% endif %}>Ingreso de retenciones</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium">Estado</label>
-        <select name="estado" class="border px-3 py-2 rounded w-40">
-          <option value="">Todos</option>
-          <option value="subido" {% if request.GET.estado == "subido" %}selected{% endif %}>Subido</option>
-          <option value="procesando" {% if request.GET.estado == "procesando" %}selected{% endif %}>Procesando</option>
-          <option value="validado" {% if request.GET.estado == "validado" %}selected{% endif %}>Validado</option>
-          <option value="error" {% if request.GET.estado == "error" %}selected{% endif %}>Con error</option>
-        </select>
-      </div>
-
-      <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded shadow hover:bg-green-800 transition text-sm">
-        🔍 Filtrar
-      </button>
-    </form>
-
-    <!-- Botón subir -->
-    <div class="flex justify-between items-center">
-      <h2 class="text-lg font-semibold text-green-700">📄 Lista Libros</h2>
-      <a href="/contabilidad/{{ alias }}/libro/subir/" class="bg-green-700 text-white px-4 py-2 rounded shadow hover:bg-green-800 transition text-sm">
-        📤 Subir nuevo libro desde SII
-      </a>
-    </div>
-
-    <!-- Tabla -->
-    <div class="overflow-x-auto bg-white rounded-lg shadow">
-      <table class="min-w-full table-auto text-sm">
-        <thead class="bg-green-100 text-green-800">
-          <tr>
-            <th class="px-4 py-2 text-center">Revisar</th>
-            <th class="px-4 py-2 text-left">Mes</th>
-            <th class="px-4 py-2 text-left">Año</th>
-            <th class="px-4 py-2 text-left">Tipo</th>
-            <th class="px-4 py-2 text-left">Usuario</th>
-            <th class="px-4 py-2 text-left">Fecha subida</th>
-            <th class="px-4 py-2 text-center">Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for libro in libros %}
-            <tr class="border-b hover:bg-green-50">
-              <td class="px-4 py-2 text-center">
-                <a href="/contabilidad/{{ alias }}/libro/{{ libro.id }}/revisar/" class="text-sm text-blue-600 hover:underline">
-                  🔍 Ver archivo
-                </a>
-                <form method="post" action="/contabilidad/{{ alias }}/libro/{{ libro.id }}/eliminar/" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este libro?');">
-                  {% csrf_token %}
-                  <button type="submit" class="text-sm text-red-600 hover:underline ml-2">🗑️ Eliminar</button>
+        <!-- Panel de filtros -->
+        <div class="glass-panel p-6">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-1">Filtros Avanzados</h2>
+                    <p class="text-sm text-gray-500">Busque y filtre libros contables</p>
+                </div>
+                
+                <form method="get" class="flex-1 max-w-3xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Mes -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-calendar-alt text-gray-400 mr-2"></i>
+                                Mes
+                            </label>
+                            <select name="mes" class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Todos los meses</option>
+                                {% for m in meses %}
+                                    <option value="{{ m }}" {% if request.GET.mes == m|stringformat:"s" %}selected{% endif %}>
+                                        {{ m }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Año -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-calendar text-gray-400 mr-2"></i>
+                                Año
+                            </label>
+                            <input type="number" name="año" value="{{ request.GET.año }}" 
+                                   class="input-modern w-full px-4 py-2.5" 
+                                   placeholder="Ej: 2024"
+                                   min="2000" max="2100">
+                        </div>
+                        
+                        <!-- Tipo -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-file-alt text-gray-400 mr-2"></i>
+                                Tipo de Libro
+                            </label>
+                            <select name="tipo" class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Todos los tipos</option>
+                                <option value="compra" {% if request.GET.tipo == "compra" %}selected{% endif %}>Compra</option>
+                                <option value="venta" {% if request.GET.tipo == "venta" %}selected{% endif %}>Venta</option>
+                                <option value="retenciones" {% if request.GET.tipo == "retenciones" %}selected{% endif %}>Retenciones</option>
+                                <option value="ingreso_retenciones" {% if request.GET.tipo == "ingreso_retenciones" %}selected{% endif %}>Ingreso de retenciones</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Estado -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-check-circle text-gray-400 mr-2"></i>
+                                Estado
+                            </label>
+                            <select name="estado" class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Todos los estados</option>
+                                <option value="subido" {% if request.GET.estado == "subido" %}selected{% endif %}>Subido</option>
+                                <option value="procesando" {% if request.GET.estado == "procesando" %}selected{% endif %}>Procesando</option>
+                                <option value="validado" {% if request.GET.estado == "validado" %}selected{% endif %}>Validado</option>
+                                <option value="error" {% if request.GET.estado == "error" %}selected{% endif %}>Con error</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-4">
+                        <div class="flex items-center space-x-2">
+                            <!-- Filtros rápidos -->
+                            <span class="filter-tag {% if not request.GET.mes and not request.GET.año and not request.GET.tipo and not request.GET.estado %}active{% endif %}"
+                                  onclick="clearFilters()">
+                                <i class="fas fa-list"></i>
+                                Todos
+                            </span>
+                            <span class="filter-tag" onclick="filterByStatus('validado')">
+                                <i class="fas fa-check-circle"></i>
+                                Validados
+                            </span>
+                            <span class="filter-tag" onclick="filterByStatus('error')">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Con error
+                            </span>
+                        </div>
+                        
+                        <button type="submit" 
+                                class="btn-primary px-5 py-2.5 rounded-lg font-medium flex items-center space-x-2">
+                            <i class="fas fa-search"></i>
+                            <span>Filtrar</span>
+                        </button>
+                    </div>
                 </form>
+            </div>
+        </div>
 
-              </td>
-              <td class="px-4 py-2">{{ libro.mes }}</td>
-              <td class="px-4 py-2">{{ libro.año }}</td>
-              <td class="px-4 py-2 capitalize">{{ libro.tipo }}</td>
-              <td class="px-4 py-2">{{ libro.usuario }}</td>
-              <td class="px-4 py-2">{{ libro.fecha_subida|date:"d/m/Y H:i" }}</td>
-              <td class="px-4 py-2 text-center">
-                {% if libro.estado == 'procesando' %}
-                  <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">🔄 Procesando</span>
-                {% elif libro.estado == 'validado' %}
-                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">✅ Validado</span>
-                {% elif libro.estado == 'error' %}
-                  <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">⚠️ Con error</span>
-                {% else %}
-                  <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold">📤 Subido</span>
-                {% endif %}
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="7" class="px-4 py-6 text-center text-gray-500">No hay libros subidos que coincidan con los filtros.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </main>
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="glass-panel card-stat border-l-blue-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Libros</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ total_libros|default:"0" }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-book text-blue-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+                    {{ variacion_mensual|default:"0" }}% este mes
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-green-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Validados</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ validados|default:"0" }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-check-circle text-green-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    {{ porcentaje_validados|default:"0" }}% del total
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-amber-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Procesando</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ procesando|default:"0" }}</p>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-full">
+                        <i class="fas fa-spinner text-amber-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    En revisión SII
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-red-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Con Error</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ con_error|default:"0" }}</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-full">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Requieren atención
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones principales -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h2 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-file-archive text-green-600 mr-2"></i>
+                Lista de Libros Contables
+            </h2>
+            
+            <a href="/contabilidad/{{ alias }}/libro/subir/" 
+               class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center space-x-3 group">
+                <i class="fas fa-cloud-upload-alt group-hover:scale-110 transition-transform"></i>
+                <span>Subir Nuevo Libro SII</span>
+            </a>
+        </div>
+
+        <!-- Tabla de libros -->
+        <div class="glass-panel overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">
+                        {{ libros|length }} libros encontrados
+                    </span>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-500">Ordenar por:</span>
+                        <select class="text-sm border-none bg-transparent focus:outline-none">
+                            <option>Fecha más reciente</option>
+                            <option>Fecha más antigua</option>
+                            <option>Tipo de libro</option>
+                            <option>Estado</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-file-alt text-gray-400"></i>
+                                    <span>Archivo</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-calendar text-gray-400"></i>
+                                    <span>Período</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-tag text-gray-400"></i>
+                                    <span>Tipo</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-user text-gray-400"></i>
+                                    <span>Usuario</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-clock text-gray-400"></i>
+                                    <span>Fecha Subida</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-check-circle text-gray-400"></i>
+                                    <span>Estado</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-cog text-gray-400"></i>
+                                    <span>Acciones</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for libro in libros %}
+                        <tr class="table-row-hover hover:bg-green-50/30 transition-all duration-200">
+                            <!-- Archivo -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                            {% if libro.tipo == "compra" %}
+                                                <i class="fas fa-shopping-cart text-blue-600"></i>
+                                            {% elif libro.tipo == "venta" %}
+                                                <i class="fas fa-chart-line text-green-600"></i>
+                                            {% elif libro.tipo == "retenciones" %}
+                                                <i class="fas fa-hand-holding-usd text-amber-600"></i>
+                                            {% else %}
+                                                <i class="fas fa-file-invoice-dollar text-purple-600"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">
+                                            Libro {{ libro.tipo|title }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            {{ libro.nombre_archivo|default:"archivo.csv" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Período -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900">{{ libro.mes }} {{ libro.año }}</div>
+                                <div class="text-xs text-gray-500">
+                                    Período contable
+                                </div>
+                            </td>
+                            
+                            <!-- Tipo -->
+                            <td class="px-6 py-4">
+                                {% if libro.tipo == "compra" %}
+                                    <span class="type-chip type-compra">
+                                        <i class="fas fa-shopping-cart"></i>
+                                        Compra
+                                    </span>
+                                {% elif libro.tipo == "venta" %}
+                                    <span class="type-chip type-venta">
+                                        <i class="fas fa-chart-line"></i>
+                                        Venta
+                                    </span>
+                                {% elif libro.tipo == "retenciones" %}
+                                    <span class="type-chip type-retenciones">
+                                        <i class="fas fa-hand-holding-usd"></i>
+                                        Retenciones
+                                    </span>
+                                {% else %}
+                                    <span class="type-chip type-ingreso_retenciones">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        Ingreso Ret.
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Usuario -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">{{ libro.usuario }}</div>
+                                <div class="text-xs text-gray-500">
+                                    Responsable
+                                </div>
+                            </td>
+                            
+                            <!-- Fecha Subida -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">{{ libro.fecha_subida|date:"d/m/Y" }}</div>
+                                <div class="text-xs text-gray-500">
+                                    {{ libro.fecha_subida|date:"H:i" }}
+                                </div>
+                            </td>
+                            
+                            <!-- Estado -->
+                            <td class="px-6 py-4">
+                                {% if libro.estado == 'procesando' %}
+                                    <span class="status-badge status-processing">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        Procesando
+                                    </span>
+                                {% elif libro.estado == 'validado' %}
+                                    <span class="status-badge status-validated">
+                                        <i class="fas fa-check-circle"></i>
+                                        Validado
+                                    </span>
+                                {% elif libro.estado == 'error' %}
+                                    <span class="status-badge status-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Con error
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-uploaded">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        Subido
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Acciones -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <a href="/contabilidad/{{ alias }}/libro/{{ libro.id }}/revisar/" 
+                                       class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                       title="Ver archivo">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="/contabilidad/{{ alias }}/libro/{{ libro.id }}/descargar/" 
+                                       class="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                       title="Descargar">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <a href="/contabilidad/{{ alias }}/libro/{{ libro.id }}/validar/" 
+                                       class="p-2 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                       title="Revalidar">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </a>
+                                    <form method="post" action="/contabilidad/{{ alias }}/libro/{{ libro.id }}/eliminar/" 
+                                          class="inline"
+                                          onsubmit="return confirmDelete(this, '{{ libro.mes }} {{ libro.año }}');">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center space-y-3">
+                                    <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                                        <i class="fas fa-book text-gray-400 text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-medium text-gray-700">No hay libros subidos</h4>
+                                        <p class="text-gray-500 mt-1">
+                                            {% if request.GET.mes or request.GET.año or request.GET.tipo or request.GET.estado %}
+                                                No hay resultados con los filtros aplicados
+                                            {% else %}
+                                                Comience subiendo su primer libro contable
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <a href="/contabilidad/{{ alias }}/libro/subir/" 
+                                       class="btn-primary mt-4 px-6 py-2 rounded-lg">
+                                        <i class="fas fa-cloud-upload-alt mr-2"></i>
+                                        Subir primer libro
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Footer de la tabla -->
+            {% if libros %}
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div class="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
+                    <div>
+                        Mostrando <span class="font-semibold text-gray-700">{{ libros|length }}</span> de {{ total_libros }} libros
+                    </div>
+                    <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+                        <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors">
+                            <i class="fas fa-chevron-left mr-1"></i>
+                            Anterior
+                        </button>
+                        <span class="text-gray-700">Página 1 de 1</span>
+                        <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors">
+                            Siguiente
+                            <i class="fas fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Distribución por tipo -->
+        <div class="glass-panel p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribución por Tipo</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-blue-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500">Compras</div>
+                        <div class="font-semibold text-gray-800">{{ libros_compra|default:"0" }}</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                        <i class="fas fa-chart-line text-green-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500">Ventas</div>
+                        <div class="font-semibold text-gray-800">{{ libros_venta|default:"0" }}</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg">
+                    <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                        <i class="fas fa-hand-holding-usd text-amber-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500">Retenciones</div>
+                        <div class="font-semibold text-gray-800">{{ libros_retenciones|default:"0" }}</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                    <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i class="fas fa-file-invoice-dollar text-purple-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500">Ingreso Ret.</div>
+                        <div class="font-semibold text-gray-800">{{ libros_ingreso_retenciones|default:"0" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Sistema Contable SII
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fas fa-shield-alt mr-1"></i> Cumplimiento SII</span>
+                <span><i class="fas fa-clock mr-1"></i> Actualizado: {{ "hoy" }}</span>
+                <span class="text-green-600 font-medium">
+                    <i class="fas fa-circle text-xs mr-1"></i>
+                    {{ total_libros|default:"0" }} libros registrados
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Animaciones de entrada
+        document.addEventListener('DOMContentLoaded', function() {
+            // Efecto de aparición para las tarjetas
+            const cards = document.querySelectorAll('.glass-panel');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+            
+            // Efecto hover en filas de tabla
+            const rows = document.querySelectorAll('.table-row-hover');
+            rows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateX(8px)';
+                });
+                
+                row.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateX(0)';
+                });
+            });
+            
+            // Filtros rápidos
+            const filterTags = document.querySelectorAll('.filter-tag');
+            filterTags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    if (this.classList.contains('active')) return;
+                    
+                    filterTags.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        });
+        
+        // Funciones para filtros rápidos
+        function clearFilters() {
+            window.location.href = window.location.pathname;
+        }
+        
+        function filterByStatus(status) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('estado', status);
+            window.location.href = url.toString();
+        }
+        
+        // Confirmación de eliminación
+        function confirmDelete(form, periodo) {
+            return confirm(`¿Está seguro de eliminar el libro del período ${periodo}?\n\nEsta acción no se puede deshacer.`);
+        }
+        
+        // Variables para estadísticas (deberían venir del backend)
+        const totalLibros = {{ total_libros|default:"0" }};
+        const validados = {{ validados|default:"0" }};
+        const procesando = {{ procesando|default:"0" }};
+        
+        // Actualizar estadísticas si es necesario
+        if (totalLibros > 0) {
+            console.log(`Estadísticas: ${totalLibros} libros, ${validados} validados, ${procesando} procesando`);
+        }
+        
+        // Auto-refresh para libros procesando
+        const processingBadges = document.querySelectorAll('.status-processing');
+        if (processingBadges.length > 0) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 30000); // Recargar cada 30 segundos si hay libros procesando
+        }
+    </script>
+
 </body>
 </html>

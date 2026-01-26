@@ -5,37 +5,294 @@
   <title>Avisos activos - {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      min-height: 100vh;
+    }
+    
+    .gradient-header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    
+    .card-shadow {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    }
+    
+    .hover-lift {
+      transition: all 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+    }
+    
+    .avisos-card {
+      border-left: 4px solid #10b981;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    }
+    
+    .btn-edit {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-edit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+    }
+    
+    .empty-state {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 2px dashed #cbd5e1;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+    
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #10b981;
+      display: inline-block;
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body>
 
-  <!-- Navbar -->
-  <nav class="bg-green-700 text-white shadow">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">📢 Avisos activos: {{ empresa.nombre }}</h1>
-      <a href="{% url 'panel_empresa' slug=slug %}" class="text-sm hover:underline">⬅️ Volver al Panel</a>
+  <!-- Header Moderno -->
+  <header class="gradient-header text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+          <div class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-bullhorn text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold">Avisos Activos: {{ empresa.nombre }}</h1>
+            <p class="text-xs opacity-90 mt-0.5">Comunicaciones visibles para clientes</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <a href="{% url 'panel_empresa' slug=slug %}" 
+             class="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-colors flex items-center text-sm">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+          </a>
+          <a href="{% url 'avisos' slug=slug %}" 
+             class="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-colors flex items-center text-sm">
+            <i class="fas fa-list mr-2"></i> Todos los Avisos
+          </a>
+        </div>
+      </div>
     </div>
-  </nav>
+  </header>
 
-  <div class="max-w-4xl mx-auto py-10 px-6">
-    <h2 class="text-2xl font-semibold text-green-700 mb-6">📋 Avisos activos publicados</h2>
-
-    {% if avisos %}
-      <ul class="space-y-4">
-        {% for aviso in avisos %}
-          <li class="bg-white shadow rounded p-4">
-            <div class="flex justify-between items-center">
-              <h3 class="text-lg font-bold text-green-800">{{ aviso.titulo }}</h3>
-              <a href="{% url 'editar_aviso' slug=slug aviso_id=aviso.id %}" class="text-blue-600 text-sm hover:underline">✏️ Editar</a>
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Estadísticas -->
+    <div class="mb-8">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Avisos Activos Publicados</h2>
+          <p class="text-gray-600 mt-1">Comunicaciones visibles actualmente para los clientes</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="bg-white card-shadow rounded-lg px-4 py-2">
+            <div class="flex items-center">
+              <div class="status-indicator"></div>
+              <span class="text-sm font-medium text-gray-900">{{ avisos.count }} activos</span>
             </div>
-            <p class="text-sm text-gray-700 mt-2">{{ aviso.mensaje }}</p>
-            <p class="text-xs text-gray-400 mt-2">Publicado el {{ aviso.fecha_creacion|date:"d/m/Y H:i" }}</p>
-          </li>
+          </div>
+          <a href="{% url 'avisos' slug=slug %}" 
+             class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center text-sm">
+            <i class="fas fa-plus mr-2"></i> Nuevo Aviso
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Listado de avisos activos -->
+    {% if avisos %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for aviso in avisos %}
+        <div class="avisos-card rounded-xl card-shadow p-5 hover-lift animate-fade-in">
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex-1">
+              <div class="flex items-center mb-1">
+                <div class="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center mr-2">
+                  <i class="fas fa-bullhorn text-emerald-600 text-sm"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-emerald-900">{{ aviso.titulo }}</h3>
+              </div>
+              
+              <div class="flex items-center space-x-3 mt-1">
+                <span class="text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">
+                  <i class="fas fa-eye mr-1"></i> Visible para clientes
+                </span>
+                <span class="text-xs text-gray-500">
+                  <i class="far fa-calendar mr-1"></i>
+                  {{ aviso.fecha_creacion|date:"d/m/Y" }}
+                </span>
+              </div>
+            </div>
+            
+            <a href="{% url 'editar_aviso' slug=slug aviso_id=aviso.id %}" 
+               class="btn-edit text-white text-sm px-4 py-2 rounded-lg flex items-center whitespace-nowrap">
+              <i class="fas fa-edit mr-2"></i> Editar
+            </a>
+          </div>
+          
+          <div class="bg-white/80 rounded-lg p-4 mb-4">
+            <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{{ aviso.mensaje }}</p>
+          </div>
+          
+          <div class="flex justify-between items-center text-xs text-gray-500 pt-4 border-t border-emerald-200">
+            <div class="flex items-center">
+              <i class="far fa-clock mr-1.5"></i>
+              <span>Publicado el {{ aviso.fecha_creacion|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="flex items-center">
+              <i class="fas fa-user-circle mr-1.5"></i>
+              <span>Sistema SSR</span>
+            </div>
+          </div>
+        </div>
         {% endfor %}
-      </ul>
+      </div>
+      
+      <!-- Resumen -->
+      <div class="mt-8 bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-xl p-5">
+        <div class="flex items-start">
+          <div class="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
+            <i class="fas fa-info-circle text-emerald-600"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-emerald-900 mb-1">Información sobre avisos activos</h3>
+            <p class="text-xs text-emerald-800">
+              Los {{ avisos.count }} avisos mostrados están actualmente visibles para los clientes en sus paneles de usuario. 
+              Para ocultar un aviso, edítalo y desactívalo. Recuerda mantener solo los avisos relevantes actualmente activos.
+            </p>
+          </div>
+          <div class="text-right">
+            <span class="text-2xl font-bold text-emerald-700">{{ avisos.count }}</span>
+            <p class="text-xs text-emerald-600">avisos activos</p>
+          </div>
+        </div>
+      </div>
+      
     {% else %}
-      <p class="text-gray-500">No hay avisos activos en este momento.</p>
+      <!-- Estado vacío -->
+      <div class="max-w-2xl mx-auto">
+        <div class="text-center py-16 empty-state rounded-xl">
+          <div class="mx-auto h-20 w-20 text-gray-300 mb-4">
+            <i class="fas fa-bullhorn text-5xl"></i>
+          </div>
+          <h3 class="text-xl font-medium text-gray-700 mb-3">No hay avisos activos</h3>
+          <p class="text-gray-500 max-w-md mx-auto mb-6">
+            Actualmente no hay avisos visibles para los clientes. Los avisos activos son una excelente forma de mantener informados a tus clientes sobre novedades importantes.
+          </p>
+          <div class="flex justify-center space-x-4">
+            <a href="{% url 'avisos' slug=slug %}" 
+               class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+              <i class="fas fa-plus mr-2"></i> Crear Primer Aviso
+            </a>
+            <a href="{% url 'panel_empresa' slug=slug %}" 
+               class="bg-gray-200 text-gray-800 px-5 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center">
+              <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+            </a>
+          </div>
+          <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+            <p class="text-sm text-blue-800 flex items-start">
+              <i class="fas fa-lightbulb text-blue-500 mt-0.5 mr-2"></i>
+              <span><strong>Tip:</strong> Los avisos activos pueden informar sobre mantenimientos programados, cambios de tarifas, nuevos servicios o comunicaciones importantes.</span>
+            </p>
+          </div>
+        </div>
+      </div>
     {% endif %}
-  </div>
+    
+    <!-- Navegación -->
+    <div class="mt-8 flex justify-between items-center">
+      <div>
+        <a href="{% url 'panel_empresa' slug=slug %}" 
+           class="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2.5 rounded-lg transition-colors flex items-center text-sm">
+          <i class="fas fa-arrow-left mr-2"></i>
+          Volver al panel principal
+        </a>
+      </div>
+      
+      {% if avisos %}
+        <div class="text-sm text-gray-500">
+          <i class="fas fa-layer-group mr-1"></i>
+          Mostrando {{ avisos.count }} avisos activos
+        </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Efecto de hover en tarjetas
+      const avisosCards = document.querySelectorAll('.avisos-card');
+      avisosCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.classList.add('shadow-lg');
+        });
+        
+        card.addEventListener('mouseleave', function() {
+          this.classList.remove('shadow-lg');
+        });
+      });
+      
+      // Animación de conteo para estadísticas
+      const countElement = document.querySelector('.text-2xl.font-bold.text-emerald-700');
+      if (countElement) {
+        const targetCount = parseInt(countElement.textContent);
+        let currentCount = 0;
+        const duration = 1000; // 1 segundo
+        const increment = targetCount / (duration / 16); // 60fps
+        
+        const countUp = setInterval(() => {
+          currentCount += increment;
+          if (currentCount >= targetCount) {
+            currentCount = targetCount;
+            clearInterval(countUp);
+          }
+          countElement.textContent = Math.floor(currentCount);
+        }, 16);
+      }
+    });
+  </script>
 
 </body>
 </html>

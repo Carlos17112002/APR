@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar {{ cliente.nombre }} - {{ empresa.nombre }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+        }
+        
+        .gradient-primary {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+        }
+        
+        .input-focus:focus {
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+            border-color: #059669;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="gradient-primary text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
+                       class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors">
+                        <i class="fas fa-arrow-left text-white"></i>
+                    </a>
+                    <div class="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-user-edit text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Editar Cliente</h1>
+                        <p class="text-sm opacity-90">{{ cliente.nombre }} · {{ empresa.nombre }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
+                       class="bg-white/20 hover:bg-white/30 text-white px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
+                        <i class="fas fa-times mr-2"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Mensajes de error -->
+        {% if form.errors %}
+        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl mb-6 card-shadow">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                <div>
+                    <h3 class="font-semibold text-red-700">Errores en el formulario</h3>
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <div>• {{ field.label }}: {{ error }}</div>
+                            {% endfor %}
+                        {% endfor %}
+                        {% if form.non_field_errors %}
+                            <div>• {{ form.non_field_errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Formulario -->
+        <div class="bg-white rounded-xl card-shadow p-8">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nombre -->
+                    <div>
+                        <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user text-gray-400 mr-1.5"></i>Nombre Completo *
+                        </label>
+                        {{ form.nombre }}
+                    </div>
+                    
+                    <!-- RUT -->
+                    <div>
+                        <label for="{{ form.rut.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-id-card text-gray-400 mr-1.5"></i>RUT *
+                        </label>
+                        {{ form.rut }}
+                    </div>
+                    
+                    <!-- Email -->
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-envelope text-gray-400 mr-1.5"></i>Email
+                        </label>
+                        {{ form.email }}
+                    </div>
+                    
+                    <!-- Teléfono -->
+                    <div>
+                        <label for="{{ form.telefono.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-phone text-gray-400 mr-1.5"></i>Teléfono
+                        </label>
+                        {{ form.telefono }}
+                    </div>
+                    
+                    <!-- Dirección -->
+                    <div class="md:col-span-2">
+                        <label for="{{ form.direccion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-map-marker-alt text-gray-400 mr-1.5"></i>Dirección
+                        </label>
+                        {{ form.direccion }}
+                    </div>
+                    
+                    <!-- Medidor -->
+                    <div>
+                        <label for="{{ form.medidor.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tachometer-alt text-gray-400 mr-1.5"></i>Número de Medidor *
+                        </label>
+                        {{ form.medidor }}
+                    </div>
+                    
+                    <!-- Sector -->
+                    <div>
+                        <label for="{{ form.sector.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-map text-gray-400 mr-1.5"></i>Sector *
+                        </label>
+                        {{ form.sector }}
+                    </div>
+                    
+                    <!-- Observaciones -->
+                    <div class="md:col-span-2">
+                        <label for="{{ form.observaciones.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-sticky-note text-gray-400 mr-1.5"></i>Observaciones
+                        </label>
+                        {{ form.observaciones }}
+                        <p class="mt-1 text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Información adicional sobre el cliente o instalación
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Campos ocultos adicionales -->
+                {% for field in form %}
+                    {% if field.is_hidden %}
+                        {{ field }}
+                    {% endif %}
+                {% endfor %}
+                
+                <div class="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                    <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
+                       class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-times mr-2"></i> Cancelar
+                    </a>
+                    
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="window.location.href='{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}'" 
+                                class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                            Ver Detalles
+                        </button>
+                        
+                        <button type="submit" 
+                                class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                            <i class="fas fa-save mr-2"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Información del cliente -->
+        <div class="mt-6 bg-white rounded-xl card-shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Información del Cliente</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-xs text-gray-500">Fecha de Registro</p>
+                    <p class="font-medium text-gray-900">{{ cliente.fecha_creacion|date:"d/m/Y" }}</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-xs text-gray-500">Última Actualización</p>
+                    <p class="font-medium text-gray-900">{{ cliente.fecha_actualizacion|date:"d/m/Y"|default:"Nunca" }}</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-xs text-gray-500">Estado</p>
+                    <p class="font-medium text-emerald-700">
+                        <i class="fas fa-check-circle mr-1"></i> Activo
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Agregar clases a los inputs
+            document.querySelectorAll('input, select, textarea').forEach(input => {
+                if (!input.classList.contains('input-focus')) {
+                    input.classList.add('input-focus', 'w-full', 'px-4', 'py-2.5', 'border', 'border-gray-300', 'rounded-lg', 'transition-colors');
+                }
+            });
+            
+            // Para textareas
+            document.querySelectorAll('textarea').forEach(textarea => {
+                textarea.classList.add('resize-none');
+                textarea.rows = 4;
+            });
+        });
+    </script>
+
+</body>
+</html>

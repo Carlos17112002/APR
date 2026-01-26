@@ -1,0 +1,24 @@
+{
+  "app_name": "SSR SSR SANTIAGO",
+  "empresa_slug": "ssr-santiago",
+  "version": "1.0.0",
+  "primary_color": "#1E40AF",
+  "secondary_color": "#DC2626",
+  "base_url": "http://localhost:8000/api/ssr-santiago/",
+  "api_key": "",
+  "sectores": [
+    "CENTRO",
+    "SUR",
+    "ESTE",
+    "OESTE"
+  ],
+  "mensaje_bienvenida": "Bienvenido a la app de lecturas",
+  "habilitar_mapa": true,
+  "habilitar_offline": true,
+  "sincronizacion_auto": true,
+  "validar_gps": true,
+  "mostrar_logo": true,
+  "intervalo_sincronizacion": 5,
+  "max_lecturas_pendientes": 100,
+  "clientes": []
+}

@@ -1,66 +1,745 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Finiquitos · {{ alias }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finiquitos Laborales · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #dc2626;
+            --primary-dark: #b91c1c;
+            --secondary: #374151;
+            --accent: #7c3aed;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+            border-radius: 16px;
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #1f2937 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(55, 65, 81, 0.3);
+        }
+        
+        .table-row-hover:hover {
+            background: linear-gradient(90deg, rgba(254, 242, 242, 0.5) 0%, rgba(254, 226, 226, 0.3) 100%);
+            transform: translateX(4px);
+            transition: all 0.2s ease;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .status-completed {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+        
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+        
+        .status-cancelled {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+        
+        .card-stat {
+            border-left: 4px solid;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card-stat:hover::before {
+            opacity: 1;
+        }
+        
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: #f3f4f6;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-tag:hover {
+            background: #e5e7eb;
+        }
+        
+        .filter-tag.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .motivo-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .motivo-renuncia {
+            background: rgba(59, 130, 246, 0.15);
+            color: #2563eb;
+        }
+        
+        .motivo-despido {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+        
+        .motivo-termino {
+            background: rgba(139, 92, 246, 0.15);
+            color: #7c3aed;
+        }
+        
+        .motivo-mutuo {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="text-gray-800 antialiased">
 
-  <!-- Encabezado -->
-  <header class="bg-red-700 text-white py-5 shadow-md">
-    <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">🧾 Finiquitos laborales · <span class="text-white/80">{{ alias }}</span></h1>
-      <a href="/contabilidad/{{ alias }}/libro/" class="text-sm hover:underline">⬅️ Volver al panel</a>
+    <!-- Encabezado -->
+    <header class="gradient-header text-white shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                        <i class="fas fa-file-contract text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Gestión de Finiquitos</h1>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm opacity-90">{{ empresa.nombre }}</span>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full">{{ alias }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div class="hidden lg:block text-sm bg-white/10 px-4 py-2 rounded-lg">
+                        <span class="opacity-80">Total registros:</span>
+                        <span class="font-semibold ml-1">{{ finiquitos|length }}</span>
+                    </div>
+                    <a href="/contabilidad/{{ alias }}/libro/" 
+                       class="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-lg transition-all duration-200 group">
+                        <i class="fas fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+                        <span class="text-sm font-medium">Volver al Panel</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Acción principal y filtros -->
+        <div class="glass-panel p-6">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-1">Registro de Finiquitos</h2>
+                    <p class="text-sm text-gray-500">Gestione los procesos de término de contrato</p>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Filtros rápidos -->
+                    <div class="flex items-center space-x-2">
+                        <span class="filter-tag active">
+                            <i class="fas fa-list"></i>
+                            Todos
+                        </span>
+                        <span class="filter-tag">
+                            <i class="fas fa-check-circle"></i>
+                            Completados
+                        </span>
+                        <span class="filter-tag">
+                            <i class="fas fa-clock"></i>
+                            Pendientes
+                        </span>
+                    </div>
+                    
+                    <!-- Botón crear -->
+                    <a href="/trabajadores/{{ alias }}/finiquitos/crear/" 
+                       class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center space-x-3 group">
+                        <i class="fas fa-plus-circle group-hover:rotate-90 transition-transform"></i>
+                        <span>Nuevo Finiquito</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="glass-panel card-stat border-l-red-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Finiquitos</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ total_finiquitos|default:"0" }}</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-full">
+                        <i class="fas fa-file-contract text-red-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+                    {{ variacion_mensual|default:"0" }}% este mes
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-green-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Liquidado</p>
+                        <p class="text-2xl font-bold text-gray-800">${{ total_liquidado|default:"0" }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-hand-holding-usd text-green-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Promedio: ${{ promedio_finiquito|default:"0" }}
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-blue-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Pendientes PDF</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ pendientes_pdf|default:"0" }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-file-pdf text-blue-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    {{ porcentaje_completado|default:"0" }}% completados
+                </div>
+            </div>
+            
+            <div class="glass-panel card-stat border-l-purple-500 p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Último Mes</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ finiquitos_mes|default:"0" }}</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i class="fas fa-calendar-alt text-purple-600 text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    {{ mes_actual|default:"Enero" }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de finiquitos -->
+        <div class="glass-panel overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-list-check text-red-600 mr-2"></i>
+                        Registro de Finiquitos
+                    </h3>
+                    <span class="text-sm text-gray-500">
+                        {{ finiquitos|length }} registros encontrados
+                    </span>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-user text-gray-400"></i>
+                                    <span>Trabajador</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-calendar text-gray-400"></i>
+                                    <span>Fecha</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-clipboard-list text-gray-400"></i>
+                                    <span>Motivo</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-dollar-sign text-gray-400"></i>
+                                    <span>Total</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-file-pdf text-gray-400"></i>
+                                    <span>Documento</span>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-cog text-gray-400"></i>
+                                    <span>Acciones</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for finiquito in finiquitos %}
+                        <tr class="table-row-hover hover:bg-red-50/30 transition-all duration-200">
+                            <!-- Trabajador -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                                            <i class="fas fa-user text-red-600 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">{{ finiquito.trabajador.nombre }}</div>
+                                        <div class="text-xs text-gray-500">{{ finiquito.trabajador.rut }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Fecha -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900">{{ finiquito.fecha_finiquito|date:"d/m/Y" }}</div>
+                                <div class="text-xs text-gray-500">
+                                    {{ finiquito.fecha_finiquito|timesince }} atrás
+                                </div>
+                            </td>
+                            
+                            <!-- Motivo -->
+                            <td class="px-6 py-4">
+                                {% if finiquito.motivo == "renuncia" %}
+                                    <span class="motivo-chip motivo-renuncia">
+                                        <i class="fas fa-sign-out-alt mr-1"></i>
+                                        Renuncia
+                                    </span>
+                                {% elif finiquito.motivo == "despido" %}
+                                    <span class="motivo-chip motivo-despido">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Despido
+                                    </span>
+                                {% elif finiquito.motivo == "termino_contrato" %}
+                                    <span class="motivo-chip motivo-termino">
+                                        <i class="fas fa-calendar-times mr-1"></i>
+                                        Término
+                                    </span>
+                                {% else %}
+                                    <span class="motivo-chip motivo-mutuo">
+                                        <i class="fas fa-handshake mr-1"></i>
+                                        Mutuo Acuerdo
+                                    </span>
+                                {% endif %}
+                                {% if finiquito.dias_trabajados %}
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {{ finiquito.dias_trabajados }} días trabajados
+                                </div>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Total -->
+                            <td class="px-6 py-4">
+                                <div class="text-lg font-bold text-green-700">
+                                    ${{ finiquito.total }}
+                                </div>
+                                {% if finiquito.total > 1000000 %}
+                                    <span class="status-badge status-completed">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Completo
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-pending">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        Básico
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Documento -->
+                            <td class="px-6 py-4">
+                                {% if finiquito.documento_pdf %}
+                                    <a href="/trabajadores/{{ alias }}/finiquito/{{ finiquito.id }}/pdf/" 
+                                       class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors group">
+                                        <div class="bg-blue-100 group-hover:bg-blue-200 p-2 rounded-lg transition-colors">
+                                            <i class="fas fa-file-pdf text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium">Ver PDF</span>
+                                            <div class="text-xs text-gray-500">Documento firmado</div>
+                                        </div>
+                                    </a>
+                                {% else %}
+                                    <div class="flex items-center space-x-3 text-gray-400">
+                                        <div class="bg-gray-100 p-2 rounded-lg">
+                                            <i class="fas fa-file-exclamation"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm">No generado</span>
+                                            <div class="text-xs">Pendiente de firma</div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Acciones -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <a href="/trabajadores/{{ alias }}/finiquito/{{ finiquito.id }}/editar/" 
+                                       class="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                       title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="/trabajadores/{{ alias }}/finiquito/{{ finiquito.id }}/pdf/" 
+                                       class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                       title="Generar PDF">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    <a href="/trabajadores/{{ alias }}/finiquito/{{ finiquito.id }}/enviar/" 
+                                       class="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                       title="Enviar por email">
+                                        <i class="fas fa-envelope"></i>
+                                    </a>
+                                    <button class="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Eliminar"
+                                            onclick="confirmDelete({{ finiquito.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center space-y-3">
+                                    <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                                        <i class="fas fa-file-contract text-red-400 text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-medium text-gray-700">No hay finiquitos registrados</h4>
+                                        <p class="text-gray-500 mt-1">Comience creando un nuevo finiquito</p>
+                                    </div>
+                                    <a href="/trabajadores/{{ alias }}/crear_finiquito/" 
+                                       class="btn-primary mt-4 px-6 py-2 rounded-lg">
+                                        <i class="fas fa-plus mr-2"></i>
+                                        Crear primer finiquito
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Footer de la tabla -->
+            {% if finiquitos %}
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div class="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
+                    <div>
+                        Mostrando <span class="font-semibold text-gray-700">{{ finiquitos|length }}</span> finiquitos
+                    </div>
+                    <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+                        <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors">
+                            <i class="fas fa-chevron-left mr-1"></i>
+                            Anterior
+                        </button>
+                        <span class="text-gray-700">Página 1 de 1</span>
+                        <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors">
+                            Siguiente
+                            <i class="fas fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Acciones masivas -->
+        <div class="glass-panel p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Acciones Masivas</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button class="flex items-center justify-center space-x-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors group">
+                    <div class="bg-blue-100 group-hover:bg-blue-200 p-3 rounded-lg transition-colors">
+                        <i class="fas fa-file-export text-blue-600"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-800">Exportar a Excel</div>
+                        <div class="text-sm text-gray-500">Todos los registros</div>
+                    </div>
+                </button>
+                
+                <button class="flex items-center justify-center space-x-3 p-4 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 transition-colors group">
+                    <div class="bg-green-100 group-hover:bg-green-200 p-3 rounded-lg transition-colors">
+                        <i class="fas fa-envelope text-green-600"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-800">Enviar Recordatorio</div>
+                        <div class="text-sm text-gray-500">Firmas pendientes</div>
+                    </div>
+                </button>
+                
+                <button class="flex items-center justify-center space-x-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 transition-colors group">
+                    <div class="bg-purple-100 group-hover:bg-purple-200 p-3 rounded-lg transition-colors">
+                        <i class="fas fa-chart-bar text-purple-600"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-800">Reporte Mensual</div>
+                        <div class="text-sm text-gray-500">Análisis de términos</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Información legal -->
+        <div class="glass-panel border-l-4 border-yellow-500 p-6">
+            <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-scale-balanced text-yellow-600 text-xl"></i>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">Consideraciones Legales</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div>
+                            <p class="flex items-center space-x-2 mb-1">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span>Plazo máximo de pago: 10 días hábiles</span>
+                            </p>
+                            <p class="flex items-center space-x-2 mb-1">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span>Firma obligatoria de trabajador y empleador</span>
+                            </p>
+                        </div>
+                        <div>
+                            <p class="flex items-center space-x-2 mb-1">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span>Conservar copia por 5 años</span>
+                            </p>
+                            <p class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span>Notificar a Dirección del Trabajo si corresponde</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Sistema de Finiquitos
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fas fa-shield-alt mr-1"></i> Cumplimiento legal</span>
+                <span><i class="fas fa-clock mr-1"></i> Actualizado: {{ "hoy" }}</span>
+                <span class="text-green-600 font-medium">
+                    <i class="fas fa-circle text-xs mr-1"></i>
+                    {{ finiquitos|length }} finiquitos registrados
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Confirmar eliminación</h3>
+                    <p class="text-sm text-gray-500">Esta acción no se puede deshacer</p>
+                </div>
+            </div>
+            <p class="text-gray-600 mb-6">¿Está seguro que desea eliminar este finiquito? Se eliminarán todos los datos asociados.</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeDeleteModal()" 
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmDeleteBtn" 
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    Eliminar definitivamente
+                </button>
+            </div>
+        </div>
     </div>
-  </header>
 
-  <!-- Contenido principal -->
-  <main class="max-w-6xl mx-auto px-6 py-10 space-y-8">
+    <script>
+        // Animaciones de entrada
+        document.addEventListener('DOMContentLoaded', function() {
+            // Efecto de aparición para las tarjetas
+            const cards = document.querySelectorAll('.glass-panel');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+            
+            // Efecto hover en filas de tabla
+            const rows = document.querySelectorAll('.table-row-hover');
+            rows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateX(8px)';
+                });
+                
+                row.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateX(0)';
+                });
+            });
+            
+            // Filtros rápidos
+            const filterTags = document.querySelectorAll('.filter-tag');
+            filterTags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    filterTags.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        });
+        
+        // Funciones para el modal de eliminación
+        let finiquitoIdToDelete = null;
+        
+        function confirmDelete(id) {
+            finiquitoIdToDelete = id;
+            const modal = document.getElementById('deleteModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                // Aquí iría la llamada AJAX para eliminar
+                window.location.href = `/trabajadores/${alias}/finiquito/${id}/eliminar/`;
+            };
+        }
+        
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            finiquitoIdToDelete = null;
+        }
+        
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+        
+        // Variables para estadísticas (deberían venir del backend)
+        const totalFiniquitos = {{ finiquitos|length }};
+        const totalLiquidado = {{ total_liquidado|default:"0" }};
+        const promedioFiniquito = totalFiniquitos > 0 ? Math.round(totalLiquidado / totalFiniquitos) : 0;
+        
+        // Actualizar estadísticas si es necesario
+        if (totalFiniquitos > 0) {
+            console.log(`Estadísticas: ${totalFiniquitos} finiquitos, total $${totalLiquidado}, promedio $${promedioFiniquito}`);
+        }
+    </script>
 
-    <!-- Botón crear finiquito -->
-    <div class="flex justify-end">
-      <a href="/trabajadores/{{ alias }}/crear_finiquito/" class="bg-red-700 text-white px-5 py-3 rounded-lg shadow hover:bg-red-800 transition text-sm flex items-center gap-2">
-        ➕ Crear nuevo finiquito
-      </a>
-    </div>
-
-    <!-- Tabla de finiquitos -->
-    <div class="overflow-x-auto bg-white rounded-xl shadow-md">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-200 text-gray-700 sticky top-0">
-          <tr>
-            <th class="px-6 py-3 text-left font-semibold">👤 Trabajador</th>
-            <th class="px-6 py-3 text-left font-semibold">📅 Fecha</th>
-            <th class="px-6 py-3 text-left font-semibold">📝 Motivo</th>
-            <th class="px-6 py-3 text-left font-semibold">💰 Total</th>
-            <th class="px-6 py-3 text-left font-semibold">📁 PDF</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          {% for finiquito in finiquitos %}
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-3">{{ finiquito.trabajador.nombre }}</td>
-            <td class="px-6 py-3">{{ finiquito.fecha_finiquito }}</td>
-            <td class="px-6 py-3">{{ finiquito.motivo }}</td>
-            <td class="px-6 py-3 font-semibold text-green-700">${{ finiquito.total }}</td>
-            <td class="px-6 py-3">
-              {% if finiquito.documento_pdf %}
-                <a href="/trabajadores/{{ alias }}/finiquito/{{ finiquito.id }}/pdf/" class="text-blue-600 hover:underline">📄 Ver PDF</a>
-              {% else %}
-                <span class="text-gray-400">No generado</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" class="px-6 py-6 text-center text-gray-500">No hay finiquitos registrados.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-  </main>
 </body>
 </html>

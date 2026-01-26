@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ cliente.nombre }} - {{ empresa.nombre }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+        }
+        
+        .gradient-primary {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        
+        .gradient-secondary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+        }
+        
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+        
+        .stats-card.green::before {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .stats-card.blue::before {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+        
+        .stats-card.purple::before {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+        
+        .stats-card.amber::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .table-row-hover:hover {
+            background-color: #f8fafc;
+        }
+        
+        .tab-active {
+            border-bottom: 3px solid #059669;
+            color: #059669;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="gradient-primary text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'listado_clientes' alias=slug %}" 
+                       class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors">
+                        <i class="fas fa-arrow-left text-white"></i>
+                    </a>
+                    <div class="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-user text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">{{ cliente.nombre }}</h1>
+                        <p class="text-sm opacity-90">{{ empresa.nombre }} · Cliente #{{ cliente.id }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.print()" 
+                           class="bg-white/20 hover:bg-white/30 text-white px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
+                        <i class="fas fa-print mr-2"></i> Imprimir
+                    </button>
+                    <a href="{% url 'editar_cliente' alias=slug cliente_id=cliente.id %}" 
+                       class="bg-white text-emerald-700 hover:bg-gray-100 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
+                        <i class="fas fa-edit mr-2"></i> Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Mensajes del sistema -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl mb-6 card-shadow flex items-center">
+                <i class="fas fa-check-circle text-emerald-600 mr-3"></i>
+                <div>
+                    <p class="font-medium">{{ message }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Pestañas de navegación -->
+        <div class="bg-white rounded-t-xl card-shadow mb-6">
+            <div class="flex border-b border-gray-200">
+                <button id="tabInfo" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium tab-active" 
+                        onclick="switchTab('info')">
+                    <i class="fas fa-info-circle mr-2"></i>Información General
+                </button>
+                <button id="tabContratos" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium" 
+                        onclick="switchTab('contratos')">
+                    <i class="fas fa-file-contract mr-2"></i>Contratos
+                </button>
+                <button id="tabLecturas" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium" 
+                        onclick="switchTab('lecturas')">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Lecturas
+                </button>
+                <button id="tabPagos" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium" 
+                        onclick="switchTab('pagos')">
+                    <i class="fas fa-credit-card mr-2"></i>Pagos
+                </button>
+                <button id="tabHistorial" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium" 
+                        onclick="switchTab('historial')">
+                    <i class="fas fa-history mr-2"></i>Historial Completo
+                </button>
+            </div>
+        </div>
+        
+        <!-- Pestaña: Información General -->
+        <div id="contentInfo" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Información Básica -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-semibold text-gray-900">Información del Cliente</h2>
+                            <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium">
+                                <i class="fas fa-user-check mr-1"></i> Activo
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 mb-3">Datos Personales</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <p class="text-xs text-gray-500">Nombre Completo</p>
+                                        <p class="font-medium text-gray-900">{{ cliente.nombre }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">RUT</p>
+                                        <p class="font-mono font-medium text-gray-900">{{ cliente.rut }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">Fecha de Registro</p>
+                                        <p class="font-medium text-gray-900">
+                                            <i class="fas fa-calendar-alt text-gray-400 mr-1"></i>
+                                            {{ cliente.fecha_creacion|date:"d/m/Y" }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 mb-3">Información de Contacto</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <p class="text-xs text-gray-500">Email</p>
+                                        {% if cliente.email %}
+                                        <p class="font-medium text-gray-900">
+                                            <i class="fas fa-envelope text-gray-400 mr-1"></i>
+                                            <a href="mailto:{{ cliente.email }}" class="text-emerald-700 hover:text-emerald-900 hover:underline">
+                                                {{ cliente.email }}
+                                            </a>
+                                        </p>
+                                        {% else %}
+                                        <p class="text-gray-400 italic">No registrado</p>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">Teléfono</p>
+                                        {% if cliente.telefono %}
+                                        <p class="font-medium text-gray-900">
+                                            <i class="fas fa-phone text-gray-400 mr-1"></i>
+                                            <a href="tel:{{ cliente.telefono }}" class="text-emerald-700 hover:text-emerald-900 hover:underline">
+                                                {{ cliente.telefono }}
+                                            </a>
+                                        </p>
+                                        {% else %}
+                                        <p class="text-gray-400 italic">No registrado</p>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">Dirección</p>
+                                        <p class="font-medium text-gray-900">
+                                            <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
+                                            {{ cliente.direccion|default:"No registrada" }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información Técnica -->
+                        <div class="mt-8 pt-8 border-t border-gray-200">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Información Técnica</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <p class="text-xs text-gray-500">Número de Medidor</p>
+                                    <p class="font-bold text-gray-900 text-lg">{{ cliente.medidor|default:"N/A" }}</p>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <p class="text-xs text-gray-500">Sector</p>
+                                    <p class="font-bold text-gray-900 text-lg">{{ cliente.sector|default:"N/A" }}</p>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <p class="text-xs text-gray-500">Última Lectura</p>
+                                    {% if lecturas.0 %}
+                                    <p class="font-bold text-gray-900 text-lg">
+                                        {{ lecturas.0.consumo|default:"0" }} m³
+                                    </p>
+                                    {% else %}
+                                    <p class="font-bold text-gray-900 text-lg">Sin datos</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas y Acciones Rápidas -->
+                <div class="space-y-6">
+                    <!-- Estadísticas -->
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Estadísticas</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Consumo Promedio</p>
+                                <p class="text-2xl font-bold text-emerald-700">{{ consumo_promedio|floatformat:2 }} m³</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Total Pagado</p>
+                                <p class="text-2xl font-bold text-blue-700">${{ total_pagado|floatformat:0|intcomma }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Deuda Actual</p>
+                                <p class="text-2xl font-bold {% if deuda_actual > 0 %}text-red-700{% else %}text-gray-700{% endif %}">
+                                    ${{ deuda_actual|floatformat:0|intcomma }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Acciones Rápidas -->
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
+                        <div class="space-y-3">
+                            <a href="{% url 'crear_lectura' alias=slug cliente_id=cliente.id %}" 
+                               class="flex items-center justify-between p-3 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fas fa-tachometer-alt mr-3"></i>
+                                    <span>Registrar Lectura</span>
+                                </div>
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                            <a href="#" 
+                               class="flex items-center justify-between p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fas fa-credit-card mr-3"></i>
+                                    <span>Registrar Pago</span>
+                                </div>
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                            <a href="{% url 'historial_cliente' alias=slug cliente_id=cliente.id %}" 
+                               class="flex items-center justify-between p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fas fa-history mr-3"></i>
+                                    <span>Ver Historial</span>
+                                </div>
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                            <button onclick="openDeleteModal('{{ cliente.id }}', '{{ cliente.nombre|escapejs }}')" 
+                                    class="w-full flex items-center justify-between p-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fas fa-trash-alt mr-3"></i>
+                                    <span>Eliminar Cliente</span>
+                                </div>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gráfico de Consumo -->
+            <div class="bg-white rounded-xl card-shadow p-6 mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900">Historial de Consumo</h2>
+                    <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option>Últimos 6 meses</option>
+                        <option>Último año</option>
+                        <option>Todo el historial</option>
+                    </select>
+                </div>
+                <div class="h-64">
+                    <canvas id="consumoChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pestaña: Contratos -->
+        <div id="contentContratos" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Contratos del Cliente</h2>
+                            <p class="text-gray-500 text-sm mt-1">{{ contratos.count }} contrato{{ contratos.count|pluralize }} registrado{{ contratos.count|pluralize }}</p>
+                        </div>
+                        <a href="#" 
+                           class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nuevo Contrato
+                        </a>
+                    </div>
+                </div>
+                
+                {% if contratos %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contrato</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Inicio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Término</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for contrato in contratos %}
+                            <tr class="table-row-hover">
+                                <td class="px-6 py-4">
+                                    <div class="font-medium text-gray-900">#{{ contrato.numero }}</div>
+                                    <div class="text-xs text-gray-500">{{ contrato.descripcion|truncatechars:40 }}</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                        {{ contrato.tipo }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    {{ contrato.fecha_inicio|date:"d/m/Y" }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if contrato.fecha_termino %}
+                                        {{ contrato.fecha_termino|date:"d/m/Y" }}
+                                    {% else %}
+                                        <span class="text-gray-400">Indefinido</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if contrato.activo %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
+                                        <i class="fas fa-check-circle mr-1"></i> Activo
+                                    </span>
+                                    {% else %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                                        <i class="fas fa-times-circle mr-1"></i> Inactivo
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex space-x-2">
+                                        <a href="#" class="text-blue-600 hover:text-blue-900">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="#" class="text-emerald-600 hover:text-emerald-900">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-file-contract text-4xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">No hay contratos registrados</h3>
+                    <p class="text-gray-500 mb-6">Este cliente no tiene contratos asociados.</p>
+                    <a href="#" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Crear Primer Contrato
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Pestaña: Lecturas -->
+        <div id="contentLecturas" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Historial de Lecturas</h2>
+                            <p class="text-gray-500 text-sm mt-1">{{ lecturas|length }} lectura{{ lecturas|length|pluralize }} registrada{{ lecturas|length|pluralize }}</p>
+                        </div>
+                        <a href="{% url 'crear_lectura' alias=slug cliente_id=cliente.id %}" 
+                           class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nueva Lectura
+                        </a>
+                    </div>
+                </div>
+                
+                {% if lecturas %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Anterior</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Actual</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consumo (m³)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Observaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for lectura in lecturas %}
+                            <tr class="table-row-hover">
+                                <td class="px-6 py-4">
+                                    {{ lectura.fecha|date:"d/m/Y" }}
+                                </td>
+                                <td class="px-6 py-4 font-mono">
+                                    {{ lectura.lectura_anterior|default:"-" }}
+                                </td>
+                                <td class="px-6 py-4 font-mono font-bold">
+                                    {{ lectura.lectura_actual }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="font-bold text-blue-700">{{ lectura.consumo|default:"0" }} m³</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if lectura.estado == 'normal' %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
+                                        Normal
+                                    </span>
+                                    {% elif lectura.estado == 'irregular' %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
+                                        Irregular
+                                    </span>
+                                    {% else %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                                        Pendiente
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    {{ lectura.observaciones|truncatechars:30|default:"-" }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-tachometer-alt text-4xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">No hay lecturas registradas</h3>
+                    <p class="text-gray-500 mb-6">Este cliente no tiene lecturas registradas.</p>
+                    <a href="{% url 'crear_lectura' alias=slug cliente_id=cliente.id %}" 
+                       class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Registrar Primera Lectura
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Pestaña: Pagos -->
+        <div id="contentPagos" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Historial de Pagos</h2>
+                            <p class="text-gray-500 text-sm mt-1">Total pagado: ${{ total_pagado|floatformat:0|intcomma }}</p>
+                        </div>
+                        <a href="#" 
+                           class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nuevo Pago
+                        </a>
+                    </div>
+                </div>
+                
+                {% if pagos %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Método</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Referencia</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Período</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for pago in pagos %}
+                            <tr class="table-row-hover">
+                                <td class="px-6 py-4">
+                                    {{ pago.fecha|date:"d/m/Y" }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="font-bold text-emerald-700">${{ pago.monto|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                        {{ pago.metodo_pago }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 font-mono text-sm">
+                                    {{ pago.referencia|default:"-" }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    {{ pago.periodo|date:"m/Y"|default:"-" }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if pago.estado == 'confirmado' %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
+                                        <i class="fas fa-check-circle mr-1"></i> Confirmado
+                                    </span>
+                                    {% else %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
+                                        <i class="fas fa-clock mr-1"></i> Pendiente
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-credit-card text-4xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">No hay pagos registrados</h3>
+                    <p class="text-gray-500 mb-6">Este cliente no tiene pagos registrados.</p>
+                    <a href="#" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Registrar Primer Pago
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Pestaña: Historial Completo -->
+        <div id="contentHistorial" class="tab-content hidden">
+            <div class="text-center py-12">
+                <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Historial Completo</h3>
+                <p class="text-gray-500 mb-6">Para ver el historial completo del cliente, visite la página dedicada.</p>
+                <a href="{% url 'historial_cliente' alias=slug cliente_id=cliente.id %}" 
+                   class="bg-purple-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-purple-700 transition-colors inline-flex items-center">
+                    <i class="fas fa-external-link-alt mr-2"></i> Ver Historial Completo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de eliminación (mismo que en listado) -->
+    <div id="deleteModal" class="modal-overlay hidden">
+        <!-- Copia el mismo modal del listado_clientes.html -->
+    </div>
+
+    <script>
+        // Sistema de pestañas
+        function switchTab(tabName) {
+            // Ocultar todos los contenidos
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remover clase activa de todas las pestañas
+            document.querySelectorAll('[id^="tab"]').forEach(tab => {
+                tab.classList.remove('tab-active');
+                tab.classList.add('text-gray-600');
+            });
+            
+            // Mostrar contenido seleccionado
+            document.getElementById('content' + capitalizeFirst(tabName)).classList.remove('hidden');
+            
+            // Activar pestaña seleccionada
+            document.getElementById('tab' + capitalizeFirst(tabName)).classList.add('tab-active');
+            document.getElementById('tab' + capitalizeFirst(tabName)).classList.remove('text-gray-600');
+        }
+        
+        function capitalizeFirst(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+        
+        // Gráfico de consumo
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('consumoChart').getContext('2d');
+            const consumoChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                    datasets: [{
+                        label: 'Consumo (m³)',
+                        data: [12, 19, 15, 25, 22, 18, 24, 20, 17, 22, 19, 23],
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        });
+        
+        // Funciones de eliminación (mismas que en listado)
+        function openDeleteModal(clientId, clientName) {
+            // Implementación similar a listado_clientes.html
+            if (confirm(`¿Está seguro de eliminar al cliente "${clientName}"?`)) {
+                window.location.href = `/{{ slug }}/clientes/${clientId}/eliminar-simple/`;
+            }
+        }
+        
+        // URL para eliminar cliente
+        const deleteUrlBase = '/{{ slug }}/clientes/';
+    </script>
+
+</body>
+</html>

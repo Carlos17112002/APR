@@ -9,5 +9,10 @@ urlpatterns = [
     path('login/', login_cliente, name='login_cliente'),
     path('logout/', logout_view, name='logout'),
     path('<slug:alias>/lecturas/ruta/', clientes_por_alias, name='lecturas_ruta'),
+    path('<slug:alias>/clientes/<int:cliente_id>/', views.detalle_cliente, name='detalle_cliente'),
+    path('<slug:alias>/clientes/<int:cliente_id>/editar/', views.editar_cliente, name='editar_cliente'),
+    path('<slug:alias>/clientes/<int:cliente_id>/eliminar/', views.eliminar_cliente, name='eliminar_cliente'),
+    path('<slug:alias>/clientes/<int:cliente_id>/historial/', views.historial_cliente, name='historial_cliente'),
+    
 ]
 

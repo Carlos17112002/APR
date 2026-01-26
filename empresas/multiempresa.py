@@ -22,15 +22,5 @@ def registrar_alias(slug):
     }
 
     print(f"[SSR] Alias registrado: {alias} → {ruta_db}")
-    aplicar_migraciones(alias)  # ← 💡 esta línea es clave
+ # ← 💡 esta línea es clave
 
-from django.apps import apps as django_apps
-
-def aplicar_migraciones(alias):
-    for app_config in django_apps.get_app_configs():
-        app_label = app_config.label
-        try:
-            call_command('migrate', app_label, database=alias, interactive=False, verbosity=0)
-            print(f"[{alias}] ✅ Migración aplicada: {app_label}")
-        except Exception as e:
-            print(f"[{alias}] ❌ Error al migrar '{app_label}': {e}")

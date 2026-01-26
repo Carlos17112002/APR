@@ -1,37 +1,837 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Crear finiquito · {{ alias }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Finiquito · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #dc2626;
+            --primary-dark: #b91c1c;
+            --secondary: #374151;
+            --accent: #7c3aed;
+            --pixel-dark: #222222;
+            --pixel-red: #b80000;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            min-height: 100vh;
+        }
+        
+        .pixel-border {
+            border: 3px solid var(--pixel-dark);
+            position: relative;
+            box-shadow: 4px 4px 0 0 var(--pixel-dark);
+        }
+        
+        .pixel-border-thin {
+            border: 2px solid var(--pixel-dark);
+            position: relative;
+            box-shadow: 2px 2px 0 0 var(--pixel-dark);
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            position: relative;
+            overflow: hidden;
+            border-bottom: 4px solid var(--pixel-dark);
+        }
+        
+        .gradient-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .btn-pixel {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-weight: 500;
+            border: 3px solid var(--pixel-dark);
+            box-shadow: 4px 4px 0 0 var(--pixel-dark);
+        }
+        
+        .btn-pixel:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 0 var(--pixel-dark);
+        }
+        
+        .btn-pixel:active {
+            transform: translate(1px, 1px);
+            box-shadow: 2px 2px 0 0 var(--pixel-dark);
+        }
+        
+        .btn-pixel-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #1f2937 100%);
+        }
+        
+        .btn-pixel-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .input-pixel {
+            background: white;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            box-shadow: inset 2px 2px 0 0 rgba(0,0,0,0.1);
+        }
+        
+        .input-pixel:focus {
+            border-color: var(--primary);
+            box-shadow: 
+                inset 2px 2px 0 0 rgba(0,0,0,0.1),
+                0 0 0 2px rgba(220, 38, 38, 0.1);
+            outline: none;
+        }
+        
+        .pixel-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border: 3px solid var(--pixel-dark);
+            box-shadow: 6px 6px 0 0 var(--pixel-dark);
+            border-radius: 12px;
+        }
+        
+        .pixel-card-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 12px 16px;
+            margin: -3px -3px 12px -3px;
+            border-bottom: 3px solid var(--pixel-dark);
+            border-radius: 9px 9px 0 0;
+        }
+        
+        .pixel-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            background: white;
+            border: 2px solid var(--pixel-dark);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--pixel-dark);
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .pixel-tag-warning {
+            background: #fef3c7;
+            border-color: #d97706;
+            color: #92400e;
+        }
+        
+        .pixel-tag-success {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        
+        .pixel-tag-info {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        
+        .pixel-divider {
+            height: 3px;
+            background: var(--pixel-dark);
+            margin: 24px 0;
+            position: relative;
+        }
+        
+        .pixel-divider::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: white;
+        }
+        
+        .pixel-divider::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: white;
+        }
+        
+        .pixel-radio-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .pixel-radio {
+            position: relative;
+        }
+        
+        .pixel-radio input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .pixel-radio label {
+            display: inline-block;
+            padding: 8px 16px;
+            border: 2px solid var(--pixel-dark);
+            background: white;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .pixel-radio input[type="radio"]:checked + label {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+        
+        .pixel-radio label:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 0 var(--pixel-dark);
+        }
+        
+        .pixel-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border: 2px solid var(--pixel-dark);
+            background: white;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .pixel-badge-danger {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+        
+        .pixel-badge-success {
+            background: #10b981;
+            color: white;
+            border-color: #059669;
+        }
+        
+        .pixel-message {
+            padding: 12px 16px;
+            border: 3px solid var(--pixel-dark);
+            margin-bottom: 16px;
+            box-shadow: 3px 3px 0 0 var(--pixel-dark);
+        }
+        
+        .pixel-message-error {
+            background: #fef2f2;
+            border-color: var(--primary);
+        }
+        
+        .pixel-message-warning {
+            background: #fffbeb;
+            border-color: #f59e0b;
+        }
+        
+        .pixel-message-success {
+            background: #f0fdf4;
+            border-color: #10b981;
+        }
+        
+        .pixel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .pixel-animation {
+            animation: pixel-blink 1s infinite;
+        }
+        
+        @keyframes pixel-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .pixel-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+            display: block;
+            position: relative;
+            padding-left: 8px;
+        }
+        
+        .pixel-label::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        
+        .font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
-  <header class="bg-red-700 text-white py-4 shadow">
-    <div class="max-w-4xl mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">🧾 Nuevo finiquito · {{ alias }}</h1>
-      <a href="/trabajadores/{{ alias }}/finiquitos/" class="text-sm hover:underline">⬅️ Volver a finiquitos</a>
-    </div>
-  </header>
+<body class="text-gray-800 antialiased">
 
-  <main class="max-w-4xl mx-auto px-4 py-10">
-    <section class="bg-white p-6 rounded shadow space-y-6">
-      <form method="post" class="space-y-4">
-        {% csrf_token %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {{ form.trabajador.label_tag }} {{ form.trabajador }}
-          {{ form.fecha_finiquito.label_tag }} {{ form.fecha_finiquito }}
-          {{ form.motivo.label_tag }} {{ form.motivo }}
-          {{ form.indemnizacion.label_tag }} {{ form.indemnizacion }}
-          {{ form.vacaciones_pendientes.label_tag }} {{ form.vacaciones_pendientes }}
-          {{ form.otros.label_tag }} {{ form.otros }}
+    <!-- Encabezado -->
+    <header class="gradient-header text-white shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-lg backdrop-blur-sm border-2 border-white/30">
+                        <i class="fas fa-file-contract text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Crear Finiquito</h1>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm opacity-90">{{ empresa.nombre }}</span>
+                            <span class="pixel-badge pixel-badge-danger font-pixel text-xs">
+                                {{ alias|upper }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <a href="/trabajadores/{{ alias }}/finiquitos/" 
+                       class="btn-pixel btn-pixel-secondary px-4 py-2.5 rounded-lg font-medium flex items-center space-x-2">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Volver</span>
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="pt-6">
-          <button type="submit" class="bg-red-700 text-white px-6 py-2 rounded hover:bg-red-800 transition">
-            ✅ Generar finiquito
-          </button>
+    </header>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Mensajes de error -->
+        {% if form.errors %}
+        <div class="pixel-message pixel-message-error">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+                <div>
+                    <h3 class="font-semibold text-red-700">Errores en el formulario</h3>
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <div>• {{ field.label }}: {{ error }}</div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
-      </form>
-    </section>
-  </main>
+        {% endif %}
+
+        <!-- Formulario principal -->
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Información básica -->
+            <div class="pixel-card">
+                <div class="pixel-card-header">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-id-card"></i>
+                        <span>Información Básica</span>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="pixel-grid gap-6">
+                        <div>
+                            <label class="pixel-label" for="id_trabajador">
+                                Trabajador
+                            </label>
+                            <select name="trabajador" id="id_trabajador" required 
+                                    class="input-pixel w-full px-4 py-2.5">
+                                <option value="">Seleccione trabajador...</option>
+                                {% for trabajador in trabajadores %}
+                                    <option value="{{ trabajador.id }}" 
+                                            {% if form.trabajador.value == trabajador.id %}selected{% endif %}>
+                                        {{ trabajador.nombre }} - {{ trabajador.rut }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="pixel-label" for="id_fecha_finiquito">
+                                Fecha Finiquito
+                            </label>
+                            <input type="date" name="fecha_finiquito" id="id_fecha_finiquito" 
+                                   required class="input-pixel w-full px-4 py-2.5"
+                                   value="{{ form.fecha_finiquito.value|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <label class="pixel-label mb-4">
+                            Motivo de Término
+                        </label>
+                        <div class="pixel-radio-group">
+                            <div class="pixel-radio">
+                                <input type="radio" name="motivo" id="motivo_renuncia" value="renuncia" 
+                                       {% if form.motivo.value == "renuncia" %}checked{% endif %}>
+                                <label for="motivo_renuncia">Renuncia</label>
+                            </div>
+                            <div class="pixel-radio">
+                                <input type="radio" name="motivo" id="motivo_despido" value="despido"
+                                       {% if form.motivo.value == "despido" %}checked{% endif %}>
+                                <label for="motivo_despido">Despido</label>
+                            </div>
+                            <div class="pixel-radio">
+                                <input type="radio" name="motivo" id="motivo_termino" value="termino_contrato"
+                                       {% if form.motivo.value == "termino_contrato" %}checked{% endif %}>
+                                <label for="motivo_termino">Término Contrato</label>
+                            </div>
+                            <div class="pixel-radio">
+                                <input type="radio" name="motivo" id="motivo_mutuo" value="mutuo_acuerdo"
+                                       {% if form.motivo.value == "mutuo_acuerdo" %}checked{% endif %}>
+                                <label for="motivo_mutuo">Mutuo Acuerdo</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Montos y cálculos -->
+            <div class="pixel-card">
+                <div class="pixel-card-header">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-calculator"></i>
+                        <span>Cálculos Finiquito</span>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="pixel-grid gap-6">
+                        <div>
+                            <label class="pixel-label" for="id_indemnizacion">
+                                Indemnización
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="indemnizacion" id="id_indemnizacion" 
+                                       step="1" min="0" class="input-pixel w-full px-4 py-2.5 pl-10"
+                                       value="{{ form.indemnizacion.value|default:'0' }}">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    $
+                                </div>
+                            </div>
+                            <div class="mt-1 text-sm text-gray-500 flex items-center">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <span>Años de servicio × Último sueldo</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="pixel-label" for="id_vacaciones_pendientes">
+                                Vacaciones Pendientes
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="vacaciones_pendientes" id="id_vacaciones_pendientes" 
+                                       step="1" min="0" class="input-pixel w-full px-4 py-2.5 pl-10"
+                                       value="{{ form.vacaciones_pendientes.value|default:'0' }}">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    $
+                                </div>
+                            </div>
+                            <div class="mt-1 text-sm text-gray-500">
+                                Días proporcionales
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="pixel-label" for="id_otros">
+                                Otros Pagos
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="otros" id="id_otros" 
+                                       step="1" min="0" class="input-pixel w-full px-4 py-2.5 pl-10"
+                                       value="{{ form.otros.value|default:'0' }}">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    $
+                                </div>
+                            </div>
+                            <div class="mt-1 text-sm text-gray-500">
+                                Gratificación, bonos, etc.
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="pixel-label" for="id_sueldo_pendiente">
+                                Sueldo Pendiente
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="sueldo_pendiente" id="id_sueldo_pendiente" 
+                                       step="1" min="0" class="input-pixel w-full px-4 py-2.5 pl-10"
+                                       value="{{ form.sueldo_pendiente.value|default:'0' }}">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    $
+                                </div>
+                            </div>
+                            <div class="mt-1 text-sm text-gray-500">
+                                Días trabajados no pagados
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Calculadora automática -->
+                    <div class="pixel-divider"></div>
+                    
+                    <div class="mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="pixel-label">
+                                Calculadora Automática
+                            </h3>
+                            <button type="button" id="calcularBtn" 
+                                    class="btn-pixel btn-pixel-secondary px-4 py-2 text-sm">
+                                Calcular
+                            </button>
+                        </div>
+                        
+                        <div class="pixel-border-thin bg-gray-50 p-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <div class="text-xs font-medium text-gray-500 mb-1">INDEMNIZACIÓN</div>
+                                    <div id="calcIndemnizacion" class="text-lg font-bold text-red-600">$0</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-500 mb-1">VACACIONES</div>
+                                    <div id="calcVacaciones" class="text-lg font-bold text-blue-600">$0</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-500 mb-1">SUELDO PEND.</div>
+                                    <div id="calcSueldo" class="text-lg font-bold text-green-600">$0</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-500 mb-1">TOTAL FINIQUITO</div>
+                                    <div id="calcTotal" class="text-2xl font-bold text-gray-800">$0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="pixel-card">
+                <div class="pixel-card-header">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Información Adicional</span>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="pixel-grid gap-6">
+                        <div>
+                            <label class="pixel-label" for="id_dias_trabajados">
+                                Días Trabajados
+                            </label>
+                            <input type="number" name="dias_trabajados" id="id_dias_trabajados" 
+                                   step="1" min="0" class="input-pixel w-full px-4 py-2.5"
+                                   value="{{ form.dias_trabajados.value|default:'0' }}">
+                        </div>
+                        
+                        <div>
+                            <label class="pixel-label" for="id_fecha_ingreso">
+                                Fecha de Ingreso
+                            </label>
+                            <input type="date" name="fecha_ingreso" id="id_fecha_ingreso" 
+                                   class="input-pixel w-full px-4 py-2.5"
+                                   value="{{ form.fecha_ingreso.value|default:'' }}">
+                        </div>
+                        
+                        <div>
+                            <label class="pixel-label" for="id_ultimo_sueldo">
+                                Último Sueldo
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="ultimo_sueldo" id="id_ultimo_sueldo" 
+                                       step="1" min="0" class="input-pixel w-full px-4 py-2.5 pl-10"
+                                       value="{{ form.ultimo_sueldo.value|default:'0' }}">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    $
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="pixel-label" for="id_observaciones">
+                                Observaciones
+                            </label>
+                            <textarea name="observaciones" id="id_observaciones" 
+                                      rows="3" class="input-pixel w-full px-4 py-2.5"
+                                      placeholder="Detalles adicionales...">{{ form.observaciones.value|default:'' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consideraciones legales -->
+            <div class="pixel-card" style="background: #fffbeb; border-color: #f59e0b;">
+                <div class="p-6">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center">
+                            <i class="fas fa-scale-balanced text-yellow-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Consideraciones Legales</h3>
+                            <p class="text-sm text-gray-600">Importante información sobre finiquitos</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-start space-x-3">
+                            <span class="pixel-tag pixel-tag-warning">
+                                <i class="fas fa-clock"></i>
+                                Plazo
+                            </span>
+                            <p class="text-sm text-gray-600 flex-1">
+                                El plazo máximo de pago es de <strong>10 días hábiles</strong> desde la fecha de término.
+                            </p>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3">
+                            <span class="pixel-tag pixel-tag-success">
+                                <i class="fas fa-signature"></i>
+                                Firma
+                            </span>
+                            <p class="text-sm text-gray-600 flex-1">
+                                Ambas partes deben <strong>firmar el documento</strong> para que sea válido.
+                            </p>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3">
+                            <span class="pixel-tag pixel-tag-info">
+                                <i class="fas fa-archive"></i>
+                                Archivo
+                            </span>
+                            <p class="text-sm text-gray-600 flex-1">
+                                Conservar copia del finiquito por un período mínimo de <strong>5 años</strong>.
+                            </p>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3">
+                            <span class="pixel-tag pixel-tag-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Notificación
+                            </span>
+                            <p class="text-sm text-gray-600 flex-1">
+                                En caso de despido, se debe notificar a la <strong>Dirección del Trabajo</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-gray-200">
+                <div class="text-sm text-gray-500 flex items-center space-x-2">
+                    <div class="w-4 h-4 rounded-full bg-green-500 animate-pulse"></div>
+                    <span>Sistema activo · {{ "hoy" }}</span>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button type="button" 
+                            class="btn-pixel btn-pixel-secondary px-6 py-3 rounded-lg font-medium"
+                            onclick="window.location.href='/trabajadores/{{ alias }}/finiquitos/'">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </button>
+                    
+                    <button type="submit" 
+                            class="btn-pixel btn-pixel-success px-6 py-3 rounded-lg font-medium">
+                        <i class="fas fa-file-contract mr-2"></i>
+                        Generar Finiquito
+                    </button>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Sistema de Finiquitos
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fas fa-shield-alt mr-1"></i> Cumplimiento legal</span>
+                <span><i class="fas fa-lock mr-1"></i> Seguro</span>
+                <span class="pixel-badge">
+                    {{ alias|upper }}
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Animación de entrada
+        document.addEventListener('DOMContentLoaded', function() {
+            // Efecto de aparición para las tarjetas
+            const cards = document.querySelectorAll('.pixel-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+            
+            // Inicializar calculadora
+            initCalculadora();
+        });
+        
+        // Calculadora automática
+        function initCalculadora() {
+            const calcularBtn = document.getElementById('calcularBtn');
+            const inputs = ['indemnizacion', 'vacaciones_pendientes', 'sueldo_pendiente', 'otros', 'ultimo_sueldo'];
+            
+            // Escuchar cambios en inputs relevantes
+            inputs.forEach(inputId => {
+                const input = document.getElementById('id_' + inputId);
+                if (input) {
+                    input.addEventListener('input', calcularTotales);
+                }
+            });
+            
+            calcularBtn.addEventListener('click', calcularTotales);
+            
+            // Calcular inicialmente
+            calcularTotales();
+        }
+        
+        function calcularTotales() {
+            // Obtener valores
+            const indemnizacion = parseFloat(document.getElementById('id_indemnizacion').value) || 0;
+            const vacaciones = parseFloat(document.getElementById('id_vacaciones_pendientes').value) || 0;
+            const sueldo = parseFloat(document.getElementById('id_sueldo_pendiente').value) || 0;
+            const otros = parseFloat(document.getElementById('id_otros').value) || 0;
+            const ultimoSueldo = parseFloat(document.getElementById('id_ultimo_sueldo').value) || 0;
+            
+            // Cálculos automáticos
+            const diasTrabajados = parseFloat(document.getElementById('id_dias_trabajados').value) || 0;
+            const fechaIngreso = document.getElementById('id_fecha_ingreso').value;
+            
+            // Calcular total
+            const totalFiniquito = indemnizacion + vacaciones + sueldo + otros;
+            
+            // Actualizar display
+            document.getElementById('calcIndemnizacion').textContent = formatCurrency(indemnizacion);
+            document.getElementById('calcVacaciones').textContent = formatCurrency(vacaciones);
+            document.getElementById('calcSueldo').textContent = formatCurrency(sueldo);
+            document.getElementById('calcTotal').textContent = formatCurrency(totalFiniquito);
+            
+            // Sugerencias automáticas
+            if (fechaIngreso && !indemnizacion) {
+                const añosServicio = calcularAñosServicio(fechaIngreso);
+                if (añosServicio > 0 && ultimoSueldo > 0) {
+                    const sugerido = Math.round(añosServicio * ultimoSueldo);
+                    if (sugerido > 0) {
+                        // Podrías mostrar sugerencia como tooltip
+                    }
+                }
+            }
+            
+            if (diasTrabajados > 0 && ultimoSueldo > 0 && !sueldo) {
+                const sugeridoSueldo = Math.round((ultimoSueldo / 30) * diasTrabajados);
+                // Podrías mostrar sugerencia
+            }
+        }
+        
+        function calcularAñosServicio(fechaInicio) {
+            if (!fechaInicio) return 0;
+            
+            const inicio = new Date(fechaInicio);
+            const hoy = new Date();
+            
+            let años = hoy.getFullYear() - inicio.getFullYear();
+            const mes = hoy.getMonth() - inicio.getMonth();
+            
+            if (mes < 0 || (mes === 0 && hoy.getDate() < inicio.getDate())) {
+                años--;
+            }
+            
+            return Math.max(0, años);
+        }
+        
+        function formatCurrency(amount) {
+            return '$' + amount.toLocaleString('es-CL', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+        
+        // Validación antes de enviar
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            const trabajador = document.getElementById('id_trabajador').value;
+            const fechaFiniquito = document.getElementById('id_fecha_finiquito').value;
+            
+            if (!trabajador || !fechaFiniquito) {
+                event.preventDefault();
+                alert('Debe completar trabajador y fecha de finiquito');
+                return false;
+            }
+            
+            // Confirmación final
+            const confirmar = confirm('¿Está seguro de generar el finiquito?\n\nEsta acción registrará el término de contrato.');
+            if (!confirmar) {
+                event.preventDefault();
+                return false;
+            }
+            
+            // Mostrar indicador de carga
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generando...';
+            submitBtn.disabled = true;
+            
+            // Restaurar después de 3 segundos si hay error
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 3000);
+        });
+    </script>
+
 </body>
 </html>

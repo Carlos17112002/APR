@@ -5,27 +5,68 @@
   <title>Exportar libro SII · {{ alias }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-gray-50 text-gray-800 font-sans">
 
-  <header class="bg-blue-700 text-white py-4 shadow">
-    <div class="max-w-4xl mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">📁 Exportar libro SII · {{ alias }}</h1>
-      <a href="/contabilidad/{{ alias }}/libros/" class="text-sm hover:underline">⬅️ Volver a libros</a>
+  <header class="bg-blue-800 text-white py-5 shadow-md">
+    <div class="max-w-4xl mx-auto px-6 flex justify-between items-center">
+      <h1 class="text-xl font-bold">📘 Exportar libro SII · <span class="text-white/80">{{ alias }}</span></h1>
+      <a href="/contabilidad/{{ alias }}/panel_fiscal/" class="text-sm hover:underline">⬅️ Volver al panel</a>
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto px-4 py-10 space-y-6">
-    <section class="bg-white p-6 rounded shadow space-y-4">
-      <form method="post">
-        {% csrf_token %}
-        <label class="block text-sm font-medium mb-1">Mes a exportar (formato YYYY-MM):</label>
-        <input type="text" name="mes" class="w-full border px-3 py-2 rounded" placeholder="2025-09">
-        <button type="submit" class="mt-4 bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-800 transition">
-          📤 Exportar libro
-        </button>
-      </form>
-    </section>
-  </main>
+  <main class="max-w-4xl mx-auto px-6 py-10">
+    <form method="post" class="space-y-6 mb-6">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input type="month" name="mes" required class="border px-3 py-2 rounded" placeholder="Mes">
+        <select name="tipo" required class="border px-3 py-2 rounded">
+          <option value="">Tipo de libro</option>
+          <option value="compras">Compras</option>
+          <option value="ventas">Ventas</option>
+          <option value="honorarios">Honorarios</option>
+        </select>
+        <button type="submit" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">📤 Generar resumen</button>
+      </div>
+    </form>
 
+    {% if mensaje %}
+      <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded mb-4 shadow">
+        {{ mensaje }}
+      </div>
+    {% endif %}
+
+    {% if resumen %}
+      <div class="overflow-x-auto">
+        <table class="table-auto w-full text-sm border">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-3 py-2 text-left">📅 Fecha</th>
+              <th class="px-3 py-2 text-left">🏢 Proveedor</th>
+              <th class="px-3 py-2 text-left">🧾 Documento</th>
+              <th class="px-3 py-2 text-right">💰 Neto</th>
+              <th class="px-3 py-2 text-right">🧮 IVA</th>
+              <th class="px-3 py-2 text-right">💵 Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in resumen %}
+              <tr class="border-t">
+                <td class="px-3 py-2">{{ fila.fecha }}</td>
+                <td class="px-3 py-2">{{ fila.proveedor }}</td>
+                <td class="px-3 py-2">{{ fila.documento }}</td>
+                <td class="px-3 py-2 text-right">${{ fila.neto|floatformat:0 }}</td>
+                <td class="px-3 py-2 text-right">${{ fila.iva|floatformat:0 }}</td>
+                <td class="px-3 py-2 text-right font-semibold">${{ fila.total|floatformat:0 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if archivo %}
+        <a href="{{ archivo.url }}" class="mt-6 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">⬇️ Descargar libro completo</a>
+      {% endif %}
+    {% endif %}
+  </main>
 </body>
 </html>

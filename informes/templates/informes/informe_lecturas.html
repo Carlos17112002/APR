@@ -2,80 +2,482 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Informe de Lecturas · {{ empresa.nombre }}</title>
+  <title>Informe de Lecturas Móviles · {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        font-size: 12px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 4px;
+      }
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
 
-  <main class="max-w-6xl mx-auto py-10 px-6 space-y-10">
+  <main class="max-w-7xl mx-auto py-8 px-4 space-y-8">
 
     <!-- Encabezado -->
-    <header class="flex justify-between items-center">
-      <h1 class="text-3xl font-bold text-green-700">Informe de Lecturas · {{ empresa.nombre }}</h1>
-      <a href="{% url 'panel_empresa' slug=slug %}" class="text-sm text-blue-600 hover:underline">← Volver al panel</a>
+    <header class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-tachometer-alt text-blue-500 mr-2"></i>
+            Informe de Lecturas Móviles
+          </h1>
+          <div class="flex flex-wrap items-center mt-2 gap-3">
+            <span class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+              <i class="fas fa-building mr-1"></i>{{ empresa.nombre }}
+            </span>
+            <span class="text-sm text-gray-600">
+              <i class="far fa-calendar-alt mr-1"></i>{{ fecha_generacion|date:"d/m/Y H:i" }}
+            </span>
+            <span class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full">
+              <i class="fas fa-calendar-day mr-1"></i>Período: {{ filtros.fecha_inicio|date:"d/m/Y" }} al {{ filtros.fecha_fin|date:"d/m/Y" }}
+            </span>
+          </div>
+        </div>
+        <div class="flex space-x-3 no-print">
+          <a href="{% url 'panel_empresa' slug=slug %}" 
+             class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium flex items-center transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+          </a>
+          <button onclick="window.print()" 
+                  class="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium flex items-center transition-colors">
+            <i class="fas fa-print mr-2"></i> Imprimir
+          </button>
+        </div>
+      </div>
     </header>
 
+    <!-- Resumen Estadístico -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-blue-500">
+        <p class="text-sm text-gray-500">Total Lecturas</p>
+        <p class="text-2xl font-bold text-gray-800">{{ estadisticas.total_lecturas }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-green-500">
+        <p class="text-sm text-gray-500">Procesadas</p>
+        <p class="text-2xl font-bold text-gray-800">{{ estadisticas.lecturas_procesadas }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-purple-500">
+        <p class="text-sm text-gray-500">Consumo Total</p>
+        <p class="text-2xl font-bold text-gray-800">{{ estadisticas.consumo_total|floatformat:2 }} m³</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-amber-500">
+        <p class="text-sm text-gray-500">% Procesadas</p>
+        <p class="text-2xl font-bold text-gray-800">{{ estadisticas.porcentaje_procesadas|floatformat:1 }}%</p>
+      </div>
+    </div>
+
     <!-- Filtros -->
-    <section class="bg-white rounded-lg shadow p-6">
-      <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+    <section class="bg-white rounded-xl shadow-sm p-6 no-print">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-filter mr-2 text-blue-500"></i> Filtros
+      </h2>
+      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Sector</label>
-          <select name="sector" class="w-full border-gray-300 rounded-md shadow-sm">
-            <option value="">Todos</option>
-            {% for s in sectores %}
-              <option value="{{ s }}" {% if request.GET.sector == s %}selected{% endif %}>{{ s }}</option>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-calendar-day mr-1"></i> Fecha Específica
+          </label>
+          <input type="date" name="fecha" value="{{ filtros.fecha }}" 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-calendar-alt mr-1"></i> Mes
+          </label>
+          <select name="mes" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Seleccionar mes</option>
+            {% for mes in meses_disponibles %}
+              <option value="{{ mes }}" {% if filtros.mes == mes %}selected{% endif %}>
+                {{ mes|slice:"5:7" }}/{{ mes|slice:":4" }}
+              </option>
             {% endfor %}
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-          <input type="date" name="fecha" value="{{ request.GET.fecha }}" class="w-full border-gray-300 rounded-md shadow-sm">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-check-circle mr-1"></i> Estado
+          </label>
+          <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Todos los estados</option>
+            {% for codigo, nombre in estados_disponibles %}
+              <option value="{{ codigo }}" {% if filtros.estado == codigo %}selected{% endif %}>{{ nombre }}</option>
+            {% endfor %}
+          </select>
         </div>
-        <div>
-          <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 shadow text-sm font-medium">
-            Filtrar
+        <div class="flex space-x-3">
+          <button type="submit" 
+                  class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium flex items-center justify-center transition-colors">
+            <i class="fas fa-search mr-2"></i> Aplicar
           </button>
+          <a href="{% url 'informe_lecturas' alias=slug %}" 
+             class="px-4 py-2.5 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 flex items-center transition-colors">
+            <i class="fas fa-redo mr-2"></i> Limpiar
+          </a>
         </div>
       </form>
     </section>
 
-    <!-- Tabla -->
-    <section>
+    <!-- Distribución -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Por Estado -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-chart-pie mr-2 text-blue-500"></i> Distribución por Estado
+        </h3>
+        <div class="space-y-3">
+          {% for item in lecturas_por_estado %}
+          <div class="flex justify-between items-center">
+            <div class="flex items-center">
+              {% if item.estado == 'procesada' %}
+                <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+              {% elif item.estado == 'cargada' %}
+                <span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
+              {% else %}
+                <span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+              {% endif %}
+              <span class="text-sm text-gray-700">{{ item.estado|title }}</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm font-medium">{{ item.cantidad }}</span>
+              {% if item.consumo_total %}
+              <span class="text-xs text-gray-500">({{ item.consumo_total|floatformat:2 }} m³)</span>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-sm text-gray-500 text-center py-4">No hay datos</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Últimos 7 días -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-chart-line mr-2 text-green-500"></i> Actividad Últimos 7 Días
+        </h3>
+        <div class="space-y-3">
+          {% for dia in lecturas_por_dia %}
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-700">{{ dia.fecha|date:"d/m" }}</span>
+            <div class="flex items-center space-x-4">
+              <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                {{ dia.total }} lecturas
+              </span>
+              {% if dia.consumo > 0 %}
+              <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                {{ dia.consumo|floatformat:2 }} m³
+              </span>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-sm text-gray-500 text-center py-4">No hay datos</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Lecturas -->
+    <section class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b bg-gray-50">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+            <i class="fas fa-list mr-2 text-blue-500"></i> Detalle de Lecturas
+          </h2>
+          <div class="text-sm text-gray-500">
+            <span class="bg-gray-200 px-3 py-1 rounded-full">
+              {{ lecturas|length }} lectura{{ lecturas|length|pluralize }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
       {% if lecturas %}
-        <div class="overflow-x-auto bg-white rounded-lg shadow">
-          <table class="min-w-full text-sm">
-            <thead class="bg-green-700 text-white">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-100">
               <tr>
-                <th class="px-4 py-3 text-left">Cliente</th>
-                <th class="px-4 py-3 text-left">Medidor</th>
-                <th class="px-4 py-3 text-left">Sector</th>
-                <th class="px-4 py-3 text-left">Fecha</th>
-                <th class="px-4 py-3 text-left">Lectura</th>
-                <th class="px-4 py-3 text-left">Observación</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-user mr-1"></i> Cliente
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-calendar-alt mr-1"></i> Fecha
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-tachometer-alt mr-1"></i> Lecturas
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-water mr-1"></i> Consumo
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-check-circle mr-1"></i> Estado
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-info-circle mr-1"></i> Detalles
+                </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-200">
               {% for lectura in lecturas %}
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-3">{{ lectura.cliente.nombre }}</td>
-                <td class="px-4 py-3">{{ lectura.cliente.medidor }}</td>
-                <td class="px-4 py-3">{{ lectura.cliente.sector }}</td>
-                <td class="px-4 py-3">{{ lectura.fecha|date:"d/m/Y" }}</td>
-                <td class="px-4 py-3">{{ lectura.valor }} m³</td>
-                <td class="px-4 py-3">{{ lectura.observacion|default:"—" }}</td>
+              <tr class="hover:bg-gray-50 transition-colors">
+                <!-- Columna Cliente -->
+                <td class="px-6 py-4">
+                  <div class="flex items-center">
+                    <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-user text-blue-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">
+                        ID: {{ lectura.cliente }}
+                      </p>
+                      <p class="text-xs text-gray-500">
+                        {% if lectura.usuario_app %}
+                          <i class="fas fa-mobile-alt mr-1"></i>{{ lectura.usuario_app }}
+                        {% endif %}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                
+                <!-- Columna Fecha -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">
+                    {{ lectura.fecha_lectura|date:"d/m/Y" }}
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    {{ lectura.fecha_sincronizacion|date:"H:i" }}
+                  </div>
+                </td>
+                
+                <!-- Columna Lecturas -->
+                <td class="px-6 py-4">
+                  <div class="space-y-1">
+                    <div class="text-sm">
+                      <span class="text-gray-500">Actual:</span>
+                      <span class="font-medium ml-1">{{ lectura.lectura_actual|floatformat:2 }}</span>
+                    </div>
+                    {% if lectura.lectura_anterior %}
+                    <div class="text-sm">
+                      <span class="text-gray-500">Anterior:</span>
+                      <span class="font-medium ml-1">{{ lectura.lectura_anterior|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                  </div>
+                </td>
+                
+                <!-- Columna Consumo -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  {% if lectura.consumo %}
+                    <div class="text-lg font-bold text-blue-700">
+                      {{ lectura.consumo|floatformat:2 }} m³
+                    </div>
+                    {% if lectura.calcular_consumo %}
+                    <div class="text-xs text-gray-500">
+                      <i class="fas fa-calculator mr-1"></i>Calculado
+                    </div>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-sm text-gray-400">Sin consumo</span>
+                  {% endif %}
+                </td>
+                
+                <!-- Columna Estado -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  {% if lectura.estado == 'procesada' %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <i class="fas fa-check-circle mr-1"></i>
+                      Procesada
+                    </span>
+                  {% elif lectura.estado == 'cargada' %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      <i class="fas fa-mobile-alt mr-1"></i>
+                      Cargada
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      <i class="fas fa-clock mr-1"></i>
+                      Pendiente
+                    </span>
+                  {% endif %}
+                  
+                  {% if lectura.usada_para_boleta %}
+                  <div class="mt-1 text-xs text-green-600">
+                    <i class="fas fa-file-invoice-dollar mr-1"></i>Usada en boleta
+                  </div>
+                  {% endif %}
+                </td>
+                
+                <!-- Columna Detalles -->
+                <td class="px-6 py-4">
+                  <div class="space-y-1">
+                    {% if lectura.foto_medidor %}
+                    <a href="{{ lectura.foto_medidor }}" 
+                       target="_blank"
+                       class="inline-flex items-center text-xs text-blue-600 hover:text-blue-800">
+                      <i class="fas fa-camera mr-1"></i>Ver foto
+                    </a>
+                    {% endif %}
+                    
+                    {% if lectura.latitud and lectura.longitud %}
+                    <div class="text-xs text-gray-500">
+                      <i class="fas fa-map-marker-alt mr-1"></i>
+                      {{ lectura.latitud|floatformat:4 }}, {{ lectura.longitud|floatformat:4 }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if lectura.observaciones_app %}
+                    <div class="text-xs text-gray-600 mt-1" title="{{ lectura.observaciones_app }}">
+                      <i class="fas fa-comment mr-1"></i>
+                      {{ lectura.observaciones_app|truncatechars:30 }}
+                    </div>
+                    {% endif %}
+                  </div>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
+            <tfoot class="bg-gray-50 font-semibold">
+              <tr>
+                <td colspan="3" class="px-6 py-4 text-right">
+                  Totales:
+                </td>
+                <td class="px-6 py-4 text-blue-700">
+                  {{ estadisticas.consumo_total|floatformat:2 }} m³
+                </td>
+                <td class="px-6 py-4">
+                  <div class="space-y-1">
+                    <div class="text-green-600">{{ estadisticas.lecturas_procesadas }} procesada{{ estadisticas.lecturas_procesadas|pluralize:"s" }}</div>
+                    <div class="text-yellow-600">{{ estadisticas.lecturas_cargadas }} cargada{{ estadisticas.lecturas_cargadas|pluralize:"s" }}</div>
+                    <div class="text-red-600">{{ estadisticas.lecturas_pendientes }} pendiente{{ estadisticas.lecturas_pendientes|pluralize:"s" }}</div>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  {{ estadisticas.lecturas_usadas_boleta }} usada{{ estadisticas.lecturas_usadas_boleta|pluralize:"s" }} en boletas
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       {% else %}
-        <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-          No hay lecturas registradas con esos filtros.
+        <div class="text-center py-12">
+          <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <i class="fas fa-tachometer-alt text-gray-400 text-2xl"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-700 mb-2">
+            {% if filtros.fecha or filtros.mes or filtros.estado %}
+              No se encontraron lecturas con los filtros aplicados
+            {% else %}
+              No hay lecturas registradas en este período
+            {% endif %}
+          </h3>
+          <p class="text-gray-500 mb-6">
+            {% if filtros.fecha or filtros.mes or filtros.estado %}
+              Intenta con otros filtros o <a href="{% url 'informe_lecturas' alias=slug %}" class="text-blue-600 hover:underline">muestra todas las lecturas</a>.
+            {% else %}
+              No hay lecturas móviles registradas entre {{ filtros.fecha_inicio|date:"d/m/Y" }} y {{ filtros.fecha_fin|date:"d/m/Y" }}.
+            {% endif %}
+          </p>
         </div>
       {% endif %}
     </section>
 
+    <!-- Top Consumo -->
+    {% if top_consumo %}
+    <section class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-trophy mr-2 text-amber-500"></i> Top 10 Consumo
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Consumo Total</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lecturas</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Consumo Promedio</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for item in top_consumo %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
+                  {{ forloop.counter }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                Cliente {{ item.cliente }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-lg font-bold text-blue-700">
+                  {{ item.total_consumo|floatformat:2 }} m³
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ item.lecturas }} lectura{{ item.lecturas|pluralize:"s" }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ item.total_consumo|divisibleby:item.lecturas|floatformat:2 }} m³
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
   </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Auto-seleccionar el mes actual si no hay filtros
+      const mesSelect = document.querySelector('select[name="mes"]');
+      const fechaInput = document.querySelector('input[name="fecha"]');
+      const estadoSelect = document.querySelector('select[name="estado"]');
+      
+      if (mesSelect && !mesSelect.value && !fechaInput.value && !estadoSelect.value) {
+        const today = new Date();
+        const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+        
+        // Verificar si el mes actual está en las opciones
+        for (let option of mesSelect.options) {
+          if (option.value === currentMonth) {
+            mesSelect.value = currentMonth;
+            break;
+          }
+        }
+      }
+      
+      // Cambiar automáticamente entre fecha y mes
+      fechaInput.addEventListener('change', function() {
+        if (this.value) {
+          mesSelect.value = '';
+        }
+      });
+      
+      mesSelect.addEventListener('change', function() {
+        if (this.value) {
+          fechaInput.value = '';
+        }
+      });
+    });
+  </script>
 </body>
 </html>

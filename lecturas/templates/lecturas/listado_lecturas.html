@@ -1,92 +1,846 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Lecturas · {{ empresa.nombre }}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecturas App Móvil - {{ empresa.nombre }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .color-chip {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 5px;
+            border: 1px solid #ddd;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .phone-mockup {
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 16px;
+            background: #f9fafb;
+            margin-top: 10px;
+        }
+        .app-preview {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        .filter-card {
+            transition: all 0.3s ease;
+        }
+        .filter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
-
-  <!-- Contenedor principal -->
-  <div class="max-w-6xl mx-auto py-10 px-6 space-y-10">
-
-    <!-- Título -->
-    <header class="flex justify-between items-center">
-      <h1 class="text-3xl font-bold text-green-700">Lecturas · {{ empresa.nombre }}</h1>
-      <a href="{% url 'mapa_lecturas' alias=slug %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium shadow">
-        Ver Mapa de Clientes
-      </a>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-emerald-600 to-green-700 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-mobile-alt text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight">Lecturas App Móvil</h1>
+                        <p class="text-sm opacity-90 mt-0.5">{{ empresa.nombre }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'panel_empresa' slug=slug %}" 
+                       class="text-white hover:bg-white/20 px-3 py-2 rounded-lg transition-all duration-200 flex items-center text-sm font-medium">
+                        <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+                    </a>
+                    <a href="{% url 'mapa_lecturas' alias=slug %}" 
+                       class="text-white hover:bg-white/20 px-3 py-2 rounded-lg transition-all duration-200 flex items-center text-sm font-medium">
+                        <i class="fas fa-map mr-2"></i> Ver Mapa
+                    </a>
+                    <button onclick="exportarLecturas()" 
+                            class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg transition-all duration-200 flex items-center text-sm font-medium">
+                        <i class="fas fa-download mr-2"></i> Exportar
+                    </button>
+                </div>
+            </div>
+        </div>
     </header>
 
-    <!-- Filtros -->
-    <section class="bg-white rounded-lg shadow p-6">
-      <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Sector</label>
-          <select name="sector" class="w-full border-gray-300 rounded-md shadow-sm">
-            <option value="">Todos</option>
-            {% for sector in sectores %}
-              <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
-            {% endfor %}
-          </select>
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Panel de información y dispositivos -->
+        <div class="mb-10">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Dispositivos Móviles Conectados</h2>
+                    <p class="text-gray-600 mt-1">Gestiona los dispositivos autorizados para tomar lecturas en terreno</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="autorizarNuevoDispositivo()" 
+                            class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center shadow-sm hover:shadow-md">
+                        <i class="fas fa-mobile-alt mr-2"></i> Autorizar Nuevo
+                    </button>
+                    <a href="#" 
+                       class="px-4 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-all duration-200 flex items-center">
+                        <i class="fas fa-cog mr-2"></i> Gestionar
+                    </a>
+                </div>
+            </div>
+            
+            {% if empresa.dispositivos.all %}
+            <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <i class="fas fa-mobile-alt mr-1"></i> Dispositivo
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <i class="fas fa-building mr-1"></i> Empresa
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <i class="fas fa-clock mr-1"></i> Última Conexión
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <i class="fas fa-list-ol mr-1"></i> Lecturas
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <i class="fas fa-circle mr-1"></i> Estado
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <i class="fas fa-cogs mr-1"></i> Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for dispositivo in empresa.dispositivos.all %}
+                            <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mr-3">
+                                            <i class="fas fa-mobile-alt text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-gray-900">{{ dispositivo.nombre_dispositivo|default:"Sin nombre" }}</div>
+                                            <div class="text-xs text-gray-500 font-mono">{{ dispositivo.identificador|truncatechars:20 }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 text-xs bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-full font-medium">
+                                        {{ dispositivo.empresa.nombre|truncatechars:15 }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex flex-col">
+                                        <span class="text-sm text-gray-900 font-medium">
+                                            {{ dispositivo.ultima_conexion|date:"d/m/Y" }}
+                                        </span>
+                                        <span class="text-xs text-gray-500">
+                                            {{ dispositivo.ultima_conexion|date:"H:i" }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800">
+                                        <i class="fas fa-list-ol mr-1"></i>
+                                        {{ dispositivo.lecturas.count }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                        {% if dispositivo.activo %}bg-gradient-to-r from-green-100 to-emerald-100 text-green-800
+                                        {% else %}bg-gradient-to-r from-red-100 to-pink-100 text-red-800{% endif %}">
+                                        <i class="fas fa-circle mr-1 text-xs {% if dispositivo.activo %}text-green-500{% else %}text-red-500{% endif %}"></i>
+                                        {% if dispositivo.activo %}Activo{% else %}Inactivo{% endif %}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex space-x-2">
+                                        <button onclick="verDispositivo('{{ dispositivo.id }}')" 
+                                                class="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors"
+                                                title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button onclick="desactivarDispositivo('{{ dispositivo.id }}')" 
+                                                class="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors"
+                                                title="Desactivar dispositivo">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 mb-4">
+                    <i class="fas fa-mobile-alt text-blue-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-blue-900 mb-2">No hay dispositivos registrados</h3>
+                <p class="text-blue-700 mb-4">Autoriza dispositivos móviles para que puedan sincronizar lecturas desde la app</p>
+                <button onclick="autorizarNuevoDispositivo()" 
+                        class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center mx-auto">
+                    <i class="fas fa-plus mr-2"></i> Autorizar Primer Dispositivo
+                </button>
+            </div>
+            {% endif %}
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-          <input type="date" name="fecha" value="{{ request.GET.fecha }}" class="w-full border-gray-300 rounded-md shadow-sm">
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow filter-card p-6 border border-gray-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Lecturas Hoy</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ lecturas_hoy }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Sincronizadas el día de hoy</p>
+                    </div>
+                    <div class="h-14 w-14 rounded-xl bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
+                        <i class="fas fa-calendar-day text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow filter-card p-6 border border-gray-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Este Mes</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ lecturas_mes }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Total del mes actual</p>
+                    </div>
+                    <div class="h-14 w-14 rounded-xl bg-gradient-to-r from-emerald-100 to-green-100 flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-emerald-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow filter-card p-6 border border-gray-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Usuarios Activos</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ usuarios|length }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Con lecturas este mes</p>
+                    </div>
+                    <div class="h-14 w-14 rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
+                        <i class="fas fa-users text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow filter-card p-6 border border-gray-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Por Sincronizar</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">0</p>
+                        <p class="text-xs text-gray-500 mt-1">Lecturas pendientes</p>
+                    </div>
+                    <div class="h-14 w-14 rounded-xl bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center">
+                        <i class="fas fa-sync text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div>
-          <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 shadow text-sm font-medium">
-            Filtrar
-          </button>
+        <!-- Filtros -->
+        <div class="bg-white rounded-xl shadow p-6 mb-6 border border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-filter mr-2 text-emerald-600"></i> Filtrar Lecturas
+            </h3>
+            <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-calendar mr-1 text-gray-500"></i> Mes
+                    </label>
+                    <select name="mes" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        <option value="all">Todos los meses</option>
+                        {% for m_num, m_nombre in meses %}
+                            <option value="{{ m_num }}" {% if filtros.mes == m_num|stringformat:"i" %}selected{% endif %}>
+                                {{ m_nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-calendar-alt mr-1 text-gray-500"></i> Año
+                    </label>
+                    <select name="anio" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        <option value="all">Todos los años</option>
+                        {% for a in anios %}
+                            <option value="{{ a }}" {% if filtros.anio == a|stringformat:"i" %}selected{% endif %}>
+                                {{ a }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-check-circle mr-1 text-gray-500"></i> Estado
+                    </label>
+                    <select name="estado" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        <option value="">Todos los estados</option>
+                        {% for estado in estados_filtro %}
+                            <option value="{{ estado }}" {% if filtros.estado == estado %}selected{% endif %}>
+                                {{ estado|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-user mr-1 text-gray-500"></i> Usuario
+                    </label>
+                    <select name="usuario" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        <option value="">Todos los usuarios</option>
+                        {% for usuario in usuarios %}
+                            <option value="{{ usuario }}" {% if filtros.usuario == usuario %}selected{% endif %}>
+                                {{ usuario }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="flex items-end space-x-3">
+                    <button type="submit" 
+                            class="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md">
+                        <i class="fas fa-filter mr-2"></i> Aplicar Filtros
+                    </button>
+                    <a href="{% url 'listado_lecturas_app' alias=slug %}" 
+                       class="px-4 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-all duration-200 flex items-center">
+                        <i class="fas fa-redo mr-2"></i>
+                    </a>
+                </div>
+            </form>
         </div>
-      </form>
-    </section>
 
-    <!-- Tabla de lecturas -->
-    <section>
-      {% if lecturas %}
-        <div class="overflow-x-auto bg-white rounded-lg shadow">
-          <table class="min-w-full text-sm">
-            <thead class="bg-green-700 text-white">
-              <tr>
-                <th class="px-4 py-3 text-left">Cliente</th>
-                <th class="px-4 py-3 text-left">Medidor</th>
-                <th class="px-4 py-3 text-left">Sector</th>
-                <th class="px-4 py-3 text-left">Fecha</th>
-                <th class="px-4 py-3 text-left">Valor</th>
-                <th class="px-4 py-3 text-left">Observación</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              {% for lectura in lecturas %}
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-3">{{ lectura.cliente.nombre }}</td>
-                <td class="px-4 py-3">{{ lectura.cliente.medidor }}</td>
-                <td class="px-4 py-3">{{ lectura.cliente.sector }}</td>
-                <td class="px-4 py-3">{{ lectura.fecha }}</td>
-                <td class="px-4 py-3">{{ lectura.valor }} m³</td>
-                <td class="px-4 py-3">{{ lectura.observacion|default:"—" }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <!-- Tabla de lecturas -->
+        <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                            <i class="fas fa-list-ol mr-2 text-emerald-600"></i> Historial de Lecturas
+                        </h2>
+                        <p class="text-gray-600 text-sm mt-1">
+                            {% if lecturas_con_info %}
+                                Mostrando {{ lecturas_con_info|length }} lecturas sincronizadas
+                            {% else %}
+                                No hay lecturas con los filtros aplicados
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="exportarExcel()" 
+                                class="px-4 py-2 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-medium transition-all duration-200 flex items-center text-sm">
+                            <i class="fas fa-file-excel mr-2"></i> Excel
+                        </button>
+                        <button onclick="imprimirTabla()" 
+                                class="px-4 py-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg font-medium transition-all duration-200 flex items-center text-sm">
+                            <i class="fas fa-print mr-2"></i> Imprimir
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            {% if lecturas_con_info %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-user mr-1"></i> Cliente
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-tachometer-alt mr-1"></i> Lectura
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-calendar mr-1"></i> Fecha Lectura
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-sync mr-1"></i> Sincronización
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-user-tie mr-1"></i> Usuario
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-circle mr-1"></i> Estado
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-cogs mr-1"></i> Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in lecturas_con_info %}
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 group">
+                            <!-- Columna Cliente -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-start">
+                                    <div class="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mr-3 flex-shrink-0">
+                                        <i class="fas fa-user text-blue-600"></i>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <!-- Nombre del Cliente -->
+                                        <div class="text-sm font-medium text-gray-900 truncate" title="{{ item.cliente_info.nombre }}">
+                                            {% if item.cliente_info.nombre and item.cliente_info.nombre != "Información no disponible" %}
+                                                {{ item.cliente_info.nombre }}
+                                            {% else %}
+                                                <span class="text-gray-400">Cliente ID: {{ item.lectura.cliente }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Información adicional del cliente -->
+                                        <div class="mt-1 space-y-0.5">
+                                            <!-- RUT -->
+                                            {% if item.cliente_info.rut and item.cliente_info.rut != "No especificado" and item.cliente_info.rut != "Información no disponible" %}
+                                            <div class="text-xs text-gray-500 flex items-center">
+                                                <i class="fas fa-id-card mr-1 text-gray-400"></i>
+                                                <span class="truncate" title="{{ item.cliente_info.rut }}">{{ item.cliente_info.rut }}</span>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Medidor -->
+                                            {% if item.cliente_info.medidor and item.cliente_info.medidor != "No especificado" and item.cliente_info.medidor != "Información no disponible" %}
+                                            <div class="text-xs text-gray-500 flex items-center">
+                                                <i class="fas fa-tachometer-alt mr-1 text-gray-400"></i>
+                                                <span class="truncate" title="{{ item.cliente_info.medidor }}">{{ item.cliente_info.medidor }}</span>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- ID de referencia -->
+                                            <div class="text-xs text-gray-400 flex items-center">
+                                                <i class="fas fa-hashtag mr-1 text-gray-300"></i>
+                                                <span>Ref: {{ item.lectura.cliente }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Columna Lectura -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-col">
+                                    <div class="text-lg font-bold text-gray-900">
+                                        {{ item.lectura.lectura_actual }}
+                                        <span class="text-sm font-normal text-gray-500">m³</span>
+                                    </div>
+                                    {% if item.lectura.consumo %}
+                                    <div class="mt-1">
+                                        <span class="text-xs px-2 py-1 rounded-full {% if item.lectura.consumo >= 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                            <i class="fas fa-arrow-{% if item.lectura.consumo >= 0 %}up{% else %}down{% endif %} mr-1"></i>
+                                            {{ item.lectura.consumo }} m³
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <!-- Fecha Lectura -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium text-gray-900">
+                                        {{ item.lectura.fecha_lectura|date:"d/m/Y" }}
+                                    </span>
+                                    <span class="text-xs text-gray-500">
+                                       {{ item.lectura.fecha_lectura|date:"d/m/Y" }}
+                                    </span>
+                                </div>
+                            </td>
+                            
+                            <!-- Sincronización -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium text-gray-900">
+                                        {{ item.lectura.fecha_sincronizacion|date:"d/m/Y" }}
+                                    </span>
+                                    <span class="text-xs text-gray-500">
+                                        {{ item.lectura.fecha_sincronizacion|date:"H:i" }}
+                                    </span>
+                                </div>
+                            </td>
+                            
+                            <!-- Usuario -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="h-8 w-8 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center mr-2">
+                                        <i class="fas fa-user text-purple-600 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900 truncate max-w-[120px]" title="{{ item.lectura.usuario_app }}">
+                                            {{ item.lectura.usuario_app }}
+                                        </div>
+                                        {% if item.lectura.dispositivo %}
+                                        <div class="text-xs text-gray-500 truncate max-w-[120px]" title="{{ item.lectura.dispositivo }}">
+                                            {{ item.lectura.dispositivo|truncatechars:15 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Estado -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if item.lectura.estado == 'cargada' %}
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1.5"></i>
+                                        Cargada
+                                    </span>
+                                {% elif item.lectura.estado == 'pendiente' %}
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800">
+                                        <i class="fas fa-clock mr-1.5"></i>
+                                        Pendiente
+                                    </span>
+                                {% elif item.lectura.estado == 'procesada' %}
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800">
+                                        <i class="fas fa-cog mr-1.5"></i>
+                                        Procesada
+                                    </span>
+                                {% elif item.lectura.estado == 'error' %}
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-red-100 to-pink-100 text-red-800">
+                                        <i class="fas fa-exclamation-circle mr-1.5"></i>
+                                        Error
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800">
+                                        <i class="fas fa-question-circle mr-1.5"></i>
+                                        {{ item.lectura.estado|default:"Desconocido" }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Acciones -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <a href="{% url 'detalle_lectura' alias=slug lectura_id=item.lectura.id %}" 
+                                       class="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors"
+                                       title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    {% if item.lectura.latitud and item.lectura.longitud %}
+                                    <a href="https://maps.google.com/?q={{ item.lectura.latitud }},{{ item.lectura.longitud }}" 
+                                       target="_blank" class="text-emerald-600 hover:text-emerald-800 p-1.5 rounded hover:bg-emerald-50 transition-colors"
+                                       title="Ver ubicación en mapa">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </a>
+                                    {% endif %}
+                                    
+                                    <button onclick="editarLectura('{{ item.lectura.id }}')" 
+                                            class="text-purple-600 hover:text-purple-800 p-1.5 rounded hover:bg-purple-50 transition-colors"
+                                            title="Editar lectura">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación -->
+            {% if page_obj and page_obj.has_other_pages %}
+            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="text-sm text-gray-700">
+                        Mostrando <span class="font-semibold">{{ page_obj.start_index }}</span> - 
+                        <span class="font-semibold">{{ page_obj.end_index }}</span> de 
+                        <span class="font-semibold">{{ page_obj.paginator.count }}</span> lecturas
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}&mes={{ filtros.mes }}&anio={{ filtros.anio }}&estado={{ filtros.estado }}&usuario={{ filtros.usuario }}" 
+                               class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors flex items-center">
+                                <i class="fas fa-chevron-left mr-1.5"></i> Anterior
+                            </a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <span class="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-lg text-sm font-semibold">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?page={{ num }}&mes={{ filtros.mes }}&anio={{ filtros.anio }}&estado={{ filtros.estado }}&usuario={{ filtros.usuario }}" 
+                                   class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}&mes={{ filtros.mes }}&anio={{ filtros.anio }}&estado={{ filtros.estado }}&usuario={{ filtros.usuario }}" 
+                               class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors flex items-center">
+                                Siguiente <i class="fas fa-chevron-right ml-1.5"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <!-- Mensaje cuando no hay lecturas -->
+            <div class="px-6 py-16 text-center">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 mb-4">
+                    <i class="fas fa-inbox text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">
+                    {% if filtros.mes != 'all' or filtros.anio != 'all' or filtros.estado or filtros.usuario %}
+                        No se encontraron lecturas con los filtros aplicados
+                    {% else %}
+                        No hay lecturas registradas aún
+                    {% endif %}
+                </h3>
+                <p class="text-gray-500 max-w-md mx-auto mb-6">
+                    {% if filtros.mes != 'all' or filtros.anio != 'all' or filtros.estado or filtros.usuario %}
+                        Intenta con otros filtros o <a href="{% url 'listado_lecturas_app' alias=slug %}" class="text-emerald-600 hover:text-emerald-800 font-medium">muestra todas las lecturas</a>.
+                    {% else %}
+                        Las lecturas aparecerán aquí cuando se sincronicen desde la aplicación móvil.
+                        Asegúrate de que los dispositivos estén autorizados y conectados.
+                    {% endif %}
+                </p>
+                {% if filtros.mes != 'all' or filtros.anio != 'all' or filtros.estado or filtros.usuario %}
+                <a href="{% url 'listado_lecturas_app' alias=slug %}" 
+                   class="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg font-medium transition-all duration-200">
+                    <i class="fas fa-redo mr-2"></i> Limpiar Filtros
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
-      {% else %}
-        <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-          No hay lecturas registradas con esos filtros.
+        
+        <!-- Información adicional -->
+        <div class="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+            <div class="flex items-start">
+                <div class="h-12 w-12 rounded-xl bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mr-4 flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-600 text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-blue-900 mb-2">Información sobre las lecturas móviles</h3>
+                    <p class="text-sm text-blue-800 mb-3">
+                        Las lecturas son sincronizadas desde la aplicación móvil SSR. Cada registro incluye:
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="flex items-center text-sm text-blue-700">
+                            <i class="fas fa-check-circle text-blue-500 mr-2"></i>
+                            <span>Valor exacto del medidor</span>
+                        </div>
+                        <div class="flex items-center text-sm text-blue-700">
+                            <i class="fas fa-check-circle text-blue-500 mr-2"></i>
+                            <span>Fecha y hora de la lectura</span>
+                        </div>
+                        <div class="flex items-center text-sm text-blue-700">
+                            <i class="fas fa-check-circle text-blue-500 mr-2"></i>
+                            <span>Usuario que realizó la lectura</span>
+                        </div>
+                        <div class="flex items-center text-sm text-blue-700">
+                            <i class="fas fa-check-circle text-blue-500 mr-2"></i>
+                            <span>Coordenadas GPS de ubicación</span>
+                        </div>
+                        <div class="flex items-center text-sm text-blue-700">
+                            <i class="fas fa-check-circle text-blue-500 mr-2"></i>
+                            <span>Consumo calculado automáticamente</span>
+                        </div>
+                        <div class="flex items-center text-sm text-blue-700">
+                            <i class="fas fa-check-circle text-blue-500 mr-2"></i>
+                            <span>Dispositivo utilizado</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      {% endif %}
-    </section>
+    </main>
 
-    <!-- Volver -->
-    <footer class="text-right">
-      <a href="{% url 'panel_empresa' slug=slug %}" class="text-sm text-blue-600 hover:underline">← Volver al Panel</a>
+    <!-- Footer -->
+    <footer class="mt-12 border-t border-gray-200 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="text-sm text-gray-500 mb-4 md:mb-0">
+                    <p class="flex items-center">
+                        <i class="fas fa-mobile-alt mr-2 text-emerald-600"></i>
+                        Sistema SSR - Lecturas App Móvil
+                    </p>
+                    <p class="mt-1">{{ empresa.nombre }} - {{ empresa.slug }}</p>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <span class="text-sm text-gray-500">
+                        <i class="fas fa-calendar-alt mr-1"></i>
+                        {% now "d/m/Y H:i" %}
+                    </span>
+                    <span class="text-sm text-gray-500">
+                        <i class="fas fa-database mr-1"></i>
+                        {{ lecturas_con_info|length }} lecturas
+                    </span>
+                </div>
+            </div>
+        </div>
     </footer>
 
-  </div>
-
+    <!-- JavaScript -->
+    <script>
+    function autorizarNuevoDispositivo() {
+        const nombre = prompt('Ingresa un nombre para el dispositivo:');
+        if (nombre) {
+            fetch(`/api/empresa/{{ slug }}/dispositivos/autorizar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    empresa_id: '{{ empresa.id }}'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Dispositivo autorizado exitosamente. Código: ' + data.codigo);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al autorizar dispositivo');
+            });
+        }
+    }
+    
+    function desactivarDispositivo(dispositivoId) {
+        if (confirm('¿Estás seguro de que deseas desactivar este dispositivo?\n\nEl dispositivo ya no podrá sincronizar lecturas.')) {
+            fetch(`/api/empresa/{{ slug }}/dispositivos/${dispositivoId}/desactivar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Error al desactivar el dispositivo');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al desactivar el dispositivo');
+            });
+        }
+    }
+    
+    function verDispositivo(dispositivoId) {
+        window.location.href = `/empresa/{{ slug }}/dispositivos/${dispositivoId}/`;
+    }
+    
+    function editarLectura(lecturaId) {
+        window.location.href = `/empresa/{{ slug }}/lecturas/${lecturaId}/editar/`;
+    }
+    
+    function exportarExcel() {
+        // Construir URL con filtros actuales
+        const params = new URLSearchParams({
+            format: 'excel',
+            mes: '{{ filtros.mes }}',
+            anio: '{{ filtros.anio }}',
+            estado: '{{ filtros.estado }}',
+            usuario: '{{ filtros.usuario }}'
+        });
+        
+        window.location.href = `/empresa/{{ slug }}/lecturas/exportar/?${params.toString()}`;
+    }
+    
+    function exportarLecturas() {
+        exportarExcel();
+    }
+    
+    function imprimirTabla() {
+        const originalContent = document.body.innerHTML;
+        const printContent = document.querySelector('.bg-white.rounded-xl.shadow.overflow-hidden').outerHTML;
+        
+        document.body.innerHTML = `
+            <html>
+                <head>
+                    <title>Lecturas App Móvil - {{ empresa.nombre }}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f5f5f5; }
+                        .header { text-align: center; margin-bottom: 20px; }
+                        .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #666; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>Lecturas App Móvil - {{ empresa.nombre }}</h2>
+                        <p>Generado el ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                    </div>
+                    ${printContent}
+                    <div class="footer">
+                        <p>Sistema SSR - Total lecturas: {{ lecturas_con_info|length }}</p>
+                    </div>
+                </body>
+            </html>
+        `;
+        
+        window.print();
+        document.body.innerHTML = originalContent;
+        location.reload();
+    }
+    
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mostrar tooltips en dispositivos
+        const tooltips = document.querySelectorAll('[title]');
+        tooltips.forEach(el => {
+            el.addEventListener('mouseenter', function(e) {
+                const title = this.getAttribute('title');
+                if (title) {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'fixed z-50 px-2 py-1 text-xs text-white bg-gray-800 rounded shadow-lg';
+                    tooltip.textContent = title;
+                    document.body.appendChild(tooltip);
+                    
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = (rect.left + window.scrollX) + 'px';
+                    tooltip.style.top = (rect.top + window.scrollY - tooltip.offsetHeight - 5) + 'px';
+                    
+                    this.setAttribute('data-tooltip-id', tooltip.id);
+                }
+            });
+            
+            el.addEventListener('mouseleave', function() {
+                const tooltip = document.querySelector(`[id="${this.getAttribute('data-tooltip-id')}"]`);
+                if (tooltip) {
+                    tooltip.remove();
+                }
+            });
+        });
+        
+        // Auto-refresh cada 5 minutos si está en la página principal
+        if (window.location.search === '') {
+            setTimeout(() => {
+                window.location.reload();
+            }, 300000); // 5 minutos
+        }
+    });
+    </script>
 </body>
 </html>

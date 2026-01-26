@@ -1,0 +1,24 @@
+{
+  "app_name": "SSR SSR Vaticano",
+  "empresa_slug": "ssr-vaticano",
+  "version": "1.0.1",
+  "primary_color": "#1E40AF",
+  "secondary_color": "#DC2626",
+  "base_url": "http://localhost:8000/api/ssr-vaticano/",
+  "api_key": "9839bd34d9080bbd2cf3723617a56fe0030235c5d68990ac66b8f71f76f918d4",
+  "sectores": [
+    "VATICANO",
+    "LAS CABRAS",
+    "LAS MERCEDES",
+    "LAS BANDURRIAS"
+  ],
+  "mensaje_bienvenida": "Bienvenido a la app de lecturas",
+  "habilitar_mapa": true,
+  "habilitar_offline": true,
+  "sincronizacion_auto": true,
+  "validar_gps": true,
+  "mostrar_logo": true,
+  "intervalo_sincronizacion": 5,
+  "max_lecturas_pendientes": 100,
+  "clientes": []
+}

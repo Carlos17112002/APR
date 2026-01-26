@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class ContratoLaboral(models.Model):
     alias = models.CharField(max_length=100)
     rut_trabajador = models.CharField(max_length=12)
@@ -74,8 +75,6 @@ class ContratoLaboral(models.Model):
     def __str__(self):
         return f"{self.nombre} · {self.alias}"
 
-
-# models.py
 class FiniquitoLaboral(models.Model):
     alias = models.CharField(max_length=100)
     trabajador = models.ForeignKey('ContratoLaboral', on_delete=models.CASCADE)
@@ -92,9 +91,6 @@ class FiniquitoLaboral(models.Model):
 
     def __str__(self):
         return f"Finiquito · {self.trabajador.nombre} · {self.alias}"
-
-# models.py
-# trabajadores/models.py
 class LiquidacionLaboral(models.Model):
     alias = models.CharField(max_length=100)
     trabajador = models.ForeignKey('ContratoLaboral', on_delete=models.CASCADE)
@@ -119,16 +115,12 @@ class LiquidacionLaboral(models.Model):
     dias_vacaciones = models.PositiveIntegerField(default=0)
     dias_ausente = models.PositiveIntegerField(default=0)
 
-    horas_extra_50 = models.PositiveIntegerField(default=0)
-    horas_extra_100 = models.PositiveIntegerField(default=0)
-
-
     # PDF generado
     documento_pdf = models.FileField(upload_to='liquidaciones/', null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
 
     def valor_hora(self):
-        return self.sueldo_base / 30 / 8  # Sueldo diario dividido en 8 horas
+        return self.sueldo_base / 30 / 8
 
     def total_horas_extra(self):
         return round(
@@ -148,7 +140,6 @@ class LiquidacionLaboral(models.Model):
 
     def liquido_pagado(self):
         return self.total_haberes() - self.total_descuentos()
-
 
 class Trabajador(models.Model):
     alias = models.CharField(max_length=100)

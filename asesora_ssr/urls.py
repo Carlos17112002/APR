@@ -53,6 +53,9 @@ urlpatterns = [
     path('contabilidad/', include('contabilidad.urls')),
     path('trabajadores/', include('trabajadores.urls')),
     path('informes/', include('informes.urls')),
+    path('ssr-tools/', include('ssr_tools.urls')),  # 🔧 ssr_tools URLs
+    path('', include('empresas.urls')),
+    path('apps-moviles/', include('apps_moviles.urls')),
 
 
 

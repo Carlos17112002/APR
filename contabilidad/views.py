@@ -265,17 +265,23 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from datetime import datetime
 
-from .helpers import generar_libro_sii
+from django.shortcuts import render
+from datetime import datetime
+from contabilidad.helpers import generar_libro_sii, obtener_resumen_libro  # asegúrate de tener estas funciones
 
 def exportar_libro_sii(request, alias):
     mensaje = ""
     archivo = None
+    resumen = []
+
     if request.method == 'POST':
         mes = request.POST.get('mes')
         tipo = request.POST.get('tipo')  # compras, ventas, etc.
+
         try:
             fecha = datetime.strptime(mes, "%Y-%m")
-            archivo = generar_libro_sii(alias, mes, tipo)
+            archivo = generar_libro_sii(alias, mes, tipo)  # genera archivo PDF o Excel
+            resumen = obtener_resumen_libro(alias, mes, tipo)  # devuelve lista de dicts
             mensaje = f"✅ Libro {tipo} para {mes} exportado correctamente."
         except ValueError:
             mensaje = "⚠️ Formato de mes inválido. Usa YYYY-MM."
@@ -283,5 +289,8 @@ def exportar_libro_sii(request, alias):
     return render(request, 'contabilidad/exportar_libro_sii.html', {
         'alias': alias,
         'mensaje': mensaje,
-        'archivo': archivo
+        'archivo': archivo,
+        'resumen': resumen
     })
+
+        

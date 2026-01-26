@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Logs por alias · {{ alias }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-mono text-sm text-gray-800">
+  <main class="max-w-5xl mx-auto mt-10 bg-white border-2 border-green-700 rounded-lg shadow-lg p-6">
+    <h1 class="text-2xl font-bold text-green-700 mb-4">Logs por alias</h1>
+    <table class="w-full border border-gray-300 text-left">
+      <thead class="bg-green-100 text-green-800">
+        <tr>
+          <th class="px-3 py-2 border">Fecha</th>
+          <th class="px-3 py-2 border">Usuario</th>
+          <th class="px-3 py-2 border">Acción</th>
+          <th class="px-3 py-2 border">Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr class="border-t">
+          <td class="px-3 py-2">{{ log.fecha|date:"d/m/Y H:i" }}</td>
+          <td class="px-3 py-2">{{ log.usuario.username }}</td>
+          <td class="px-3 py-2">{{ log.accion }}</td>
+          <td class="px-3 py-2">
+            {% for line in log.resultado %}
+              <div class="{% if '[ERROR]' in line %}text-red-600{% elif '[OK]' in line %}text-green-700{% else %}text-gray-700{% endif %}">{{ line }}</div>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

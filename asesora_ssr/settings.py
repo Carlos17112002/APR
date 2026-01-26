@@ -52,6 +52,10 @@ INSTALLED_APPS = [
     'contabilidad',
     'trabajadores',
     'informes',
+    'widget_tweaks',
+    'ssr_tools',
+    'apps_moviles',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +66,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'asesora_ssr.urls'
@@ -185,3 +191,26 @@ REST_FRAMEWORK = {
     ]
 }
 
+
+# Configuración CORS
+CORS_ALLOW_ALL_ORIGINS = True  # En desarrollo, en producción especifica orígenes
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]

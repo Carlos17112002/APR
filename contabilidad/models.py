@@ -36,9 +36,6 @@ class DocumentoVenta(models.Model):
     monto_total = models.DecimalField(max_digits=12, decimal_places=2)
     alias = models.CharField(max_length=50)
     cuenta_contable = models.CharField(max_length=100, null=True, blank=True)
-
-
-
 class LibroSII(models.Model):
     alias = models.CharField(max_length=50)
     mes = models.IntegerField()
@@ -66,3 +63,25 @@ class LibroSII(models.Model):
     cuenta_egreso = models.CharField(max_length=100, null=True, blank=True)
     archivo = models.FileField(upload_to='libros_sii/', null=True, blank=True)
 
+class DocumentoContable(models.Model):
+    alias = models.CharField(max_length=100)
+    tipo = models.CharField(max_length=50)
+    archivo = models.FileField(upload_to='documentos/')
+    descripcion = models.TextField(blank=True)
+
+    # Contrato
+    nombre_trabajador = models.CharField(max_length=100, blank=True)
+    cargo = models.CharField(max_length=100, blank=True)
+    inicio = models.DateField(null=True, blank=True)
+    tipo_contrato = models.CharField(max_length=50, blank=True)
+
+    # Finiquito
+    fecha_finiquito = models.DateField(null=True, blank=True)
+    motivo_finiquito = models.CharField(max_length=200, blank=True)
+    total_finiquito = models.PositiveIntegerField(null=True, blank=True)
+
+    # Liquidación
+    mes_liquidacion = models.CharField(max_length=7, blank=True)  # Ej: "2025-09"
+    total_liquido = models.PositiveIntegerField(null=True, blank=True)
+
+    creado = models.DateTimeField(auto_now_add=True)

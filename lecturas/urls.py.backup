@@ -1,0 +1,13 @@
+# lecturas/urls.py - SOLO ESTO
+from django.urls import path
+from . import views
+
+app_name = 'lecturas'
+
+urlpatterns = [
+    path('lecturas-app/', views.listado_lecturas_app, name='listado_lecturas_app'),
+    path('generar-boletas/', views.generar_boletas_lote, name='generar_boletas_lote'),
+    path('boletas/', views.listado_boletas, name='listado_boletas'),
+    path('api/sincronizar/', views.api_sincronizar_lecturas, name='api_sincronizar_lecturas'),
+    path('api/pendientes/', views.api_obtener_clientes_pendientes, name='api_clientes_pendientes'),
+]

@@ -1,0 +1,263 @@
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from django.db import transaction
+from boletas.models import Boleta
+from .models import LecturaMovil
+from empresas.models import Empresa
+from clientes.models import Cliente
+import json
+from decimal import Decimal
+import uuid
+from datetime import datetime, timedelta
+
+# ========== API PARA APP MÓVIL ==========
+@csrf_exempt
+def api_sincronizar_lecturas(request, alias):
+    """
+    API para que la app móvil envíe lecturas
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    empresa = get_object_or_404(Empresa, slug=alias)
+    alias_db = f'db_{alias}'
+    
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Formato JSON inválido'}, status=400)
+    
+    recibidas = len(data)
+    guardadas = 0
+    errores = []
+    
+    for item in data:
+        try:
+            with transaction.atomic(using=alias_db):
+                # Validar que el cliente existe
+                cliente = Cliente.objects.using(alias_db).get(id=item['cliente_id'])
+                
+                # Crear lectura desde app móvil
+                lectura = LecturaMovil.objects.using(alias_db).create(
+                    id=item.get('id', uuid.uuid4()),
+                    cliente=cliente,
+                    fecha_lectura=item['fecha_lectura'],
+                    lectura_actual=Decimal(str(item['lectura_actual'])),
+                    foto_medidor=item.get('foto_medidor', ''),
+                    latitud=Decimal(str(item.get('latitud', 0))) if item.get('latitud') else None,
+                    longitud=Decimal(str(item.get('longitud', 0))) if item.get('longitud') else None,
+                    estado='cargada',
+                    observaciones_app=item.get('observaciones', ''),
+                    usuario_app=item.get('usuario_app', 'movil'),
+                    empresa_slug=alias
+                )
+                
+                # Buscar lectura anterior para calcular consumo
+                lectura_anterior = LecturaMovil.objects.using(alias_db).filter(
+                    cliente=cliente,
+                    fecha_lectura__lt=lectura.fecha_lectura,
+                    estado='cargada'
+                ).order_by('-fecha_lectura').first()
+                
+                if lectura_anterior:
+                    lectura.lectura_anterior = lectura_anterior.lectura_actual
+                    lectura.calcular_consumo()
+                
+                guardadas += 1
+                
+        except Cliente.DoesNotExist:
+            errores.append({
+                'cliente_id': item.get('cliente_id'),
+                'motivo': 'Cliente no encontrado'
+            })
+        except Exception as e:
+            errores.append({
+                'cliente_id': item.get('cliente_id'),
+                'motivo': str(e)
+            })
+    
+    return JsonResponse({
+        'status': 'success',
+        'empresa': empresa.nombre,
+        'recibidas': recibidas,
+        'guardadas': guardadas,
+        'rechazadas': len(errores),
+        'errores': errores
+    })
+
+
+@csrf_exempt
+def api_obtener_clientes_pendientes(request, alias):
+    """
+    API para que la app móvil obtenga clientes pendientes de lectura
+    """
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    empresa = get_object_or_404(Empresa, slug=alias)
+    alias_db = f'db_{alias}'
+    
+    # Obtener mes actual
+    mes_actual = timezone.now().month
+    año_actual = timezone.now().year
+    
+    # Clientes que NO tienen lectura este mes
+    clientes_con_lectura = LecturaMovil.objects.using(alias_db).filter(
+        fecha_lectura__month=mes_actual,
+        fecha_lectura__year=año_actual,
+        estado='cargada'
+    ).values_list('cliente_id', flat=True)
+    
+    clientes_pendientes = Cliente.objects.using(alias_db).exclude(
+        id__in=clientes_con_lectura
+    ).values('id', 'nombre', 'direccion', 'medidor', 'sector', 
+             'latitude', 'longitude', 'codigo_cliente')
+    
+    return JsonResponse({
+        'status': 'success',
+        'empresa': empresa.nombre,
+        'total_pendientes': len(clientes_pendientes),
+        'clientes': list(clientes_pendientes)
+    })
+
+
+# ========== VISTAS WEB PARA GENERAR BOLETAS ==========
+def listado_lecturas_app(request, alias):
+    """
+    Vista web para ver lecturas cargadas desde la app móvil
+    """
+    empresa = get_object_or_404(Empresa, slug=alias)
+    alias_db = f'db_{alias}'
+    
+    lecturas = LecturaMovil.objects.using(alias_db).select_related('cliente').all()
+    
+    # Filtros
+    estado = request.GET.get('estado', 'cargada')
+    sector = request.GET.get('sector')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    
+    if estado:
+        lecturas = lecturas.filter(estado=estado)
+    if sector:
+        lecturas = lecturas.filter(cliente__sector=sector)
+    if fecha_desde:
+        lecturas = lecturas.filter(fecha_lectura__gte=fecha_desde)
+    if fecha_hasta:
+        lecturas = lecturas.filter(fecha_lectura__lte=fecha_hasta)
+    
+    lecturas = lecturas.order_by('-fecha_lectura')
+    
+    sectores = Cliente.objects.using(alias_db).values_list('sector', flat=True).distinct()
+    
+    return render(request, 'listado_lecturas_app.html', {
+        'empresa': empresa,
+        'slug': alias,
+        'lecturas': lecturas,
+        'sectores': sectores,
+        'estados': LecturaMovil.ESTADOS_LECTURA,
+    })
+
+
+def generar_boletas_lote(request, alias):
+    """
+    Vista para generar boletas en lote desde lecturas de la app
+    """
+    if request.method != 'POST':
+        return redirect('listado_lecturas_app', alias=alias)
+    
+    empresa = get_object_or_404(Empresa, slug=alias)
+    alias_db = f'db_{alias}'
+    
+    # Obtener tarifas de la empresa
+    tarifa_consumo = Decimal(empresa.tarifa_consumo or 5.0)  # Valor por m³
+    cargo_fijo = Decimal(empresa.cargo_fijo or 15.0)
+    
+    # Obtener IDs de lecturas seleccionadas
+    lecturas_ids = request.POST.getlist('lecturas_ids')
+    
+    if not lecturas_ids:
+        # Si no hay IDs específicos, generar para todas las lecturas no procesadas
+        lecturas = LecturaMovil.objects.using(alias_db).filter(
+            estado='cargada',
+            usada_para_boleta=False
+        )
+    else:
+        lecturas = LecturaMovil.objects.using(alias_db).filter(
+            id__in=lecturas_ids,
+            estado='cargada',
+            usada_para_boleta=False
+        )
+    
+    boletas_generadas = 0
+    
+    with transaction.atomic(using=alias_db):
+        for lectura in lecturas:
+            # Calcular consumo si no está calculado
+            if not lectura.consumo:
+                lectura.calcular_consumo()
+            
+            # Calcular montos
+            monto_consumo = lectura.consumo * tarifa_consumo
+            total = monto_consumo + cargo_fijo
+            
+            # Crear boleta
+            boleta = Boleta.objects.using(alias_db).create(
+                lectura=lectura,
+                cliente=lectura.cliente,
+                fecha_vencimiento=timezone.now().date() + timedelta(days=15),
+                consumo=lectura.consumo,
+                monto_consumo=monto_consumo,
+                cargo_fijo=cargo_fijo,
+                total=total,
+                empresa_slug=alias,
+                codigo_barras=f"{alias}-{lectura.cliente.id}-{datetime.now().strftime('%Y%m%d')}"
+            )
+            
+            # Marcar lectura como procesada
+            lectura.estado = 'procesada'
+            lectura.usada_para_boleta = True
+            lectura.boleta_generada = boleta
+            lectura.save()
+            
+            boletas_generadas += 1
+    
+    return render(request, 'lecturas/resultado_generacion.html', {
+        'empresa': empresa,
+        'slug': alias,
+        'boletas_generadas': boletas_generadas,
+        'total_lecturas': len(lecturas_ids) if lecturas_ids else 'todas pendientes'
+    })
+
+
+def listado_boletas(request, alias):
+    """
+    Vista para ver y gestionar boletas generadas
+    """
+    empresa = get_object_or_404(Empresa, slug=alias)
+    alias_db = f'db_{alias}'
+    
+    boletas = Boleta.objects.using(alias_db).select_related('cliente', 'lectura').all()
+    
+    # Filtros
+    estado = request.GET.get('estado')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    
+    if estado:
+        boletas = boletas.filter(estado=estado)
+    if fecha_desde:
+        boletas = boletas.filter(fecha_emision__gte=fecha_desde)
+    if fecha_hasta:
+        boletas = boletas.filter(fecha_emision__lte=fecha_hasta)
+    
+    boletas = boletas.order_by('-fecha_emision')
+    
+    return render(request, 'lecturas/listado_boletas.html', {
+        'empresa': empresa,
+        'slug': alias,
+        'boletas': boletas,
+        'estados': Boleta.ESTADOS_BOLETA,
+    })

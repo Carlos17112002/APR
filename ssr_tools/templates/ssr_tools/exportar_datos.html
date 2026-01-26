@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Exportar datos · {{ alias }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-mono text-sm text-gray-800">
+  <main class="max-w-xl mx-auto mt-10 bg-white border-2 border-green-700 rounded-lg shadow-lg p-6">
+    <h1 class="text-2xl font-bold text-green-700 mb-4">Exportar datos</h1>
+    <form method="post">
+      {% csrf_token %}
+      <label for="tipo" class="block mb-2 text-gray-700">Selecciona tipo de exportación:</label>
+      <select name="tipo" id="tipo" class="w-full mb-4 border border-gray-300 rounded px-3 py-2 bg-gray-50">
+        <option value="clientes">Clientes</option>
+        <option value="lecturas">Lecturas</option>
+        <option value="contratos">Contratos</option>
+        <option value="liquidaciones">Liquidaciones</option>
+      </select>
+      <button type="submit" class="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800 transition">Exportar CSV</button>
+    </form>
+  </main>
+</body>
+</html>

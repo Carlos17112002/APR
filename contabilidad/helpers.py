@@ -43,3 +43,44 @@ def obtener_resumen_contable(alias, mes, año):
             resumen[key] = int(resumen[key])
 
     return resumen
+
+from contabilidad.models import DocumentoCompra, DocumentoVenta
+from datetime import datetime
+
+def obtener_resumen_libro(alias, mes, tipo):
+    resumen = []
+    año, mes_num = map(int, mes.split('-'))
+
+    if tipo == 'compra':
+        compras = DocumentoCompra.objects.filter(
+            alias=alias,
+            fecha_emision__year=año,
+            fecha_emision__month=mes_num
+        )
+        for doc in compras:
+            resumen.append({
+                'fecha': doc.fecha_emision.strftime('%Y-%m-%d'),
+                'proveedor': doc.razon_social,
+                'documento': f"{doc.get_tipo_documento_display()} #{doc.folio}",
+                'neto': doc.monto_neto,
+                'iva': doc.iva,
+                'total': doc.monto_total
+            })
+
+    elif tipo == 'venta':
+        ventas = DocumentoVenta.objects.filter(
+            alias=alias,
+            fecha_emision__year=año,
+            fecha_emision__month=mes_num
+        )
+        for doc in ventas:
+            resumen.append({
+                'fecha': doc.fecha_emision.strftime('%Y-%m-%d'),
+                'proveedor': doc.razon_social,
+                'documento': f"{doc.get_tipo_documento_display()} #{doc.folio}",
+                'neto': doc.monto_neto,
+                'iva': doc.iva,
+                'total': doc.monto_total
+            })
+
+    return resumen

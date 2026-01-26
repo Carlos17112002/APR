@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Contratos · {{ empresa.nombre }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+</head>
+<body class="bg-gray-50 text-gray-800 font-['Inter']">
+    
+    <!-- Encabezado moderno -->
+    <header class="bg-gradient-to-r from-green-700 to-green-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-6 py-5">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                        <i class="fas fa-chart-bar text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Reporte Analítico de Contratos</h1>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-green-100 text-sm">
+                                <i class="fas fa-building mr-1"></i>{{ empresa.nombre }}
+                            </span>
+                            <span class="text-green-200 bg-white/10 px-2 py-0.5 rounded-full text-xs">
+                                {{ alias }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <a href="/trabajadores/{{ alias }}/contratos/" 
+                   class="bg-white/20 hover:bg-white/30 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center backdrop-blur-sm">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Volver al listado
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- Información del reporte -->
+        <div class="bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-md p-6 mb-8 border border-gray-100">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-green-100 text-green-600 p-3 rounded-full">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900">Resumen Ejecutivo</h2>
+                        <p class="text-sm text-gray-600 mt-1">Análisis completo del estado de contratos laborales</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-gray-500 mb-1">Generado el</div>
+                    <div class="text-sm font-medium text-gray-900 bg-gray-100 px-3 py-1.5 rounded-lg">
+                        <i class="far fa-clock mr-2"></i>{{ hoy|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas principales -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Total Contratos -->
+            <div class="bg-white rounded-xl shadow-md p-5 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Total Contratos</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ total_contratos }}</p>
+                    </div>
+                    <div class="bg-green-50 text-green-600 p-3 rounded-lg">
+                        <i class="fas fa-file-contract text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600 flex items-center">
+                            <i class="fas fa-user-check text-green-500 mr-2"></i>
+                            <span>Activos</span>
+                        </div>
+                        <span class="font-semibold text-green-700">{{ contratos_activos }} ({{ porcentaje_activos|floatformat:0 }}%)</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: {{ porcentaje_activos|default:0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sueldo Promedio -->
+            <div class="bg-white rounded-xl shadow-md p-5 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Sueldo Promedio</p>
+                        <p class="text-3xl font-bold text-gray-900">${{ stats.sueldos.promedio|default:"0"|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-blue-50 text-blue-600 p-3 rounded-lg">
+                        <i class="fas fa-chart-line text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="text-center">
+                            <p class="text-xs text-gray-500 mb-1">Mínimo</p>
+                            <p class="text-sm font-semibold text-gray-900">${{ stats.sueldos.minimo|default:"0"|floatformat:0 }}</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs text-gray-500 mb-1">Máximo</p>
+                            <p class="text-sm font-semibold text-gray-900">${{ stats.sueldos.maximo|default:"0"|floatformat:0 }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Próximos a Vencer -->
+            <div class="bg-white rounded-xl shadow-md p-5 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Próximos a Vencer</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ por_vencer }}</p>
+                    </div>
+                    <div class="bg-amber-50 text-amber-600 p-3 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-600 flex items-center">
+                            <i class="far fa-calendar-alt text-amber-500 mr-2"></i>
+                            <span>En 30 días</span>
+                        </div>
+                        <div class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+                            Atención requerida
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de gráficos/información -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Distribución por Tipo -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <div class="bg-indigo-100 text-indigo-600 p-2 rounded-lg mr-3">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        Distribución por Tipo
+                    </h2>
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        {{ stats.por_tipo|length }} categorías
+                    </span>
+                </div>
+                
+                <div class="space-y-4">
+                    {% for tipo, total in stats.por_tipo %}
+                    <div class="group hover:bg-gray-50 p-3 rounded-lg transition-colors duration-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-3 h-3 rounded-full 
+                                    {% if forloop.counter0 == 0 %}bg-green-500
+                                    {% elif forloop.counter0 == 1 %}bg-blue-500
+                                    {% elif forloop.counter0 == 2 %}bg-amber-500
+                                    {% elif forloop.counter0 == 3 %}bg-purple-500
+                                    {% else %}bg-pink-500{% endif %}">
+                                </div>
+                                <span class="font-medium text-gray-800">
+                                    {% if tipo == 'indefinido' %}
+                                        Contrato Indefinido
+                                    {% elif tipo == 'plazo_fijo' %}
+                                        Plazo Fijo
+                                    {% elif tipo == 'faena' %}
+                                        Por Faena/Obra
+                                    {% else %}
+                                        {{ tipo|title }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="text-right">
+                                <span class="font-bold text-gray-900">{{ total }}</span>
+                                <span class="text-sm text-gray-500 ml-1">
+                                    {% if total_contratos > 0 %}
+                                    ({% widthratio total total_contratos 100 %}%)
+                                    {% else %}
+                                    (0%)
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="h-full rounded-full 
+                                {% if forloop.counter0 == 0 %}bg-green-500
+                                {% elif forloop.counter0 == 1 %}bg-blue-500
+                                {% elif forloop.counter0 == 2 %}bg-amber-500
+                                {% elif forloop.counter0 == 3 %}bg-purple-500
+                                {% else %}bg-pink-500{% endif %}"
+                                style="width: {% if total_contratos > 0 %}{% widthratio total total_contratos 100 %}%{% else %}0%{% endif %}">
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <div class="text-gray-400 text-3xl mb-3">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <p class="text-gray-500">No hay contratos registrados</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Distribución por AFP -->
+            {% if stats.por_afp %}
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <div class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">
+                            <i class="fas fa-university"></i>
+                        </div>
+                        Distribución por AFP
+                    </h2>
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        {{ stats.por_afp|length }} AFPs
+                    </span>
+                </div>
+                
+                <div class="space-y-5">
+                    {% for afp, total in stats.por_afp %}
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span class="font-medium text-gray-800 text-sm">
+                                    {% if afp == 'modelo' %}
+                                        AFP Modelo
+                                    {% elif afp == 'provida' %}
+                                        AFP Provida
+                                    {% elif afp == 'cuprum' %}
+                                        AFP Cuprum
+                                    {% elif afp == 'habitat' %}
+                                        AFP Habitat
+                                    {% elif afp == 'planvital' %}
+                                        AFP PlanVital
+                                    {% elif afp == 'capital' %}
+                                        AFP Capital
+                                    {% else %}
+                                        {{ afp|title }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <span class="text-sm font-semibold text-gray-900">{{ total }}
+                                {% if total_contratos > 0 %}
+                                <span class="text-gray-500 font-normal ml-1">
+                                    ({% widthratio total total_contratos 100 %}%)
+                                </span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                                 style="width: {% if total_contratos > 0 %}{% widthratio total total_contratos 100 %}%{% else %}0%{% endif %}"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if not stats.por_afp %}
+                <div class="text-center py-8">
+                    <div class="text-gray-400 text-3xl mb-3">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <p class="text-gray-500">Sin datos de AFP disponibles</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Top 5 Sueldos -->
+        {% if top_contratos %}
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8 border border-gray-100">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <div class="bg-amber-100 text-amber-600 p-2 rounded-lg mr-3">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    Top 5 - Mayores Remuneraciones
+                </h2>
+                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    Orden descendente
+                </span>
+            </div>
+            
+            <div class="overflow-hidden rounded-lg border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                #
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Trabajador
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Cargo
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Sueldo Base
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Estado
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for contrato in top_contratos %}
+                        <tr class="hover:bg-gray-50 transition-colors duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center justify-center w-8 h-8 rounded-full 
+                                    {% if forloop.counter == 1 %}bg-yellow-100 text-yellow-800
+                                    {% elif forloop.counter == 2 %}bg-gray-100 text-gray-800
+                                    {% elif forloop.counter == 3 %}bg-amber-100 text-amber-800
+                                    {% else %}bg-blue-50 text-blue-800{% endif %} font-bold">
+                                    {{ forloop.counter }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="font-medium text-gray-900">{{ contrato.nombre }}</div>
+                                <div class="text-sm text-gray-500">{{ contrato.rut_trabajador }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ contrato.cargo }}</div>
+                                <div class="text-xs text-gray-500">{{ contrato.jornada }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-lg font-bold text-gray-900">${{ contrato.sueldo_base|floatformat:0 }}</div>
+                                <div class="text-xs text-gray-500">Base mensual</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if contrato.esta_activo %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Activo
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    Inactivo
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+                <p class="text-sm text-gray-600">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Basado en el sueldo base de {{ total_contratos }} contratos registrados
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pie de página -->
+        <div class="mt-12 pt-8 border-t border-gray-200">
+            <div class="bg-gradient-to-r from-gray-50 to-white rounded-xl p-6 text-center">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="text-left">
+                        <p class="text-sm font-medium text-gray-900">Reporte generado automáticamente</p>
+                        <p class="text-xs text-gray-500 mt-1">Sistema SSR · Gestión de Contratos Laborales</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-600">
+                            <i class="far fa-calendar-alt mr-2"></i>
+                            {{ hoy|date:"d/m/Y H:i" }}
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">Todos los derechos reservados</p>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center">
+                    <div class="w-24 h-1 bg-gradient-to-r from-green-500 to-blue-500 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Estilos adicionales -->
+    <style>
+        .font-['Inter'] {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Animaciones sutiles */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* Mejoras de hover */
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Gradientes sutiles */
+        .gradient-border {
+            position: relative;
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            border-radius: 6px 6px 0 0;
+        }
+    </style>
+
+    <!-- Script para animaciones -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Añadir animación a las tarjetas
+            const cards = document.querySelectorAll('.bg-white.rounded-xl');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.classList.add('animate-fadeIn');
+            });
+            
+            // Añadir efecto hover a las tarjetas principales
+            const mainCards = document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-3 .bg-white');
+            mainCards.forEach(card => {
+                card.classList.add('hover-lift');
+            });
+        });
+    </script>
+</body>
+</html>

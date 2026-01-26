@@ -2,89 +2,476 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Informe de Contratos · {{ empresa.nombre }}</title>
+  <title>Informe de Contratos Laborales · {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        font-size: 12px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 4px;
+      }
+    }
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #374151;
+      color: white;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 12px;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
 
-  <main class="max-w-6xl mx-auto py-10 px-6 space-y-10">
+  <main class="max-w-7xl mx-auto py-8 px-4 space-y-8">
 
-    <header class="flex justify-between items-center">
-      <h1 class="text-3xl font-bold text-green-700">Informe de Contratos · {{ empresa.nombre }}</h1>
-      <a href="{% url 'panel_empresa' slug=slug %}" class="text-sm text-blue-600 hover:underline">← Volver al panel</a>
+    <!-- Encabezado -->
+    <header class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-file-contract text-blue-500 mr-2"></i>
+            Informe de Contratos Laborales
+          </h1>
+          <div class="flex flex-wrap items-center mt-2 gap-3">
+            <span class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+              <i class="fas fa-building mr-1"></i>{{ empresa.nombre }}
+            </span>
+            <span class="text-sm text-gray-600">
+              <i class="far fa-calendar-alt mr-1"></i>{{ fecha_generacion|date:"d/m/Y H:i" }}
+            </span>
+            {% if error %}
+            <span class="text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full">
+              <i class="fas fa-exclamation-triangle mr-1"></i>Error: {{ error }}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="flex space-x-3 no-print">
+          <a href="{% url 'panel_empresa' slug=slug %}" 
+             class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium flex items-center transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+          </a>
+          <button onclick="window.print()" 
+                  class="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium flex items-center transition-colors">
+            <i class="fas fa-print mr-2"></i> Imprimir
+          </button>
+        </div>
+      </div>
     </header>
 
+    <!-- Resumen Estadístico -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-blue-500">
+        <p class="text-sm text-gray-500">Total Contratos</p>
+        <p class="text-2xl font-bold text-gray-800">{{ estadisticas.total_contratos }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-green-500">
+        <p class="text-sm text-gray-500">Vigentes</p>
+        <p class="text-2xl font-bold text-gray-800">{{ estadisticas.contratos_vigentes }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-red-500">
+        <p class="text-sm text-gray-500">Vencidos</p>
+        <p class="text-2xl font-bold text-gray-800">{{ estadisticas.contratos_vencidos }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-purple-500">
+        <p class="text-sm text-gray-500">Remuneración Total</p>
+        <p class="text-2xl font-bold text-gray-800">${{ estadisticas.total_remuneracion|floatformat:0 }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-amber-500">
+        <p class="text-sm text-gray-500">Próximos a Vencer</p>
+        <p class="text-2xl font-bold text-gray-800">{{ estadisticas.contratos_proximos_vencer }}</p>
+      </div>
+    </div>
+
     <!-- Filtros -->
-    <section class="bg-white rounded-lg shadow p-6">
-      <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+    <section class="bg-white rounded-xl shadow-sm p-6 no-print">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-filter mr-2 text-blue-500"></i> Filtros
+      </h2>
+      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
-          <select name="cargo" class="w-full border-gray-300 rounded-md shadow-sm">
-            <option value="">Todos</option>
-            {% for c in cargos %}
-              <option value="{{ c }}" {% if request.GET.cargo == c %}selected{% endif %}>{{ c }}</option>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-briefcase mr-1"></i> Cargo
+          </label>
+          <select name="cargo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Todos los cargos</option>
+            {% for cargo in cargos %}
+              <option value="{{ cargo }}" {% if filtros.cargo == cargo %}selected{% endif %}>{{ cargo }}</option>
             {% endfor %}
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-          <select name="estado" class="w-full border-gray-300 rounded-md shadow-sm">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-file-contract mr-1"></i> Tipo Contrato
+          </label>
+          <select name="tipo_contrato" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Todos</option>
-            <option value="vigente" {% if request.GET.estado == 'vigente' %}selected{% endif %}>Vigente</option>
-            <option value="finalizado" {% if request.GET.estado == 'finalizado' %}selected{% endif %}>Finalizado</option>
+            {% for tipo in tipos_contrato %}
+              <option value="{{ tipo }}" {% if filtros.tipo_contrato == tipo %}selected{% endif %}>{{ tipo }}</option>
+            {% endfor %}
           </select>
         </div>
         <div>
-          <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 shadow text-sm font-medium">
-            Filtrar
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-check-circle mr-1"></i> Estado
+          </label>
+          <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Todos</option>
+            <option value="vigente" {% if filtros.estado == 'vigente' %}selected{% endif %}>Vigente</option>
+            <option value="vencido" {% if filtros.estado == 'vencido' %}selected{% endif %}>Vencido</option>
+          </select>
+        </div>
+        <div class="flex space-x-3">
+          <button type="submit" 
+                  class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium flex items-center justify-center transition-colors">
+            <i class="fas fa-search mr-2"></i> Aplicar
           </button>
+          <a href="{% url 'informe_contratos' alias=slug %}" 
+             class="px-4 py-2.5 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 flex items-center transition-colors">
+            <i class="fas fa-redo mr-2"></i> Limpiar
+          </a>
         </div>
       </form>
     </section>
 
-    <!-- Tabla -->
-    <section>
+    <!-- Distribución -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Por Tipo de Contrato -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-chart-pie mr-2 text-blue-500"></i> Por Tipo de Contrato
+        </h3>
+        <div class="space-y-3">
+          {% for item in contratos_por_tipo %}
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-700">{{ item.tipo_contrato|default:"Sin tipo" }}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm font-medium">{{ item.cantidad }}</span>
+              <span class="text-xs text-gray-500">(${{ item.sueldo_total|floatformat:0 }})</span>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-sm text-gray-500 text-center py-4">No hay datos</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Por AFP -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-shield-alt mr-2 text-green-500"></i> Por AFP
+        </h3>
+        <div class="space-y-3">
+          {% for item in contratos_por_afp %}
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-700">{{ item.afp|default:"Sin AFP" }}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm font-medium">{{ item.cantidad }}</span>
+              <span class="text-xs text-gray-500">(${{ item.sueldo_total|floatformat:0 }})</span>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-sm text-gray-500 text-center py-4">No hay datos</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Por Jornada -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-clock mr-2 text-purple-500"></i> Por Jornada
+        </h3>
+        <div class="space-y-3">
+          {% for item in contratos_por_jornada %}
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-700">{{ item.jornada|default:"Sin jornada" }}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm font-medium">{{ item.cantidad }}</span>
+              <span class="text-xs text-gray-500">(${{ item.sueldo_promedio|floatformat:0 }} prom)</span>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-sm text-gray-500 text-center py-4">No hay datos</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Contratos -->
+    <section class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b bg-gray-50">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+            <i class="fas fa-list mr-2 text-blue-500"></i> Detalle de Contratos
+          </h2>
+          <div class="text-sm text-gray-500">
+            <span class="bg-gray-200 px-3 py-1 rounded-full">
+              {{ contratos|length }} contrato{{ contratos|length|pluralize }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
       {% if contratos %}
-        <div class="overflow-x-auto bg-white rounded-lg shadow">
-          <table class="min-w-full text-sm">
-            <thead class="bg-green-700 text-white">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-100">
               <tr>
-                <th class="px-4 py-3 text-left">Trabajador</th>
-                <th class="px-4 py-3 text-left">Cargo</th>
-                <th class="px-4 py-3 text-left">Inicio</th>
-                <th class="px-4 py-3 text-left">Término</th>
-                <th class="px-4 py-3 text-left">Sueldo Base</th>
-                <th class="px-4 py-3 text-left">Estado</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-user-tie mr-1"></i> Trabajador
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-briefcase mr-1"></i> Cargo / Tipo
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-calendar-alt mr-1"></i> Fechas
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-money-bill-wave mr-1"></i> Remuneración
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <i class="fas fa-info-circle mr-1"></i> Detalles
+                </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-200">
               {% for contrato in contratos %}
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-3">{{ contrato.trabajador.nombre }}</td>
-                <td class="px-4 py-3">{{ contrato.cargo }}</td>
-                <td class="px-4 py-3">{{ contrato.fecha_inicio|date:"d/m/Y" }}</td>
-                <td class="px-4 py-3">{{ contrato.fecha_termino|default:"—" }}</td>
-                <td class="px-4 py-3">${{ contrato.sueldo_base }}</td>
-                <td class="px-4 py-3">
-                  {% if contrato.estado == 'vigente' %}
-                    <span class="px-2 py-1 rounded text-xs bg-green-100 text-green-700">Vigente</span>
-                  {% else %}
-                    <span class="px-2 py-1 rounded text-xs bg-gray-200 text-gray-700">Finalizado</span>
-                  {% endif %}
+              <tr class="hover:bg-gray-50 transition-colors">
+                <!-- Columna Trabajador -->
+                <td class="px-6 py-4">
+                  <div class="flex items-center">
+                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                      <i class="fas fa-user text-blue-600"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">
+                        {{ contrato.nombre|default:"Sin nombre" }}
+                      </p>
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                          <i class="fas fa-id-card mr-1"></i>{{ contrato.rut_trabajador|default:"Sin RUT" }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                
+                <!-- Columna Cargo / Tipo -->
+                <td class="px-6 py-4">
+                  <div class="space-y-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      <i class="fas fa-briefcase mr-1"></i>
+                      {{ contrato.cargo|default:"Sin especificar" }}
+                    </span>
+                    <div class="flex flex-wrap gap-1">
+                      <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                        <i class="fas fa-file-contract mr-1"></i>{{ contrato.tipo_contrato }}
+                      </span>
+                      <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                        <i class="fas fa-clock mr-1"></i>{{ contrato.jornada }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                
+                <!-- Columna Fechas -->
+                <td class="px-6 py-4">
+                  <div class="space-y-2">
+                    <div class="flex items-center text-sm">
+                      <i class="fas fa-play text-green-500 mr-2 w-4 text-center"></i>
+                      <span class="font-medium">Inicio:</span>
+                      <span class="ml-2">{{ contrato.fecha_inicio|date:"d/m/Y" }}</span>
+                    </div>
+                    {% if contrato.fecha_termino %}
+                    <div class="flex items-center text-sm">
+                      <i class="fas fa-stop text-red-500 mr-2 w-4 text-center"></i>
+                      <span class="font-medium">Término:</span>
+                      <span class="ml-2">{{ contrato.fecha_termino|date:"d/m/Y" }}</span>
+                    </div>
+                    {% now "Y-m-d" as today %}
+                    {% if contrato.fecha_termino|date:"Y-m-d" <= today %}
+                      <div class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded inline-block">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>Vencido
+                      </div>
+                    {% else %}
+                      <div class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded inline-block">
+                        <i class="fas fa-check-circle mr-1"></i>Vigente
+                      </div>
+                    {% endif %}
+                    {% else %}
+                      <div class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded inline-block">
+                        <i class="fas fa-infinity mr-1"></i>Indefinido
+                      </div>
+                    {% endif %}
+                  </div>
+                </td>
+                
+                <!-- Columna Remuneración -->
+                <td class="px-6 py-4">
+                  <div class="space-y-1">
+                    <div class="text-lg font-bold text-blue-700">
+                      ${{ contrato.sueldo_base|default:0|floatformat:0 }}
+                    </div>
+                    <div class="space-y-0.5">
+                      {% if contrato.gratificacion %}
+                      <div class="text-sm text-green-600">
+                        <i class="fas fa-plus-circle mr-1"></i>Gratificación: ${{ contrato.gratificacion|floatformat:0 }}
+                      </div>
+                      {% endif %}
+                      {% if contrato.bonos %}
+                      <div class="text-sm text-amber-600">
+                        <i class="fas fa-gift mr-1"></i>Bonos: ${{ contrato.bonos|floatformat:0 }}
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="text-sm font-semibold text-gray-800 mt-1">
+                      Total: ${{ contrato.sueldo_base|add:contrato.gratificacion|add:contrato.bonos|floatformat:0 }}
+                    </div>
+                  </div>
+                </td>
+                
+                <!-- Columna Detalles -->
+                <td class="px-6 py-4">
+                  <div class="space-y-2">
+                    <div class="flex flex-wrap gap-1">
+                      <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
+                        <i class="fas fa-shield-alt mr-1"></i>{{ contrato.afp }}
+                      </span>
+                      <span class="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded">
+                        <i class="fas fa-heartbeat mr-1"></i>{{ contrato.salud }}
+                      </span>
+                    </div>
+                    {% if contrato.sistema_gratificacion %}
+                    <div class="text-xs text-gray-600 mt-1">
+                      <i class="fas fa-percentage mr-1"></i>{{ contrato.sistema_gratificacion }}
+                    </div>
+                    {% endif %}
+                    {% if contrato.documento_pdf %}
+                    <a href="{{ contrato.documento_pdf.url }}" 
+                       target="_blank"
+                       class="inline-flex items-center text-xs text-blue-600 hover:text-blue-800">
+                      <i class="fas fa-file-pdf mr-1"></i>Ver PDF
+                    </a>
+                    {% endif %}
+                  </div>
                 </td>
               </tr>
               {% endfor %}
             </tbody>
+            <tfoot class="bg-gray-50 font-semibold">
+              <tr>
+                <td colspan="3" class="px-6 py-4 text-right">
+                  Totales:
+                </td>
+                <td class="px-6 py-4 text-blue-700">
+                  <div class="space-y-1">
+                    <div>Sueldos: ${{ estadisticas.total_sueldos|floatformat:0 }}</div>
+                    <div>Gratificaciones: ${{ estadisticas.total_gratificaciones|floatformat:0 }}</div>
+                    <div>Bonos: ${{ estadisticas.total_bonos|floatformat:0 }}</div>
+                    <div class="text-lg">Total: ${{ estadisticas.total_remuneracion|floatformat:0 }}</div>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="space-y-1">
+                    <div class="text-green-600">{{ estadisticas.contratos_vigentes }} vigente{{ estadisticas.contratos_vigentes|pluralize }}</div>
+                    <div class="text-red-600">{{ estadisticas.contratos_vencidos }} vencido{{ estadisticas.contratos_vencidos|pluralize }}</div>
+                    <div class="text-amber-600">{{ estadisticas.contratos_proximos_vencer }} próximo{{ estadisticas.contratos_proximos_vencer|pluralize:"s" }} a vencer</div>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       {% else %}
-        <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-          No hay contratos registrados con esos filtros.
+        <div class="text-center py-12">
+          <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <i class="fas fa-file-contract text-gray-400 text-2xl"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-700 mb-2">
+            {% if filtros.cargo or filtros.estado or filtros.tipo_contrato %}
+              No se encontraron contratos con los filtros aplicados
+            {% else %}
+              No hay contratos registrados
+            {% endif %}
+          </h3>
+          <p class="text-gray-500 mb-6">
+            {% if filtros.cargo or filtros.estado or filtros.tipo_contrato %}
+              Intenta con otros filtros o <a href="{% url 'informe_contratos' alias=slug %}" class="text-blue-600 hover:underline">muestra todos los contratos</a>.
+            {% else %}
+              Comienza registrando contratos laborales en el sistema.
+            {% endif %}
+          </p>
         </div>
       {% endif %}
     </section>
 
+    <!-- Información de la Empresa (solo en impresión) -->
+    <div class="hidden print:block mt-8 pt-8 border-t border-gray-300">
+      <div class="text-sm text-gray-600">
+        <p><strong>Empresa:</strong> {{ empresa.nombre }}</p>
+        <p><strong>Informe:</strong> Contratos Laborales</p>
+        <p><strong>Fecha de generación:</strong> {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+        <p><strong>Usuario:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+        <p><strong>Resumen:</strong> {{ estadisticas.total_contratos }} contratos, 
+          ${{ estadisticas.total_remuneracion|floatformat:0 }} en remuneraciones</p>
+      </div>
+    </div>
+
   </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Funcionalidad para tooltips
+      const cells = document.querySelectorAll('td');
+      cells.forEach(cell => {
+        if (cell.scrollWidth > cell.clientWidth) {
+          cell.title = cell.textContent;
+        }
+      });
+      
+      // Contador de caracteres para filtros
+      const selects = document.querySelectorAll('select');
+      selects.forEach(select => {
+        select.addEventListener('change', function() {
+          const activeFilters = Array.from(selects).filter(s => s.value).length;
+          const filterBadge = document.querySelector('.filters-count');
+          if (filterBadge) {
+            filterBadge.textContent = activeFilters;
+            filterBadge.style.display = activeFilters > 0 ? 'inline-block' : 'none';
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>

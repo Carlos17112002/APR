@@ -5,38 +5,402 @@
   <title>Editar aviso - {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      min-height: 100vh;
+    }
+    
+    .gradient-header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    
+    .card-shadow {
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+    }
+    
+    .hover-lift {
+      transition: all 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3);
+    }
+    
+    .input-focus:focus {
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+      border-color: #059669;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+      transition: .4s;
+      border-radius: 34px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(30px);
+    }
+    
+    .textarea-autoresize {
+      resize: none;
+      min-height: 150px;
+      max-height: 400px;
+    }
+    
+    .form-section {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 1px solid #a7f3d0;
+      border-radius: 12px;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body>
 
-  <!-- Navbar -->
-  <nav class="bg-green-700 text-white shadow">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">✏️ Editar aviso: {{ empresa.nombre }}</h1>
-      <a href="{% url 'avisos_activos' slug=slug %}" class="text-sm hover:underline">⬅️ Volver a avisos activos</a>
+  <!-- Header Moderno -->
+  <header class="gradient-header text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+          <div class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-edit text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold">Editar Aviso: {{ empresa.nombre }}</h1>
+            <p class="text-xs opacity-90 mt-0.5">Modificar comunicación existente</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <a href="{% url 'avisos_activos' slug=slug %}" 
+             class="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-colors flex items-center text-sm">
+            <i class="fas fa-arrow-left mr-2"></i> Volver a avisos activos
+          </a>
+          <a href="{% url 'avisos' slug=slug %}" 
+             class="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-colors flex items-center text-sm">
+            <i class="fas fa-list mr-2"></i> Todos los avisos
+          </a>
+        </div>
+      </div>
     </div>
-  </nav>
+  </header>
 
-  <!-- Formulario de edición -->
-  <div class="max-w-3xl mx-auto py-10 px-6">
-    <form method="POST" action="{% url 'editar_aviso' slug=slug aviso_id=aviso.id %}" class="space-y-6 bg-white p-6 rounded-lg shadow">
-      {% csrf_token %}
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Título</label>
-        <input type="text" name="titulo" value="{{ aviso.titulo }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Mensaje</label>
-        <textarea name="mensaje" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">{{ aviso.mensaje }}</textarea>
-      </div>
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Información del aviso actual -->
+    <div class="mb-8 form-section p-5">
       <div class="flex items-center">
-        <input type="checkbox" name="activo" {% if aviso.activo %}checked{% endif %} class="form-checkbox text-green-600">
-        <label class="ml-2 text-sm text-gray-700">Activo</label>
+        <div class="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center mr-4">
+          <i class="fas fa-info-circle text-emerald-600"></i>
+        </div>
+        <div>
+          <h3 class="font-semibold text-emerald-900">Editando aviso existente</h3>
+          <p class="text-sm text-emerald-700 mt-1">
+            <i class="far fa-calendar mr-1.5"></i>
+            Creado el {{ aviso.fecha_creacion|date:"d/m/Y H:i" }}
+            {% if aviso.fecha_actualizacion %}
+              <span class="mx-2">•</span>
+              <i class="fas fa-history mr-1.5"></i>
+              Última edición: {{ aviso.fecha_actualizacion|date:"d/m/Y H:i" }}
+            {% endif %}
+          </p>
+        </div>
       </div>
-      <div class="flex justify-end">
-        <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">💾 Guardar cambios</button>
+    </div>
+
+    <!-- Formulario de edición -->
+    <div class="bg-white rounded-xl card-shadow p-6 hover-lift animate-fade-in">
+      <div class="flex items-center mb-6">
+        <div class="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+          <i class="fas fa-edit text-blue-600"></i>
+        </div>
+        <h2 class="text-xl font-semibold text-gray-900">Editar Contenido del Aviso</h2>
       </div>
-    </form>
-  </div>
+      
+      <form method="POST" action="{% url 'editar_aviso' slug=slug aviso_id=aviso.id %}" class="space-y-6">
+        {% csrf_token %}
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-heading mr-1.5 text-gray-400"></i>Título del Aviso
+          </label>
+          <input type="text" name="titulo" value="{{ aviso.titulo }}" required 
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
+                 placeholder="Ingrese el título del aviso"
+                 maxlength="100">
+          <p class="text-xs text-gray-500 mt-1.5">El título aparecerá destacado para los clientes</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-comment-dots mr-1.5 text-gray-400"></i>Mensaje
+          </label>
+          <div class="mb-2">
+            <span class="text-xs text-gray-500">Escribe el contenido principal del aviso</span>
+          </div>
+          <textarea name="mensaje" rows="6" required 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg textarea-autoresize input-focus transition-colors"
+                    placeholder="Escriba el contenido del aviso aquí..."
+                    maxlength="500">{{ aviso.mensaje }}</textarea>
+          <div class="flex justify-between mt-1">
+            <p class="text-xs text-gray-500">Máximo 500 caracteres</p>
+            <p class="text-xs text-gray-500">
+              <span id="charCounter">{{ aviso.mensaje|length }}</span>/500
+            </p>
+          </div>
+        </div>
+        
+        <!-- Estado del aviso -->
+        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-900">Estado del Aviso</p>
+              <p class="text-xs text-gray-500 mt-0.5">
+                {% if aviso.activo %}
+                  <span class="text-emerald-600 font-medium">Actualmente visible para los clientes</span>
+                {% else %}
+                  <span class="text-gray-600">Actualmente oculto para los clientes</span>
+                {% endif %}
+              </p>
+            </div>
+            
+            <label class="toggle-switch">
+              <input type="checkbox" name="activo" {% if aviso.activo %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="p-3 rounded-lg {% if aviso.activo %}bg-emerald-50 border border-emerald-200{% else %}bg-gray-100 border border-gray-200{% endif %}">
+              <div class="flex items-center">
+                <div class="h-8 w-8 rounded-lg {% if aviso.activo %}bg-emerald-100 text-emerald-600{% else %}bg-gray-200 text-gray-600{% endif %} flex items-center justify-center mr-2">
+                  <i class="fas {% if aviso.activo %}fa-eye{% else %}fa-eye-slash{% endif %}"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-900">Estado actual</p>
+                  <p class="text-xs {% if aviso.activo %}text-emerald-700{% else %}text-gray-600{% endif %}">
+                    {{ aviso.activo|yesno:"Activo,Inactivo" }}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200">
+              <div class="flex items-center">
+                <div class="h-8 w-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mr-2">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-900">Visibilidad</p>
+                  <p class="text-xs text-blue-700">
+                    {% if aviso.activo %}
+                      Visible para clientes
+                    {% else %}
+                      Solo administración
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Acciones -->
+        <div class="pt-6 border-t border-gray-200">
+          <div class="flex justify-between items-center">
+            <div>
+              <a href="{% url 'avisos_activos' slug=slug %}" 
+                 class="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2.5 rounded-lg transition-colors flex items-center text-sm">
+                <i class="fas fa-times mr-2"></i> Cancelar
+              </a>
+            </div>
+            
+            <div class="flex space-x-4">
+              <button type="button" onclick="window.location.href='{% url 'avisos_activos' slug=slug %}'" 
+                      class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center">
+                <i class="fas fa-times mr-2"></i> Descartar
+              </button>
+              
+              <button type="submit" 
+                      class="btn-primary text-white px-6 py-2.5 rounded-lg font-medium flex items-center">
+                <i class="fas fa-save mr-2"></i> Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Vista previa -->
+    <div class="mt-8 bg-white rounded-xl card-shadow p-6">
+      <div class="flex items-center mb-4">
+        <div class="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+          <i class="fas fa-eye text-purple-600"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900">Vista Previa del Aviso</h3>
+      </div>
+      
+      <div class="border border-gray-200 rounded-lg p-5 bg-gray-50">
+        <div class="flex justify-between items-start mb-3">
+          <h4 class="text-lg font-semibold text-gray-900" id="previewTitulo">{{ aviso.titulo }}</h4>
+          <span id="previewStatus" class="text-xs px-3 py-1 rounded-full {% if aviso.activo %}bg-emerald-100 text-emerald-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+            {{ aviso.activo|yesno:"Activo,Inactivo" }}
+          </span>
+        </div>
+        <p class="text-sm text-gray-700 whitespace-pre-line" id="previewMensaje">{{ aviso.mensaje }}</p>
+        <p class="text-xs text-gray-400 mt-4">
+          <i class="far fa-clock mr-1"></i>
+          Vista previa - Los cambios se aplicarán al guardar
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Contador de caracteres
+      const textarea = document.querySelector('textarea[name="mensaje"]');
+      const charCounter = document.getElementById('charCounter');
+      
+      if (textarea && charCounter) {
+        textarea.addEventListener('input', function() {
+          charCounter.textContent = this.value.length;
+          updatePreview();
+        });
+        
+        textarea.addEventListener('input', function() {
+          this.style.height = 'auto';
+          this.style.height = (this.scrollHeight) + 'px';
+        });
+        
+        // Inicializar altura del textarea
+        textarea.style.height = 'auto';
+        textarea.style.height = (textarea.scrollHeight) + 'px';
+      }
+      
+      // Actualizar vista previa en tiempo real
+      const tituloInput = document.querySelector('input[name="titulo"]');
+      const activoCheckbox = document.querySelector('input[name="activo"]');
+      
+      if (tituloInput) {
+        tituloInput.addEventListener('input', updatePreview);
+      }
+      
+      if (activoCheckbox) {
+        activoCheckbox.addEventListener('change', updatePreview);
+      }
+      
+      function updatePreview() {
+        const titulo = document.querySelector('input[name="titulo"]')?.value || '{{ aviso.titulo }}';
+        const mensaje = document.querySelector('textarea[name="mensaje"]')?.value || '{{ aviso.mensaje }}';
+        const activo = document.querySelector('input[name="activo"]')?.checked || false;
+        
+        const previewTitulo = document.getElementById('previewTitulo');
+        const previewMensaje = document.getElementById('previewMensaje');
+        const previewStatus = document.getElementById('previewStatus');
+        
+        if (previewTitulo) previewTitulo.textContent = titulo || 'Título del aviso';
+        if (previewMensaje) previewMensaje.textContent = mensaje || 'Contenido del aviso...';
+        
+        if (previewStatus) {
+          if (activo) {
+            previewStatus.className = 'text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-800';
+            previewStatus.textContent = 'Activo';
+          } else {
+            previewStatus.className = 'text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-800';
+            previewStatus.textContent = 'Inactivo';
+          }
+        }
+      }
+      
+      // Inicializar vista previa
+      updatePreview();
+      
+      // Confirmación al enviar formulario
+      const form = document.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          const button = this.querySelector('button[type="submit"]');
+          const originalText = button.innerHTML;
+          
+          // Mostrar estado de carga
+          button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+          button.disabled = true;
+          
+          // Restaurar después de un tiempo (en caso de que la página no recargue)
+          setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+          }, 3000);
+        });
+      }
+    });
+  </script>
 
 </body>
 </html>

@@ -1,38 +1,429 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <title>Crear Empresa SSR</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05), 0 2px 10px rgba(0, 0, 0, 0.03);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(5, 150, 105, 0.2);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        }
+        .input-focus:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+        .step-indicator {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .step-indicator.active {
+            background-color: #10b981;
+            color: white;
+        }
+        .step-indicator.inactive {
+            background-color: #e5e7eb;
+            color: #6b7280;
+        }
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background-color: #e5e7eb;
+        }
+        .step-line.active {
+            background-color: #10b981;
+        }
+        .sector-tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #065f46;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .sector-tag button {
+            margin-left: 0.375rem;
+            color: #047857;
+            opacity: 0.7;
+        }
+        .sector-tag button:hover {
+            opacity: 1;
+        }
+    </style>
 </head>
-
-<body class="bg-gray-50 text-gray-800 font-sans">
-
-    <div class="max-w-md mx-auto py-10 px-6">
-        <h1 class="text-2xl font-bold text-green-700 mb-6">➕ Crear Nueva Empresa</h1>
-
-        <form method="post" class="space-y-4">
-            {% csrf_token %}
-            <form method="post" class="space-y-4">
-            {% csrf_token %}
-            <label class="block text-sm font-medium text-gray-700">Nombre de la empresa</label>
-            <input type="text" name="nombre" required class="block w-full border-gray-300 rounded-md shadow-sm">
-
-            <label class="block text-sm font-medium text-gray-700">Sectores (separados por coma)</label>
-            <textarea name="sectores" rows="3" class="block w-full border-gray-300 rounded-md shadow-sm" placeholder="Centro, Norte, Sur, Villa Los Aromos"></textarea>
-
-            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Crear Empresa</button>
-            </form>
-        </form>
-
-        <div class="mt-6">
-            <a href="{% url 'dashboard_admin_ssr' %}" class="text-blue-600 hover:underline">⬅️ Volver al Panel
-                General</a>
+<body class="gradient-bg min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mr-3">
+                        <i class="fas fa-plus text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Crear Nueva Empresa</h1>
+                        <p class="text-sm text-gray-600">Sistema SSR - Panel Administrativo</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'dashboard_admin_ssr' %}" class="flex items-center text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+                    </a>
+                    <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <span class="text-emerald-700 font-medium text-sm">AD</span>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+    </header>
 
+    <!-- Contenido Principal -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Indicador de Progreso -->
+        <div class="mb-10">
+            <div class="flex items-center justify-between max-w-lg mx-auto">
+                <div class="flex flex-col items-center">
+                    <div class="step-indicator active">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <p class="text-xs font-medium text-gray-700 mt-2">Información</p>
+                </div>
+                <div class="step-line active"></div>
+                <div class="flex flex-col items-center">
+                    <div class="step-indicator inactive">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <p class="text-xs font-medium text-gray-500 mt-2">Configuración</p>
+                </div>
+                <div class="step-line"></div>
+                <div class="flex flex-col items-center">
+                    <div class="step-indicator inactive">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <p class="text-xs font-medium text-gray-500 mt-2">Confirmación</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Formulario -->
+            <div class="lg:w-2/3">
+                <div class="bg-white rounded-2xl card-shadow p-8">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center mr-4">
+                            <i class="fas fa-building text-emerald-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Información de la Empresa</h2>
+                            <p class="text-gray-600 mt-1">Complete los datos requeridos para crear una nueva empresa en el sistema SSR</p>
+                        </div>
+                    </div>
+
+                    {% if messages %}
+                    <div class="mb-6">
+                        {% for message in messages %}
+                        <div class="p-4 rounded-lg mb-3 {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+                            <div class="flex items-center">
+                                <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-3"></i>
+                                <div>
+                                    <p class="font-medium">{{ message }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" class="space-y-6" id="create-company-form">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-signature text-gray-400 mr-2"></i> Nombre de la Empresa
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    name="nombre" 
+                                    required 
+                                    class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent input-focus" 
+                                    placeholder="Ej: Agua Potable Rural Los Aromos"
+                                    autocomplete="off"
+                                >
+                                <div class="absolute right-3 top-3">
+                                    <i class="fas fa-building text-gray-400"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Ingrese el nombre completo de la empresa APR.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-map-marker-alt text-gray-400 mr-2"></i> Sectores (separados por coma)
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <textarea 
+                                    name="sectores" 
+                                    rows="3" 
+                                    class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent input-focus" 
+                                    placeholder="Ej: Centro, Norte, Sur, Villa Los Aromos, Alto del Carmen"
+                                    id="sectores-input"
+                                ></textarea>
+                                <div class="absolute right-3 top-3">
+                                    <i class="fas fa-map text-gray-400"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Estos sectores se usarán para organizar clientes y lecturas.</p>
+                            
+                            <!-- Tags de sectores (visualización) -->
+                            <div class="mt-4" id="sectores-tags-container">
+                                <div class="text-sm text-gray-500 mb-2">Sectores detectados:</div>
+                                <div id="sectores-tags" class="flex flex-wrap">
+                                    <!-- Los tags se generarán dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información adicional -->
+                        <div class="border-t border-gray-200 pt-6 mt-6">
+                            <h3 class="text-lg font-medium text-gray-800 mb-4">Configuraciones Automáticas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="flex items-start p-4 bg-gray-50 rounded-lg">
+                                    <i class="fas fa-database text-emerald-600 mt-1 mr-3"></i>
+                                    <div>
+                                        <p class="font-medium text-gray-800">Base de Datos</p>
+                                        <p class="text-sm text-gray-600 mt-1">Se creará automáticamente una base de datos dedicada para esta empresa.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start p-4 bg-gray-50 rounded-lg">
+                                    <i class="fas fa-user-shield text-emerald-600 mt-1 mr-3"></i>
+                                    <div>
+                                        <p class="font-medium text-gray-800">Usuario Admin</p>
+                                        <p class="text-sm text-gray-600 mt-1">Podrá crear un usuario administrador después de registrar la empresa.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                            <button type="submit" class="btn-primary text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center">
+                                <i class="fas fa-plus-circle mr-2"></i> Crear Empresa
+                            </button>
+                            <a href="{% url 'dashboard_admin_ssr' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-medium flex items-center justify-center transition-colors">
+                                <i class="fas fa-times mr-2"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Panel Lateral - Información -->
+            <div class="lg:w-1/3">
+                <div class="bg-white rounded-2xl card-shadow p-6 mb-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-info-circle text-emerald-600 mr-2"></i> Información Importante
+                    </h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-emerald-500 mt-1 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-800">Nombre único</p>
+                                <p class="text-sm text-gray-600">Cada empresa debe tener un nombre único en el sistema.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-emerald-500 mt-1 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-800">Slug automático</p>
+                                <p class="text-sm text-gray-600">El sistema generará automáticamente un slug basado en el nombre.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-emerald-500 mt-1 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-800">Sectores iniciales</p>
+                                <p class="text-sm text-gray-600">Puede agregar o modificar sectores después de la creación.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl card-shadow p-6 border border-emerald-100">
+                    <h3 class="text-lg font-bold text-emerald-800 mb-4 flex items-center">
+                        <i class="fas fa-lightbulb text-emerald-600 mr-2"></i> Recomendaciones
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
+                                <span class="text-emerald-700 font-bold text-xs">1</span>
+                            </div>
+                            <p class="text-sm text-emerald-800">Use nombres descriptivos que identifiquen claramente la empresa.</p>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
+                                <span class="text-emerald-700 font-bold text-xs">2</span>
+                            </div>
+                            <p class="text-sm text-emerald-800">Defina sectores coherentes con la organización territorial real.</p>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
+                                <span class="text-emerald-700 font-bold text-xs">3</span>
+                            </div>
+                            <p class="text-sm text-emerald-800">Después de crear la empresa, configure los parámetros administrativos.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-white rounded-lg border border-emerald-200">
+                        <div class="flex items-center">
+                            <i class="fas fa-clock text-emerald-600 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-emerald-800">Tiempo estimado</p>
+                                <p class="text-xs text-emerald-700">Creación: 2-3 minutos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Manejo dinámico de tags para sectores
+        document.addEventListener('DOMContentLoaded', function() {
+            const sectoresInput = document.getElementById('sectores-input');
+            const sectoresTagsContainer = document.getElementById('sectores-tags');
+            const tagsContainer = document.getElementById('sectores-tags-container');
+            
+            // Ocultar inicialmente el contenedor de tags
+            tagsContainer.style.display = 'none';
+            
+            // Función para actualizar tags
+            function updateTags() {
+                const value = sectoresInput.value;
+                const sectores = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                
+                // Limpiar tags existentes
+                sectoresTagsContainer.innerHTML = '';
+                
+                // Si no hay sectores, ocultar el contenedor
+                if (sectores.length === 0) {
+                    tagsContainer.style.display = 'none';
+                    return;
+                }
+                
+                // Mostrar el contenedor
+                tagsContainer.style.display = 'block';
+                
+                // Crear tags
+                sectores.forEach((sector, index) => {
+                    const tag = document.createElement('div');
+                    tag.className = 'sector-tag';
+                    tag.innerHTML = `
+                        ${sector}
+                        <button type="button" onclick="removeSector(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    sectoresTagsContainer.appendChild(tag);
+                });
+            }
+            
+            // Actualizar tags cuando el usuario escribe
+            sectoresInput.addEventListener('input', updateTags);
+            
+            // Actualizar tags al cargar la página si ya hay contenido
+            updateTags();
+            
+            // Función para eliminar un sector (global para que funcione en los botones)
+            window.removeSector = function(index) {
+                const value = sectoresInput.value;
+                const sectores = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                
+                // Eliminar el sector en el índice especificado
+                sectores.splice(index, 1);
+                
+                // Actualizar el textarea
+                sectoresInput.value = sectores.join(', ');
+                
+                // Actualizar los tags
+                updateTags();
+            };
+            
+            // Validación del formulario
+            document.getElementById('create-company-form').addEventListener('submit', function(e) {
+                const nombre = document.querySelector('input[name="nombre"]').value.trim();
+                const sectores = sectoresInput.value.trim();
+                
+                if (!nombre) {
+                    e.preventDefault();
+                    alert('Por favor, ingrese el nombre de la empresa.');
+                    document.querySelector('input[name="nombre"]').focus();
+                    return;
+                }
+                
+                if (!sectores) {
+                    e.preventDefault();
+                    alert('Por favor, ingrese al menos un sector.');
+                    sectoresInput.focus();
+                    return;
+                }
+                
+                // Mostrar indicador de carga
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creando empresa...';
+                submitBtn.disabled = true;
+                
+                // Restaurar después de 5 segundos (en caso de que algo falle)
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 5000);
+            });
+            
+            // Sugerencia de sectores comunes
+            sectoresInput.addEventListener('focus', function() {
+                if (!this.value) {
+                    this.placeholder = "Ej: Centro, Norte, Sur, Villa Los Aromos, Alto del Carmen";
+                }
+            });
+        });
+    </script>
 </body>
-
 </html>

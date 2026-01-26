@@ -1,240 +1,800 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" x-data="calculoLiquidacion()">
 <head>
-  <meta charset="UTF-8">
-  <title>Crear liquidación · {{ alias }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-</head>
-<body class="bg-gray-50 text-gray-800 font-sans">
-
-  <header class="bg-green-800 text-white py-5 shadow-md">
-    <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Nueva liquidación · <span class="text-white/80">{{ alias }}</span></h1>
-      <a href="/trabajadores/{{ alias }}/liquidaciones/" class="text-sm hover:underline">Volver a liquidaciones</a>
-    </div>
-  </header>
-
-  <main class="max-w-6xl mx-auto px-6 py-10 space-y-10">
-
-    {% if form_liquidacion.errors %}
-      <div class="bg-red-100 text-red-700 p-4 rounded">
-        <p class="font-semibold">Hay errores en el formulario:</p>
-        <ul class="list-disc ml-5">
-          {% for field in form_liquidacion %}
-            {% for error in field.errors %}
-              <li>{{ field.label }}: {{ error }}</li>
-            {% endfor %}
-          {% endfor %}
-        </ul>
-      </div>
-    {% endif %}
-
-    <!-- Formulario para cargar datos del contrato -->
-    <form method="post" class="bg-white p-6 rounded shadow space-y-6">
-      {% csrf_token %}
-      <input type="hidden" name="modo" value="cargar">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-        <div>
-          <label class="block text-sm font-medium mb-1">Trabajador</label>
-          {{ form_carga.trabajador }}
-        </div>
-        <div>
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition mt-6">
-            Cargar datos del contrato
-          </button>
-        </div>
-      </div>
-    </form>
-
-    <!-- Formulario para generar liquidación -->
-    <form method="post" class="bg-white p-6 rounded shadow space-y-6" x-data="calculoLiquidacion()" x-init="init()">
-      {% csrf_token %}
-      <input type="hidden" name="modo" value="guardar">
-      <input type="hidden" name="trabajador" value="{{ form_liquidacion.trabajador.value }}">
-
-      <!-- Mes -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Mes</label>
-          {{ form_liquidacion.mes }}
-        </div>
-      </div>
-
-      <!-- Haberes -->
-      <h3 class="text-sm font-semibold text-green-700">Haberes</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Sueldo base</label>
-          {{ form_liquidacion.sueldo_base }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Gratificación</label>
-          {{ form_liquidacion.gratificacion }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Bonos</label>
-          {{ form_liquidacion.bonos }}
-        </div>
-      </div>
-
-      <!-- Horas extra -->
-      <h3 class="text-sm font-semibold text-green-700">Horas extra</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Horas extra 50%</label>
-          {{ form_liquidacion.horas_extra_50 }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Horas extra 100%</label>
-          {{ form_liquidacion.horas_extra_100 }}
-        </div>
-      </div>
-
-      <!-- Descuentos previsionales -->
-      <h3 class="text-sm font-semibold text-green-700">Descuentos previsionales</h3>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <p class="text-sm text-gray-600">AFP utilizada: <strong>{{ contrato.afp|title }}</strong></p>
-
-          <label class="block text-sm font-medium mb-1">AFP</label>
-          {{ form_liquidacion.afp }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Salud</label>
-          {{ form_liquidacion.salud }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Seguro cesantía</label>
-          {{ form_liquidacion.seguro_cesantia }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Otros descuentos</label>
-          {{ form_liquidacion.otros_descuentos }}
-        </div>
-      </div>
-
-      <!-- Días del mes -->
-      <h3 class="text-sm font-semibold text-green-700">Días del mes</h3>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Trabajados</label>
-          {{ form_liquidacion.dias_trabajados }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Licencia</label>
-          {{ form_liquidacion.dias_licencia }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Vacaciones</label>
-          {{ form_liquidacion.dias_vacaciones }}
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Ausente</label>
-          {{ form_liquidacion.dias_ausente }}
-        </div>
-      </div>
-
-      <!-- Resumen dinámico -->
-      <div class="bg-gray-50 border rounded p-4 mt-6">
-        <h3 class="text-sm font-semibold text-green-700 mb-2">Resumen en tiempo real</h3>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Liquidación · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857;
+            --primary-dark: #065f46;
+            --secondary: #2563eb;
+            --accent: #7c3aed;
+        }
         
-        <p class="text-sm text-gray-600">Total haberes: <span class="font-bold text-green-700">$<span x-text="haberes"></span></span></p>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            border-radius: 16px;
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(4, 120, 87, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #1d4ed8 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        }
+        
+        .input-modern {
+            background: white;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .input-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.1);
+            outline: none;
+        }
+        
+        .section-title {
+            position: relative;
+            padding-left: 16px;
+            color: var(--primary);
+        }
+        
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 20px;
+            width: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        
+        .stat-card {
+            border-left: 4px solid;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .badge-info {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .animate-pulse-subtle {
+            animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 10;
+            margin-bottom: 8px;
+        }
+        
+        .highlight-change {
+            animation: highlight 0.6s ease;
+        }
+        
+        @keyframes highlight {
+            0% { background-color: transparent; }
+            50% { background-color: rgba(255, 251, 235, 0.8); }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
 
-        <div class="mt-2 space-y-1">
-          <p class="text-sm text-gray-600">Descuentos:</p>
-          <ul class="ml-4 text-sm text-gray-600 space-y-1">
-            <li>AFP: <span class="font-bold text-red-600">$<span x-text="Math.round(afp)"></span></span></li>
-            <li>Salud: <span class="font-bold text-red-600">$<span x-text="Math.round(salud)"></span></span></li>
-            <li>Cesantía: <span class="font-bold text-red-600">$<span x-text="Math.round(cesantia)"></span></span></li>
-            <li>Otros descuentos: <span class="font-bold text-red-600">$<span x-text="Math.round(otros)"></span></span></li>
-            <li>Ausencias: <span class="font-bold text-red-600">$<span x-text="Math.round(descuento_ausente)"></span></span></li>
-          </ul>
-          <p class="text-sm text-gray-600 mt-1">Total descuentos: 
-            <span class="font-bold text-red-600">$<span x-text="descuentos"></span></span>
-          </p>
+    <!-- Encabezado -->
+    <header class="gradient-header text-white shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                        <i class="fas fa-file-invoice-dollar text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Nueva Liquidación</h1>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm opacity-90">{{ empresa.nombre }}</span>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full">{{ alias }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <a href="/trabajadores/{{ alias }}/liquidaciones/" 
+                       class="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-lg transition-all duration-200 group">
+                        <i class="fas fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+                        <span class="text-sm font-medium">Volver a Liquidaciones</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Mensajes de error -->
+        {% if form_liquidacion.errors %}
+        <div class="glass-panel border-l-4 border-red-500 p-6">
+            <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-red-700 mb-2">Errores en el formulario</h3>
+                    <ul class="space-y-1 text-sm text-red-600">
+                        {% for field in form_liquidacion %}
+                            {% for error in field.errors %}
+                                <li class="flex items-center space-x-2">
+                                    <i class="fas fa-chevron-right text-xs"></i>
+                                    <span><strong>{{ field.label }}:</strong> {{ error }}</span>
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Paso 1: Selección de trabajador -->
+        <div class="glass-panel p-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span class="font-bold text-blue-600">1</span>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800">Seleccionar Trabajador</h2>
+                    <p class="text-sm text-gray-500">Cargue los datos del contrato del trabajador</p>
+                </div>
+            </div>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="modo" value="cargar">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user text-gray-400 mr-2"></i>
+                            Seleccionar Trabajador
+                        </label>
+                        <div class="relative">
+                            {{ form_carga.trabajador }}
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-end">
+                        <button type="submit" 
+                                class="btn-secondary w-full md:w-auto px-6 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
+                            <i class="fas fa-database"></i>
+                            <span>Cargar Datos del Contrato</span>
+                        </button>
+                    </div>
+                </div>
+                
+                {% if contrato %}
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 mt-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                        <div>
+                            <h4 class="font-medium text-green-800">Datos del contrato cargados</h4>
+                            <p class="text-sm text-green-600">
+                                {{ contrato.trabajador.nombre }} · AFP: {{ contrato.afp|upper }} · Sueldo: ${{ contrato.sueldo_base }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </form>
         </div>
 
-        <p class="text-sm text-gray-600 mt-2">Horas extra: 
-          <span class="font-bold text-green-700">$<span x-text="extras"></span></span>
-        </p>
+        <!-- Paso 2: Formulario de liquidación -->
+        <div class="glass-panel p-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                    <span class="font-bold text-green-600">2</span>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800">Configurar Liquidación</h2>
+                    <p class="text-sm text-gray-500">Complete los datos del período a liquidar</p>
+                </div>
+            </div>
+            
+            <form method="post" class="space-y-8">
+                {% csrf_token %}
+                <input type="hidden" name="modo" value="guardar">
+                <input type="hidden" name="trabajador" value="{{ form_liquidacion.trabajador.value }}">
 
-        <p class="text-sm text-gray-800 mt-2"><strong>Líquido pagado:</strong> 
-          <span class="text-lg font-bold">$<span x-text="liquido"></span></span>
-        </p>
-      </div>
+                <!-- Período -->
+                <div>
+                    <h3 class="section-title text-lg font-semibold mb-4">Período</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar-alt text-gray-400 mr-2"></i>
+                                Mes y Año
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.mes }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <i class="fas fa-calendar text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-      <div class="pt-6">
-        <button type="submit" class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">
-          Generar liquidación
-        </button>
-      </div>
-    </form>
-  </main>
+                <!-- Haberes -->
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title text-lg font-semibold">Haberes</h3>
+                        <span class="text-xs badge-success px-3 py-1 rounded-full">
+                            <i class="fas fa-plus-circle mr-1"></i>
+                            Ingresos
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Sueldo Base
+                                <span class="text-xs text-gray-500 ml-1">(obligatorio)</span>
+                            </label>
+                            <div class="relative" x-data="{ highlight: false }" x-init="
+                                $watch('sueldo_base', (value, oldValue) => {
+                                    if (value !== oldValue && oldValue !== undefined) {
+                                        highlight = true;
+                                        setTimeout(() => highlight = false, 600);
+                                    }
+                                })">
+                                {{ form_liquidacion.sueldo_base }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">$</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Gratificación
+                                <span class="tooltip" data-tooltip="Bonificación legal o contractual">
+                                    <i class="fas fa-info-circle text-gray-400 ml-1"></i>
+                                </span>
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.gratificacion }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">$</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Bonos Adicionales
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.bonos }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">$</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-  <!-- Script Alpine.js -->
-<script>
-function calculoLiquidacion() {
-  return {
-    haberes: 0,
-    descuentos: 0,
-    extras: 0,
-    liquido: 0,
-    afp: 0,
-    salud: 0,
-    cesantia: 0,
-    otros: 0,
-    descuento_ausente: 0,
-    dias_mes: 30,
-    jornada_diaria: 8,
+                <!-- Horas Extra -->
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title text-lg font-semibold">Horas Extra</h3>
+                        <span class="text-xs badge-warning px-3 py-1 rounded-full">
+                            <i class="fas fa-clock mr-1"></i>
+                            Recargo
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Horas Extra 50%
+                                <span class="text-xs text-gray-500">(recargo del 50%)</span>
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.horas_extra_50 }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">hrs</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Horas Extra 100%
+                                <span class="text-xs text-gray-500">(recargo del 100%)</span>
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.horas_extra_100 }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">hrs</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    init() {
-      this.recalcular();
-      document.querySelectorAll('input, select').forEach(el => {
-        el.addEventListener('input', () => this.recalcular());
-      });
-    },
+                <!-- Descuentos Previsionales -->
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title text-lg font-semibold">Descuentos Previsionales</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs badge-info px-3 py-1 rounded-full">
+                                AFP: {{ contrato.afp|upper|default:"-" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Aporte AFP
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.afp }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">$</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Salud (Fonasa/Isapre)
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.salud }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">$</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Seguro de Cesantía
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.seguro_cesantia }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">$</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Otros Descuentos
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.otros_descuentos }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">$</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    getValor(id) {
-      const el = document.getElementById(id);
-      return el ? parseFloat(el.value) || 0 : 0;
-    },
+                <!-- Días del Mes -->
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title text-lg font-semibold">Días del Mes</h3>
+                        <span class="text-xs text-gray-500">Total días: <strong>30</strong></span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Días Trabajados
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.dias_trabajados }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">días</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Días con Licencia
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.dias_licencia }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">días</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Días de Vacaciones
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.dias_vacaciones }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">días</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Días Ausente
+                            </label>
+                            <div class="relative">
+                                {{ form_liquidacion.dias_ausente }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-400">días</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    recalcular() {
-      const sueldo_base = this.getValor('id_sueldo_base');
-      const gratificacion = this.getValor('id_gratificacion');
-      const bonos = this.getValor('id_bonos');
+                <!-- Resumen en tiempo real -->
+                <div class="glass-panel border border-green-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-green-700">
+                            <i class="fas fa-calculator mr-2"></i>
+                            Resumen en Tiempo Real
+                        </h3>
+                        <span class="text-xs badge-success px-3 py-1 rounded-full animate-pulse-subtle">
+                            <i class="fas fa-sync-alt mr-1"></i>
+                            Actualizando...
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <!-- Total Haberes -->
+                        <div class="stat-card border-l-green-500 p-4">
+                            <p class="text-sm text-gray-500 mb-1">Total Haberes</p>
+                            <p class="text-2xl font-bold text-green-700">$<span x-text="haberes.toLocaleString('es-CL')"></span></p>
+                            <div class="text-xs text-gray-400 mt-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Incluye sueldo, bonos y extras
+                            </div>
+                        </div>
+                        
+                        <!-- Total Descuentos -->
+                        <div class="stat-card border-l-red-500 p-4">
+                            <p class="text-sm text-gray-500 mb-1">Total Descuentos</p>
+                            <p class="text-2xl font-bold text-red-600">$<span x-text="descuentos.toLocaleString('es-CL')"></span></p>
+                            <div class="text-xs text-gray-400 mt-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Previsionales y ausencias
+                            </div>
+                        </div>
+                        
+                        <!-- Horas Extra -->
+                        <div class="stat-card border-l-amber-500 p-4">
+                            <p class="text-sm text-gray-500 mb-1">Horas Extra</p>
+                            <p class="text-2xl font-bold text-amber-600">$<span x-text="extras.toLocaleString('es-CL')"></span></p>
+                            <div class="text-xs text-gray-400 mt-2">
+                                <i class="fas fa-clock mr-1"></i>
+                                50% y 100%
+                            </div>
+                        </div>
+                        
+                        <!-- Líquido a Pagar -->
+                        <div class="stat-card border-l-blue-500 p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <p class="text-sm text-gray-500 mb-1">Líquido a Pagar</p>
+                            <p class="text-3xl font-bold text-blue-700">$<span x-text="liquido.toLocaleString('es-CL')"></span></p>
+                            <div class="text-xs text-blue-600 font-medium mt-2">
+                                <i class="fas fa-hand-holding-usd mr-1"></i>
+                                Monto final para el trabajador
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Desglose detallado -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Desglose de descuentos -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">Desglose de Descuentos</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">AFP:</span>
+                                    <span class="font-medium text-red-600">$<span x-text="afp.toLocaleString('es-CL')"></span></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Salud:</span>
+                                    <span class="font-medium text-red-600">$<span x-text="salud.toLocaleString('es-CL')"></span></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Seguro Cesantía:</span>
+                                    <span class="font-medium text-red-600">$<span x-text="cesantia.toLocaleString('es-CL')"></span></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Otros Descuentos:</span>
+                                    <span class="font-medium text-red-600">$<span x-text="otros.toLocaleString('es-CL')"></span></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Descuento por Ausencias:</span>
+                                    <span class="font-medium text-red-600">$<span x-text="descuento_ausente.toLocaleString('es-CL')"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Resumen de días -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">Resumen de Días</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Días Efectivos:</span>
+                                    <span class="font-medium text-green-600" x-text="trabajados"></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Días Ausente:</span>
+                                    <span class="font-medium text-red-600" x-text="ausente"></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Valor Día Trabajado:</span>
+                                    <span class="font-medium text-blue-600">$<span x-text="sueldo_diario.toLocaleString('es-CL', {minimumFractionDigits: 0})"></span></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Valor Hora Normal:</span>
+                                    <span class="font-medium text-blue-600">$<span x-text="valor_hora.toLocaleString('es-CL', {minimumFractionDigits: 0})"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-      const afp_valor = this.getValor('id_afp');
-      const salud_valor = this.getValor('id_salud');
-      const cesantia_valor = this.getValor('id_seguro_cesantia');
-      const otros_valor = this.getValor('id_otros_descuentos');
+                <!-- Botón de envío -->
+                <div class="pt-6 border-t border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                            Todos los cálculos se guardan automáticamente
+                        </div>
+                        <button type="submit" 
+                                class="btn-primary px-8 py-3 rounded-lg font-medium text-lg flex items-center space-x-3">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Generar Liquidación</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
 
-      const trabajados = this.getValor('id_dias_trabajados');
-      const ausente = this.getValor('id_dias_ausente');
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Sistema de Liquidaciones
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fas fa-calculator mr-1"></i> Cálculos en tiempo real</span>
+                <span><i class="fas fa-save mr-1"></i> Auto-guardado</span>
+                <span class="text-green-600 font-medium">
+                    <i class="fas fa-circle text-xs mr-1"></i>
+                    {{ "ahora"|capfirst }}
+                </span>
+            </div>
+        </div>
+    </footer>
 
-      const extra50 = this.getValor('id_horas_extra_50');
-      const extra100 = this.getValor('id_horas_extra_100');
-
-      const sueldo_diario = sueldo_base / this.dias_mes || 0;
-      const sueldo_real = sueldo_diario * trabajados || 0;
-      this.descuento_ausente = sueldo_diario * ausente || 0;
-
-      const valor_hora = sueldo_diario / this.jornada_diaria || 0;
-      this.extras = Math.round(extra50 * valor_hora * 1.5 + extra100 * valor_hora * 2.0) || 0;
-
-      this.afp = Math.round(afp_valor) || 0;
-      this.salud = Math.round(salud_valor) || 0;
-      this.cesantia = Math.round(cesantia_valor) || 0;
-      this.otros = Math.round(otros_valor) || 0;
-
-      this.haberes = Math.round(sueldo_real + gratificacion + bonos + this.extras);
-      this.descuentos = Math.round(this.afp + this.salud + this.cesantia + this.otros + this.descuento_ausente);
-      this.liquido = this.haberes - this.descuentos;
-    }
-  }
-}
-</script>
+    <!-- Script Alpine.js mejorado -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('calculoLiquidacion', () => ({
+                // Variables de cálculo
+                haberes: 0,
+                descuentos: 0,
+                extras: 0,
+                liquido: 0,
+                afp: 0,
+                salud: 0,
+                cesantia: 0,
+                otros: 0,
+                descuento_ausente: 0,
+                sueldo_diario: 0,
+                valor_hora: 0,
+                trabajados: 0,
+                ausente: 0,
+                
+                // Constantes
+                dias_mes: 30,
+                jornada_diaria: 8,
+                
+                init() {
+                    // Inicializar valores desde el formulario
+                    this.recalcular();
+                    
+                    // Escuchar cambios en todos los inputs
+                    document.querySelectorAll('input, select').forEach(el => {
+                        el.addEventListener('input', () => {
+                            this.recalcular();
+                            this.mostrarFeedback();
+                        });
+                    });
+                    
+                    // Auto-guardado cada 30 segundos
+                    setInterval(() => this.autoSave(), 30000);
+                },
+                
+                getValor(id) {
+                    const el = document.getElementById(id);
+                    if (!el) return 0;
+                    
+                    const valor = parseFloat(el.value);
+                    return isNaN(valor) ? 0 : valor;
+                },
+                
+                recalcular() {
+                    // Obtener valores del formulario
+                    const sueldo_base = this.getValor('id_sueldo_base');
+                    const gratificacion = this.getValor('id_gratificacion');
+                    const bonos = this.getValor('id_bonos');
+                    
+                    this.afp = this.getValor('id_afp');
+                    this.salud = this.getValor('id_salud');
+                    this.cesantia = this.getValor('id_seguro_cesantia');
+                    this.otros = this.getValor('id_otros_descuentos');
+                    
+                    this.trabajados = this.getValor('id_dias_trabajados');
+                    this.ausente = this.getValor('id_dias_ausente');
+                    const extra50 = this.getValor('id_horas_extra_50');
+                    const extra100 = this.getValor('id_horas_extra_100');
+                    
+                    // Calcular valores intermedios
+                    this.sueldo_diario = sueldo_base / this.dias_mes;
+                    const sueldo_real = this.sueldo_diario * this.trabajados;
+                    this.descuento_ausente = this.sueldo_diario * this.ausente;
+                    
+                    this.valor_hora = this.sueldo_diario / this.jornada_diaria;
+                    this.extras = (extra50 * this.valor_hora * 1.5) + (extra100 * this.valor_hora * 2.0);
+                    
+                    // Calcular totales
+                    this.haberes = sueldo_real + gratificacion + bonos + this.extras;
+                    this.descuentos = this.afp + this.salud + this.cesantia + this.otros + this.descuento_ausente;
+                    this.liquido = this.haberes - this.descuentos;
+                    
+                    // Redondear valores
+                    this.haberes = Math.round(this.haberes);
+                    this.descuentos = Math.round(this.descuentos);
+                    this.liquido = Math.round(this.liquido);
+                    this.extras = Math.round(this.extras);
+                    this.afp = Math.round(this.afp);
+                    this.salud = Math.round(this.salud);
+                    this.cesantia = Math.round(this.cesantia);
+                    this.otros = Math.round(this.otros);
+                    this.descuento_ausente = Math.round(this.descuento_ausente);
+                    this.sueldo_diario = Math.round(this.sueldo_diario);
+                    this.valor_hora = Math.round(this.valor_hora);
+                },
+                
+                mostrarFeedback() {
+                    // Efecto visual al cambiar valores importantes
+                    const elementos = ['haberes', 'descuentos', 'liquido'];
+                    elementos.forEach(elemento => {
+                        const oldValue = this[elemento];
+                        setTimeout(() => {
+                            if (this[elemento] !== oldValue) {
+                                const target = document.querySelector(`[x-text*="${elemento}"]`);
+                                if (target) {
+                                    target.classList.add('highlight-change');
+                                    setTimeout(() => target.classList.remove('highlight-change'), 600);
+                                }
+                            }
+                        }, 100);
+                    });
+                },
+                
+                autoSave() {
+                    // Simulación de auto-guardado
+                    console.log('Auto-guardando datos...');
+                    // Aquí puedes implementar AJAX para guardar en el servidor
+                },
+                
+                formatCurrency(value) {
+                    return new Intl.NumberFormat('es-CL', {
+                        style: 'currency',
+                        currency: 'CLP',
+                        minimumFractionDigits: 0
+                    }).format(value);
+                }
+            }));
+        });
+    </script>
 
 </body>
 </html>

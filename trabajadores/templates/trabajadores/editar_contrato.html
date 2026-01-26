@@ -4,57 +4,409 @@
   <meta charset="UTF-8">
   <title>Editar contrato · {{ alias }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-gray-50 text-gray-800 font-sans">
 
-  <header class="bg-yellow-600 text-white py-4 shadow">
-    <div class="max-w-4xl mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">✏️ Editar contrato · {{ contrato.nombre }}</h1>
-      <a href="/rrhh/{{ alias }}/contratos/" class="text-sm hover:underline">⬅️ Volver a contratos</a>
+  <!-- Header moderno -->
+  <header class="bg-white border-b border-gray-200 py-4 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
+      <div class="flex items-center space-x-4">
+        <div class="bg-indigo-600 text-white p-3 rounded-lg">
+          <i class="fas fa-file-contract text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Editar Contrato</h1>
+          <p class="text-sm text-gray-500 mt-1">{{ contrato.nombre }}</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+          <i class="fas fa-building mr-1"></i>{{ alias }}
+        </span>
+        <a href="/trabajadores/{{ alias }}/contratos/" 
+           class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center">
+          <i class="fas fa-arrow-left mr-2"></i>Volver
+        </a>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto px-4 py-10">
-    <section class="bg-white p-6 rounded shadow space-y-6">
-
-      <h2 class="text-lg font-semibold text-yellow-700">🛠️ Modificar datos del contrato</h2>
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Card principal -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+      
+      <!-- Encabezado del formulario -->
+      <div class="bg-gradient-to-r from-gray-900 to-gray-800 px-8 py-6">
+        <div class="flex items-center">
+          <div class="bg-indigo-500/20 text-indigo-300 p-3 rounded-xl mr-4">
+            <i class="fas fa-edit text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">Modificar datos del contrato</h2>
+            <p class="text-gray-300 mt-1 text-sm">Actualice los campos necesarios y guarde los cambios</p>
+          </div>
+        </div>
+      </div>
 
       {% if form.errors %}
-        <div class="bg-red-100 text-red-700 p-4 rounded">
-          <p class="font-semibold">⚠️ Hay errores en el formulario:</p>
-          <ul class="list-disc ml-5">
+        <div class="bg-red-50 border border-red-200 mx-8 mt-6 rounded-xl p-5">
+          <div class="flex items-center">
+            <div class="bg-red-100 text-red-600 p-2.5 rounded-full mr-3">
+              <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <h3 class="font-semibold text-red-800">Errores en el formulario</h3>
+          </div>
+          <ul class="mt-3 ml-11 space-y-2">
             {% for field in form %}
               {% for error in field.errors %}
-                <li>{{ field.label }}: {{ error }}</li>
+                <li class="text-red-700 text-sm flex items-start">
+                  <i class="fas fa-chevron-right text-xs mt-1 mr-2"></i>
+                  <span><span class="font-medium">{{ field.label }}:</span> {{ error }}</span>
+                </li>
               {% endfor %}
             {% endfor %}
           </ul>
         </div>
       {% endif %}
 
-      <form method="post" class="space-y-4">
+      <form method="post" class="p-8 space-y-10">
         {% csrf_token %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {{ form.rut_trabajador.label_tag }} {{ form.rut_trabajador }}
-          {{ form.nombre.label_tag }} {{ form.nombre }}
-          {{ form.cargo.label_tag }} {{ form.cargo }}
-          {{ form.jornada.label_tag }} {{ form.jornada }}
-          {{ form.sueldo_base.label_tag }} {{ form.sueldo_base }}
-          {{ form.gratificacion.label_tag }} {{ form.gratificacion }}
-          {{ form.bonos.label_tag }} {{ form.bonos }}
-          {{ form.tipo_contrato.label_tag }} {{ form.tipo_contrato }}
-          {{ form.fecha_inicio.label_tag }} {{ form.fecha_inicio }}
-          {{ form.fecha_termino.label_tag }} {{ form.fecha_termino }}
+        
+        <!-- Sección 1: Datos Personales -->
+        <div class="space-y-6">
+          <div class="flex items-center pb-2 border-b border-gray-100">
+            <div class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">
+              <i class="fas fa-user"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Datos Personales</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-id-card text-gray-400 mr-2 text-sm"></i>
+                {{ form.rut_trabajador.label }}
+                {% if form.rut_trabajador.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.rut_trabajador }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-fingerprint text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-signature text-gray-400 mr-2 text-sm"></i>
+                {{ form.nombre.label }}
+                {% if form.nombre.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.nombre }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-user text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="pt-6">
-          <button type="submit" class="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700 transition">
-            💾 Guardar cambios
-          </button>
+        <!-- Sección 2: Información del Contrato -->
+        <div class="space-y-6">
+          <div class="flex items-center pb-2 border-b border-gray-100">
+            <div class="bg-indigo-100 text-indigo-600 p-2 rounded-lg mr-3">
+              <i class="fas fa-file-alt"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Información del Contrato</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-briefcase text-gray-400 mr-2 text-sm"></i>
+                {{ form.cargo.label }}
+                {% if form.cargo.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.cargo }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-user-tie text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-clock text-gray-400 mr-2 text-sm"></i>
+                {{ form.jornada.label }}
+                {% if form.jornada.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.jornada }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-calendar-day text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-file-signature text-gray-400 mr-2 text-sm"></i>
+                {{ form.tipo_contrato.label }}
+                {% if form.tipo_contrato.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.tipo_contrato }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-handshake text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Fechas del contrato -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-play-circle text-gray-400 mr-2 text-sm"></i>
+                {{ form.fecha_inicio.label }}
+                {% if form.fecha_inicio.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.fecha_inicio }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-calendar-plus text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-flag-checkered text-gray-400 mr-2 text-sm"></i>
+                {{ form.fecha_termino.label }}
+                {% if form.fecha_termino.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.fecha_termino }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-calendar-minus text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección 3: Remuneraciones -->
+        <div class="space-y-6">
+          <div class="flex items-center pb-2 border-b border-gray-100">
+            <div class="bg-green-100 text-green-600 p-2 rounded-lg mr-3">
+              <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Remuneraciones</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-wallet text-gray-400 mr-2 text-sm"></i>
+                {{ form.sueldo_base.label }}
+                {% if form.sueldo_base.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.sueldo_base }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="text-gray-500 font-medium">$</span>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-gift text-gray-400 mr-2 text-sm"></i>
+                {{ form.gratificacion.label }}
+                {% if form.gratificacion.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.gratificacion }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="text-gray-500 font-medium">$</span>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-star text-gray-400 mr-2 text-sm"></i>
+                {{ form.bonos.label }}
+              </label>
+              <div class="relative">
+                {{ form.bonos }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="text-gray-500 font-medium">$</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección 4: Previsión (AFP y Salud) -->
+        <div class="space-y-6">
+          <div class="flex items-center pb-2 border-b border-gray-100">
+            <div class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-3">
+              <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Previsión Social</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-landmark text-gray-400 mr-2 text-sm"></i>
+                {{ form.afp.label }}
+                {% if form.afp.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.afp }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-piggy-bank text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-heartbeat text-gray-400 mr-2 text-sm"></i>
+                {{ form.salud.label }}
+                {% if form.salud.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                {{ form.salud }}
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-hospital text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="pt-8 border-t border-gray-200">
+          <div class="flex justify-end space-x-4">
+            <a href="/trabajadores/{{ alias }}/contratos/"
+               class="px-7 py-3.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium flex items-center shadow-sm hover:shadow">
+              <i class="fas fa-times mr-2"></i>
+              Cancelar
+            </a>
+            <button type="submit" 
+                    class="px-7 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-600 transition-all duration-200 font-medium shadow-lg hover:shadow-xl flex items-center">
+              <i class="fas fa-save mr-2"></i>
+              Guardar cambios
+            </button>
+          </div>
         </div>
       </form>
-    </section>
+    </div>
   </main>
 
+  <!-- Estilos adicionales corregidos -->
+  <style>
+    /* Estilos para inputs del formulario Django */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 3rem;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 0.75rem;
+      font-size: 0.95rem;
+      transition: all 0.25s ease;
+      background-color: #fafafa;
+    }
+    
+    /* Para campos monetarios que ya tienen padding-left */
+    input[type="number"] {
+      padding-left: 3rem;
+    }
+    
+    /* Select personalizado */
+    select {
+      padding-left: 3rem;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1.5em;
+      padding-right: 2.5rem;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+      background-color: white;
+    }
+    
+    input:hover, select:hover, textarea:hover {
+      border-color: #d1d5db;
+      background-color: white;
+    }
+    
+    /* Para inputs sin iconos (si los hubiera) */
+    input.no-icon, select.no-icon {
+      padding-left: 1rem;
+    }
+    
+    /* Posicionamiento de iconos */
+    .relative .fas, .relative .fa-solid {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      z-index: 10;
+      pointer-events: none;
+    }
+    
+    /* Iconos monetarios (símbolo $) */
+    .relative .text-gray-500.font-medium {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      pointer-events: none;
+    }
+    
+    /* Asegurar que los campos Django hereden estilos */
+    form input, form select, form textarea {
+      width: 100%;
+      padding-left: 3rem !important;
+    }
+    
+    /* Campos de fecha */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      opacity: 0.6;
+      cursor: pointer;
+    }
+    
+    /* Animación sutil para el card */
+    .card-hover {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card-hover:hover {
+      transform: translateY(-2px);
+    }
+  </style>
+  
+  <!-- Script para asegurar que los inputs tengan el padding correcto -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Asegurar que todos los inputs dentro del form tengan el padding correcto
+      const inputs = document.querySelectorAll('form input, form select, form textarea');
+      inputs.forEach(input => {
+        // Verificar si ya tiene padding-left
+        const computedStyle = window.getComputedStyle(input);
+        const paddingLeft = computedStyle.getPropertyValue('padding-left');
+        
+        if (parseInt(paddingLeft) < 40) {
+          input.style.paddingLeft = '3rem';
+        }
+      });
+    });
+  </script>
 </body>
 </html>

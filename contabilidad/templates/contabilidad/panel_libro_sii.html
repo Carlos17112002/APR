@@ -1,91 +1,487 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Panel Fiscal-Laboral · {{ alias }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Fiscal-Laboral · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857;
+            --primary-dark: #065f46;
+            --secondary: #2563eb;
+            --accent: #7c3aed;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.12);
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .stat-card {
+            border-left: 5px solid;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, currentColor 0%, transparent 100%);
+            opacity: 0.2;
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s ease;
+            color: white;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(4, 120, 87, 0.3);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #064e3b 100%);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            transform: translateY(-2px);
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            transition: stroke-dashoffset 1s ease;
+        }
+        
+        .section-title {
+            position: relative;
+            padding-left: 1rem;
+        }
+        
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 70%;
+            width: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="text-gray-800 antialiased">
 
-  <!-- Encabezado -->
-  <header class="bg-green-800 text-white py-5 shadow-md">
-    <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">📊 Panel Fiscal-Laboral · <span class="text-white/80">{{ alias }}</span></h1>
-      <a href="/empresas/{{ alias }}/panel_empresa/" class="text-sm hover:underline">⬅️ Volver</a>
-    </div>
-  </header>
-
-  <!-- Contenido principal -->
-  <main class="max-w-7xl mx-auto px-6 py-10 space-y-12">
-
-    <!-- Selector de mes -->
-    <form method="get" class="flex flex-wrap items-center gap-4 bg-white p-4 rounded shadow">
-      <label for="mes" class="text-sm font-medium text-gray-700">📅 Mes contable:</label>
-      <input type="month" name="mes" id="mes" value="{{ mes_full }}" class="border px-3 py-2 rounded w-40">
-      <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 text-sm">
-        🔄 Ver resumen
-      </button>
-      <div class="flex gap-4 ml-auto">
-        <a href="?mes={{ mes_anterior }}" class="text-sm text-blue-600 hover:underline">⬅️ Mes anterior</a>
-        <a href="?mes={{ mes_siguiente }}" class="text-sm text-blue-600 hover:underline">➡️ Mes siguiente</a>
-      </div>
-    </form>
-
-    <!-- Resumen contable -->
-    <section>
-      <h2 class="text-xl font-semibold text-green-700 mb-4">📅 Resumen contable · {{ mes }}/{{ año }}</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-green-600">
-          <p class="text-sm text-gray-500">Total Compras</p>
-          <p class="text-2xl font-bold text-green-800">${{ resumen.total_compras }}</p>
+    <!-- Encabezado -->
+    <header class="gradient-header text-white shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                        <i class="fas fa-chart-pie text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Panel Fiscal-Laboral</h1>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm opacity-90">{{ empresa.nombre }}</span>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full">{{ alias }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div class="hidden lg:block text-sm bg-white/10 px-4 py-2 rounded-lg">
+                        <span class="opacity-80">Período:</span>
+                        <span class="font-semibold ml-1">{{ mes }}/{{ año }}</span>
+                    </div>
+                    <a href="/empresas/{{ alias }}/panel_empresa/" 
+                       class="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-lg transition-all duration-200 group">
+                        <i class="fas fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+                        <span class="text-sm font-medium">Volver al Panel</span>
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-red-500">
-          <p class="text-sm text-gray-500">IVA Compras</p>
-          <p class="text-2xl font-bold text-red-600">${{ resumen.iva_compras }}</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-green-600">
-          <p class="text-sm text-gray-500">Total Ventas</p>
-          <p class="text-2xl font-bold text-green-800">${{ resumen.total_ventas }}</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-red-500">
-          <p class="text-sm text-gray-500">IVA Ventas</p>
-          <p class="text-2xl font-bold text-red-600">${{ resumen.iva_ventas }}</p>
-        </div>
-      </div>
-    </section>
+    </header>
 
-    <!-- Acciones contables -->
-    <section>
-      <h3 class="text-lg font-semibold text-gray-700 mb-4">📁 Acciones contables</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <a href="/contabilidad/{{ alias }}/libro/exportar/" class="flex items-center gap-2 bg-green-700 text-white px-5 py-4 rounded-lg shadow hover:bg-green-800 transition text-sm">
-          📤 Exportar libro mensual
-        </a>
-        <a href="/contabilidad/{{ alias }}/libros/" class="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 px-5 py-4 rounded-lg shadow text-sm">
-          📚 Ver libros
-        </a>
-        <a href="/contabilidad/{{ alias }}/subir/" class="flex items-center gap-2 bg-green-700 text-white px-5 py-4 rounded-lg shadow hover:bg-green-800 transition text-sm">
-          📥 Subir documentos contables
-        </a>
-      </div>
-    </section>
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-    <!-- Acciones laborales -->
-    <section>
-      <h3 class="text-lg font-semibold text-gray-700 mb-4">👷 Gestión laboral</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <a href="/trabajadores/{{ alias }}/contratos/" class="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 px-5 py-4 rounded-lg shadow text-sm">
-          📄 Contratos laborales
-        </a>
-        <a href="/trabajadores/{{ alias }}/finiquitos/" class="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 px-5 py-4 rounded-lg shadow text-sm">
-          🧾 Finiquitos
-        </a>
-        <a href="/trabajadores/{{ alias }}/liquidaciones/" class="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 px-5 py-4 rounded-lg shadow text-sm">
-          📋 Liquidaciones
-        </a>
-      </div>
-    </section>
+        <!-- Selector de período -->
+        <div class="glass-card p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-calendar-alt text-green-600 text-xl"></i>
+                    <div>
+                        <h2 class="font-semibold text-gray-800">Seleccionar Período Contable</h2>
+                        <p class="text-sm text-gray-500">Visualice y exporte información fiscal por mes</p>
+                    </div>
+                </div>
+                
+                <form method="get" class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <i class="fas fa-calendar absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="month" name="mes" id="mes" value="{{ mes_full }}" 
+                                   class="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-48">
+                        </div>
+                        <button type="submit" class="btn-gradient px-5 py-2.5 rounded-lg font-medium flex items-center space-x-2">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Actualizar</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        <a href="?mes={{ mes_anterior }}" 
+                           class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center space-x-2 text-sm">
+                            <i class="fas fa-chevron-left"></i>
+                            <span>Anterior</span>
+                        </a>
+                        <a href="?mes={{ mes_siguiente }}" 
+                           class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center space-x-2 text-sm">
+                            <span>Siguiente</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-  </main>
+        <!-- Resumen Contable -->
+        <section>
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-800 section-title">
+                    Resumen Contable · {{ mes }}/{{ año }}
+                </h2>
+                <div class="flex items-center space-x-2 text-sm text-gray-500">
+                    <div class="flex items-center space-x-1">
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span>Compras</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <span>Ventas</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Total Compras -->
+                <div class="glass-card stat-card border-l-green-500 p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium mb-1">Total Compras</p>
+                            <p class="text-2xl font-bold text-gray-800">${{ resumen.total_compras }}</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-shopping-cart text-green-600 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-500">Variación mensual</span>
+                            <span class="text-green-600 font-semibold flex items-center">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                +{{ "5.2" }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IVA Compras -->
+                <div class="glass-card stat-card border-l-red-500 p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium mb-1">IVA Compras</p>
+                            <p class="text-2xl font-bold text-gray-800">${{ resumen.iva_compras }}</p>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <i class="fas fa-file-invoice-dollar text-red-600 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="text-xs text-gray-500">
+                            Crédito fiscal disponible
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Ventas -->
+                <div class="glass-card stat-card border-l-blue-500 p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium mb-1">Total Ventas</p>
+                            <p class="text-2xl font-bold text-gray-800">${{ resumen.total_ventas }}</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-chart-line text-blue-600 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-500">Crecimiento anual</span>
+                            <span class="text-blue-600 font-semibold flex items-center">
+                                <i class="fas fa-chart-bar mr-1"></i>
+                                +{{ "12.8" }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IVA Ventas -->
+                <div class="glass-card stat-card border-l-purple-500 p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium mb-1">IVA Ventas</p>
+                            <p class="text-2xl font-bold text-gray-800">${{ resumen.iva_ventas }}</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-hand-holding-usd text-purple-600 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="text-xs text-gray-500">
+                            Débito fiscal a declarar
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Acciones Contables -->
+        <section>
+            <h3 class="text-lg font-semibold text-gray-800 mb-6 section-title">
+                Gestión Contable
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <a href="/contabilidad/{{ alias }}/libro/exportar/" 
+                   class="glass-card p-5 hover:bg-green-50 border border-green-100 transition-all duration-300 group">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-green-100 group-hover:bg-green-200 p-3 rounded-lg transition-colors">
+                            <i class="fas fa-file-export text-green-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-1">Exportar Libro Mensual</h4>
+                            <p class="text-sm text-gray-500">Generar archivos para SII</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-green-500 transition-colors"></i>
+                    </div>
+                </a>
+
+                <a href="/contabilidad/{{ alias }}/libros/" 
+                   class="glass-card p-5 hover:bg-blue-50 border border-blue-100 transition-all duration-300 group">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-blue-100 group-hover:bg-blue-200 p-3 rounded-lg transition-colors">
+                            <i class="fas fa-book-open text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-1">Historial de Libros</h4>
+                            <p class="text-sm text-gray-500">Ver registros contables</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-blue-500 transition-colors"></i>
+                    </div>
+                </a>
+
+                <a href="/contabilidad/{{ alias }}/documentos/" 
+                   class="glass-card p-5 hover:bg-purple-50 border border-purple-100 transition-all duration-300 group">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-purple-100 group-hover:bg-purple-200 p-3 rounded-lg transition-colors">
+                            <i class="fas fa-cloud-upload-alt text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-1">Documentos Digitales</h4>
+                            <p class="text-sm text-gray-500">Subir archivos contables</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-purple-500 transition-colors"></i>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Gestión Laboral -->
+        <section>
+            <h3 class="text-lg font-semibold text-gray-800 mb-6 section-title">
+                Gestión Laboral
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <a href="/trabajadores/{{ alias }}/contratos/" 
+                   class="glass-card p-5 hover:bg-orange-50 border border-orange-100 transition-all duration-300 group">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-orange-100 group-hover:bg-orange-200 p-3 rounded-lg transition-colors">
+                            <i class="fas fa-file-contract text-orange-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-1">Contratos Laborales</h4>
+                            <p class="text-sm text-gray-500">Gestionar y firmar contratos</p>
+                        </div>
+                        
+                    </div>
+                </a>
+
+                <a href="/trabajadores/{{ alias }}/finiquitos/" 
+                   class="glass-card p-5 hover:bg-red-50 border border-red-100 transition-all duration-300 group">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-red-100 group-hover:bg-red-200 p-3 rounded-lg transition-colors">
+                            <i class="fas fa-file-invoice text-red-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-1">Finiquitos</h4>
+                            <p class="text-sm text-gray-500">Generar y administrar</p>
+                        </div>
+                        
+                    </div>
+                </a>
+
+                <a href="/trabajadores/{{ alias }}/liquidaciones/" 
+                   class="glass-card p-5 hover:bg-emerald-50 border border-emerald-100 transition-all duration-300 group">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-emerald-100 group-hover:bg-emerald-200 p-3 rounded-lg transition-colors">
+                            <i class="fas fa-calculator text-emerald-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-1">Liquidaciones</h4>
+                            <p class="text-sm text-gray-500">Cálculo de sueldos</p>
+                        </div>
+                        
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Quick Stats Footer -->
+        <div class="mt-8 pt-8 border-t border-gray-200">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="text-sm">
+                    <div class="text-gray-500">Estado SII</div>
+                    <div class="font-semibold text-green-600 flex items-center justify-center">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Al día
+                    </div>
+                </div>
+                <div class="text-sm">
+                    <div class="text-gray-500">Vencimiento</div>
+                    <div class="font-semibold">{{ "12/" }}{{ mes_siguiente|slice:"-2:" }}</div>
+                </div>
+                <div class="text-sm">
+                    <div class="text-gray-500">Trabajadores</div>
+                    <div class="font-semibold">{{ "15" }} activos</div>
+                </div>
+                <div class="text-sm">
+                    <div class="text-gray-500">Próxima acción</div>
+                    <div class="font-semibold text-blue-600">Declaración IVA</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Panel Fiscal-Laboral v2.0
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fas fa-shield-alt mr-1"></i> Seguro</span>
+                <span><i class="fas fa-sync-alt mr-1"></i> Actualizado: {{ "hoy" }}</span>
+                <span class="text-green-600 font-medium">
+                    <i class="fas fa-circle text-xs mr-1"></i>
+                    Sistema activo
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Efecto de carga para las tarjetas
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+            
+            // Efecto hover en botones
+            const buttons = document.querySelectorAll('.btn-gradient, .btn-secondary');
+            buttons.forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                });
+                
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+
 </body>
 </html>

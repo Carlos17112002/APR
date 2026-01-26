@@ -5,68 +5,408 @@
   <title>Avisos - {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      min-height: 100vh;
+    }
+    
+    .gradient-header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    
+    .card-shadow {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    }
+    
+    .hover-lift {
+      transition: all 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3);
+    }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+    
+    .input-focus:focus {
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+      border-color: #059669;
+    }
+    
+    .checkbox-custom {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 0.375rem;
+      border: 2px solid #d1d5db;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .checkbox-custom:checked {
+      background-color: #059669;
+      border-color: #059669;
+    }
+    
+    .checkbox-custom:checked::after {
+      content: "✓";
+      position: absolute;
+      color: white;
+      font-size: 0.875rem;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .avisos-card {
+      border-left: 4px solid;
+      transition: all 0.3s ease;
+    }
+    
+    .avisos-card:hover {
+      transform: translateX(4px);
+    }
+    
+    .empty-state {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 2px dashed #cbd5e1;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body>
 
-  <!-- Navbar SSR -->
-  <nav class="bg-green-700 text-white shadow">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">📢 Avisos: {{ empresa.nombre }}</h1>
-      <a href="{% url 'logout_ssr' %}" class="text-sm hover:underline">🚪 Cerrar Sesión</a>
+  <!-- Header Moderno -->
+  <header class="gradient-header text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+          <div class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-bullhorn text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold">Avisos: {{ empresa.nombre }}</h1>
+            <p class="text-xs opacity-90 mt-0.5">Gestión de comunicaciones</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <a href="{% url 'panel_empresa' slug=slug %}" 
+             class="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-colors flex items-center text-sm">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al panel
+          </a>
+          <a href="{% url 'logout_ssr' %}" 
+             class="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-colors flex items-center text-sm">
+            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+          </a>
+        </div>
+      </div>
     </div>
-  </nav>
+  </header>
 
-  <div class="max-w-4xl mx-auto py-10 px-6">
-
-    <!-- Formulario para publicar aviso -->
-    <div class="bg-white rounded-lg shadow p-6 mb-10">
-      <h2 class="text-2xl font-semibold text-green-700 mb-4">➕ Publicar Aviso</h2>
-      <form method="POST" action="{% url 'avisos' slug=slug %}" class="space-y-4">
-        {% csrf_token %}
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Título</label>
-          <input type="text" name="titulo" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- Formulario para publicar aviso - Diseño Moderno -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl card-shadow p-6 hover-lift">
+          <div class="flex items-center mb-6">
+            <div class="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
+              <i class="fas fa-plus text-emerald-600"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-900">Publicar Aviso</h2>
+          </div>
+          
+          <form method="POST" action="{% url 'avisos' slug=slug %}" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-heading mr-1.5 text-gray-400"></i>Título
+              </label>
+              <input type="text" name="titulo" required 
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
+                     placeholder="Ingrese el título del aviso">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-comment-dots mr-1.5 text-gray-400"></i>Mensaje
+              </label>
+              <textarea name="mensaje" rows="6" required 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors resize-none"
+                        placeholder="Escriba el contenido del aviso aquí..."></textarea>
+            </div>
+            
+            <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+              <input type="checkbox" name="activo" id="activoCheckbox" class="hidden">
+              <label for="activoCheckbox" class="flex items-center cursor-pointer">
+                <div class="checkbox-custom mr-3"></div>
+                <div>
+                  <span class="text-sm font-medium text-gray-900">Activo</span>
+                  <p class="text-xs text-gray-500 mt-0.5">Los avisos activos serán visibles para los clientes</p>
+                </div>
+              </label>
+            </div>
+            
+            <button type="submit" 
+                    class="w-full btn-primary text-white font-medium py-3.5 px-4 rounded-lg flex items-center justify-center">
+              <i class="fas fa-paper-plane mr-2"></i> Publicar Aviso
+            </button>
+          </form>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Mensaje</label>
-          <textarea name="mensaje" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"></textarea>
+        
+        <!-- Información adicional -->
+        <div class="mt-6 bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-xl p-5">
+          <div class="flex items-start">
+            <div class="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
+              <i class="fas fa-lightbulb text-emerald-600"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-emerald-900 mb-1">Consejos para avisos efectivos</h3>
+              <ul class="text-xs text-emerald-800 space-y-1">
+                <li class="flex items-start">
+                  <i class="fas fa-check-circle text-emerald-500 mr-2 mt-0.5"></i>
+                  <span>Sea claro y conciso en el mensaje</span>
+                </li>
+                <li class="flex items-start">
+                  <i class="fas fa-check-circle text-emerald-500 mr-2 mt-0.5"></i>
+                  <span>Use títulos descriptivos</span>
+                </li>
+                <li class="flex items-start">
+                  <i class="fas fa-check-circle text-emerald-500 mr-2 mt-0.5"></i>
+                  <span>Active solo los avisos relevantes actualmente</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
-        <div class="flex items-center">
-          <input type="checkbox" name="activo" class="form-checkbox text-green-600">
-          <label class="ml-2 text-sm text-gray-700">Activo</label>
-        </div>
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Publicar</button>
-      </form>
-    </div>
-
-    <!-- Listado de avisos -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-2xl font-semibold text-green-700 mb-4">📋 Avisos Publicados</h2>
-      {% if avisos %}
-        <ul class="space-y-4">
-          {% for aviso in avisos %}
-            <li class="border rounded p-4 bg-gray-50">
-              <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold text-green-800">{{ aviso.titulo }}</h3>
-                <span class="text-xs px-2 py-1 rounded-full {% if aviso.activo %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
-                  {{ aviso.activo|yesno:"Activo,Inactivo" }}
-                </span>
+      </div>
+      
+      <!-- Listado de avisos - Diseño Moderno -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl card-shadow overflow-hidden">
+          <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+            <div class="flex justify-between items-center">
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900">Avisos Publicados</h2>
+                <p class="text-gray-500 text-sm mt-1">Historial de comunicaciones</p>
               </div>
-              <p class="text-sm text-gray-700 mt-2">{{ aviso.mensaje }}</p>
-              <p class="text-xs text-gray-400 mt-2">Publicado el {{ aviso.fecha_creacion|date:"d/m/Y H:i" }}</p>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="text-gray-500">No hay avisos publicados aún.</p>
-      {% endif %}
+              <div class="text-sm text-gray-500">
+                <i class="fas fa-layer-group mr-1"></i>
+                Total: {{ avisos.count }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="divide-y divide-gray-100">
+            {% if avisos %}
+              {% for aviso in avisos %}
+              <div class="avisos-card p-5 animate-fade-in hover-lift {% if aviso.activo %}border-l-emerald-500 bg-gradient-to-r from-emerald-50/50 to-white{% else %}border-l-gray-400 bg-gradient-to-r from-gray-50/50 to-white{% endif %}">
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ aviso.titulo }}</h3>
+                    <div class="flex items-center space-x-3 mt-1">
+                      <span class="text-xs text-gray-500">
+                        <i class="far fa-calendar mr-1"></i>
+                        {{ aviso.fecha_creacion|date:"d/m/Y" }}
+                      </span>
+                      <span class="text-xs text-gray-500">
+                        <i class="far fa-clock mr-1"></i>
+                        {{ aviso.fecha_creacion|date:"H:i" }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    {% if aviso.activo %}
+                      <span class="status-badge bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <i class="fas fa-eye mr-1.5"></i>Activo
+                      </span>
+                    {% else %}
+                      <span class="status-badge bg-gray-100 text-gray-800 border border-gray-200">
+                        <i class="fas fa-eye-slash mr-1.5"></i>Inactivo
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <p class="text-sm text-gray-700 mb-4 whitespace-pre-line">{{ aviso.mensaje }}</p>
+                
+                <div class="flex items-center text-xs text-gray-500">
+                  <i class="fas fa-user-circle mr-1.5"></i>
+                  <span>Sistema SSR</span>
+                  <span class="mx-2">•</span>
+                  <i class="far fa-edit mr-1.5"></i>
+                  <span>Publicado por el sistema</span>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <!-- Estado vacío -->
+              <div class="text-center py-12 empty-state rounded-lg m-6">
+                <div class="mx-auto h-16 w-16 text-gray-300 mb-4">
+                  <i class="fas fa-bullhorn text-4xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">No hay avisos publicados</h3>
+                <p class="text-gray-500 max-w-md mx-auto mb-6">
+                  Comienza publicando tu primer aviso usando el formulario a la izquierda.
+                </p>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-md mx-auto">
+                  <p class="text-xs text-blue-800">
+                    <i class="fas fa-info-circle mr-1.5"></i>
+                    Los avisos son una forma efectiva de comunicarte con tus clientes sobre novedades importantes.
+                  </p>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Pie del listado -->
+          {% if avisos %}
+          <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div class="flex justify-between items-center text-sm text-gray-600">
+              <div>
+                Mostrando <span class="font-medium">{{ avisos.count }}</span> avisos
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                  <div class="h-2 w-2 rounded-full bg-emerald-500 mr-1.5"></div>
+                  <span>
+                    {% with activos=avisos|dictsort:"activo"|length %}
+                      {{ activos }} activos
+                    {% endwith %}
+                  </span>
+                </div>
+                <div class="flex items-center">
+                  <div class="h-2 w-2 rounded-full bg-gray-400 mr-1.5"></div>
+                  <span>{{ avisos.count|add:"-activos" }} inactivos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Acción rápida -->
+        <div class="mt-6 text-right">
+          <a href="{% url 'panel_empresa' slug=slug %}" 
+             class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-4 py-2.5 rounded-lg transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Volver al panel principal
+          </a>
+        </div>
+      </div>
     </div>
-    <div class="mt-6 text-right">
-      <a href="{% url 'panel_empresa' slug=slug %}" class="text-blue-600 hover:underline">⬅️ Volver al panel</a>
-    </div>
-  </div>
+  </main>
 
-  </div>
+  <script>
+    // Funcionalidad para el checkbox personalizado
+    document.addEventListener('DOMContentLoaded', function() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      
+      checkboxes.forEach(checkbox => {
+        // Inicializar estado
+        const customCheckbox = checkbox.nextElementSibling?.querySelector('.checkbox-custom');
+        if (customCheckbox) {
+          if (checkbox.checked) {
+            customCheckbox.classList.add('bg-emerald-500', 'border-emerald-500');
+          }
+        }
+        
+        // Cambiar estado
+        checkbox.addEventListener('change', function() {
+          if (customCheckbox) {
+            if (this.checked) {
+              customCheckbox.classList.add('bg-emerald-500', 'border-emerald-500');
+            } else {
+              customCheckbox.classList.remove('bg-emerald-500', 'border-emerald-500');
+            }
+          }
+        });
+      });
+      
+      // Auto-ajuste del textarea
+      const textareas = document.querySelectorAll('textarea');
+      textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+          this.style.height = 'auto';
+          this.style.height = (this.scrollHeight) + 'px';
+        });
+      });
+      
+      // Efecto de hover en tarjetas de avisos
+      const avisosCards = document.querySelectorAll('.avisos-card');
+      avisosCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.classList.add('shadow-md');
+        });
+        
+        card.addEventListener('mouseleave', function() {
+          this.classList.remove('shadow-md');
+        });
+      });
+    });
+    
+    // Animación al enviar formulario
+    const form = document.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const button = this.querySelector('button[type="submit"]');
+        const originalText = button.innerHTML;
+        
+        // Mostrar estado de carga
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Publicando...';
+        button.disabled = true;
+        
+        // Simular delay para mostrar la animación
+        setTimeout(() => {
+          button.innerHTML = originalText;
+          button.disabled = false;
+        }, 2000);
+      });
+    }
+  </script>
 
 </body>
 </html>

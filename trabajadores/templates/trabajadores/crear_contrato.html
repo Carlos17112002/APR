@@ -1,101 +1,1134 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Crear contrato laboral · {{ alias }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Contrato Laboral · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857;
+            --primary-dark: #065f46;
+            --secondary: #2563eb;
+            --accent: #7c3aed;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+            border-radius: 16px;
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(4, 120, 87, 0.3);
+        }
+        
+        .input-modern {
+            background: white;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .input-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.1);
+            outline: none;
+        }
+        
+        .section-title {
+            position: relative;
+            padding-left: 16px;
+            color: var(--primary);
+        }
+        
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 20px;
+            width: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+            font-size: 0.875rem;
+        }
+        
+        .form-helper {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        .required::after {
+            content: '*';
+            color: #dc2626;
+            margin-left: 4px;
+        }
+        
+        .select-modern {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        
+        .rut-error {
+            border-color: #dc2626 !important;
+            background-color: #fef2f2 !important;
+        }
+        
+        .error-message {
+            color: #dc2626;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .badge-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            background: #dbeafe;
+            color: #1e40af;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            background: #d1fae5;
+            color: #065f46;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .badge-warning {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .contract-summary {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-left: 4px solid var(--primary);
+            padding: 16px;
+            border-radius: 12px;
+        }
+        
+        .bono-item {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .bono-item:hover {
+            background: #f1f5f9;
+            border-color: #d1d5db;
+        }
+        
+        .bono-item:last-child {
+            margin-bottom: 0;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="text-gray-800 antialiased">
 
-  <!-- Encabezado -->
-  <header class="bg-green-700 text-white py-4 shadow">
-    <div class="max-w-4xl mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">📝 Nuevo contrato · {{ alias }}</h1>
-      <a href="/trabajadores/{{ alias }}/contratos/" class="text-sm hover:underline">⬅️ Volver a contratos</a>
-    </div>
-  </header>
-
-  <!-- Contenido principal -->
-  <main class="max-w-4xl mx-auto px-4 py-10">
-    <section class="bg-white p-6 rounded shadow space-y-6">
-
-      <h2 class="text-lg font-semibold text-green-700">📄 Datos del contrato</h2>
-
-      {% if form.errors %}
-        <div class="bg-red-100 text-red-700 p-4 rounded">
-          <p class="font-semibold">⚠️ Hay errores en el formulario:</p>
-          <ul class="list-disc ml-5">
-            {% for field in form %}
-              {% for error in field.errors %}
-                <li>{{ field.label }}: {{ error }}</li>
-              {% endfor %}
-            {% endfor %}
-          </ul>
+    <!-- Encabezado -->
+    <header class="gradient-header text-white shadow-2xl">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+                        <i class="fas fa-file-contract text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Nuevo Contrato Laboral</h1>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm opacity-90">{{ empresa.nombre }}</span>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full">{{ alias }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <a href="/trabajadores/{{ alias }}/contratos/" 
+                       class="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-lg transition-all duration-200 group"
+                       onclick="return confirm('¿Está seguro de cancelar? Los datos no guardados se perderán.')">
+                        <i class="fas fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+                        <span class="text-sm font-medium">Volver a Contratos</span>
+                    </a>
+                </div>
+            </div>
         </div>
-      {% endif %}
+    </header>
 
-      <form method="post" class="space-y-4">
-        {% csrf_token %}
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium mb-1">RUT del trabajador</label>
-            {{ form.rut_trabajador }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Nombre completo</label>
-            {{ form.nombre }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Cargo</label>
-            {{ form.cargo }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Jornada</label>
-            {{ form.jornada }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Tipo de contrato</label>
-            {{ form.tipo_contrato }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">AFP</label>
-            {{ form.afp }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Sistema de salud</label>
-            {{ form.salud }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Sueldo base</label>
-            {{ form.sueldo_base }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Gratificación</label>
-            {{ form.gratificacion }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Bonos</label>
-            {{ form.bonos }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Fecha de inicio</label>
-            {{ form.fecha_inicio }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Fecha de término</label>
-            {{ form.fecha_termino }}
-          </div>
+    <!-- Contenido principal -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Si viene de un trabajador específico -->
+        {% if trabajador %}
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-blue-800">Creando contrato para:</h3>
+                        <p class="text-blue-700">{{ trabajador.nombre }} · {{ trabajador.rut }} · {{ trabajador.cargo }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
+        {% endif %}
 
-        <div class="pt-6">
-          <button type="submit" class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">
-            ✅ Generar contrato
-          </button>
+        <!-- Formulario principal -->
+        <div class="glass-panel p-6">
+            <!-- Mensajes de error -->
+            {% if form.errors %}
+            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg" id="error-alert">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                        <div>
+                            <h3 class="font-semibold text-red-700">Errores en el formulario</h3>
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fas fa-chevron-right text-xs"></i>
+                                            <span><strong>{{ field.label }}:</strong> {{ error }}</span>
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="document.getElementById('error-alert').style.display='none'" 
+                            class="text-red-500 hover:text-red-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-8" id="contratoForm">
+                {% csrf_token %}
+                
+                <!-- Sección 1: Datos Personales -->
+                <div>
+                    <h3 class="section-title text-xl font-semibold mb-6">
+                        <i class="fas fa-user-circle mr-2"></i>
+                        Datos Personales del Trabajador
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- RUT -->
+                        <div class="form-group">
+                            <label for="id_rut_trabajador" class="form-label required">
+                                <i class="fas fa-id-card text-gray-400 mr-2"></i>
+                                RUT del Trabajador
+                            </label>
+                            <input type="text" name="rut_trabajador" id="id_rut_trabajador" 
+                                   required class="input-modern w-full px-4 py-2.5"
+                                   value="{{ form.rut_trabajador.value|default:'' }}"
+                                   placeholder="11.111.111-1">
+                            <div class="form-helper">
+                                Formato: 11.111.111-1 o 11111111-1
+                            </div>
+                            {% if form.rut_trabajador.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.rut_trabajador.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Nombre -->
+                        <div class="form-group">
+                            <label for="id_nombre" class="form-label required">
+                                <i class="fas fa-user text-gray-400 mr-2"></i>
+                                Nombre Completo
+                            </label>
+                            <input type="text" name="nombre" id="id_nombre" 
+                                   required class="input-modern w-full px-4 py-2.5"
+                                   value="{{ form.nombre.value|default:'' }}"
+                                   placeholder="Juan Pérez González">
+                            {% if form.nombre.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.nombre.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Cargo -->
+                        <div class="form-group md:col-span-2">
+                            <label for="id_cargo" class="form-label required">
+                                <i class="fas fa-user-tie text-gray-400 mr-2"></i>
+                                Cargo
+                            </label>
+                            <input type="text" name="cargo" id="id_cargo" 
+                                   required class="input-modern w-full px-4 py-2.5"
+                                   value="{{ form.cargo.value|default:'' }}"
+                                   placeholder="Ejecutivo de Ventas">
+                            {% if form.cargo.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.cargo.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 2: Condiciones Laborales -->
+                <div class="pt-8 border-t border-gray-200">
+                    <h3 class="section-title text-xl font-semibold mb-6">
+                        <i class="fas fa-briefcase mr-2"></i>
+                        Condiciones Laborales
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Jornada -->
+                        <div class="form-group">
+                            <label for="id_jornada" class="form-label required">
+                                <i class="fas fa-clock text-gray-400 mr-2"></i>
+                                Jornada Laboral
+                            </label>
+                            <select name="jornada" id="id_jornada" required 
+                                    class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Seleccione jornada...</option>
+                                <option value="completa" {% if form.jornada.value == "completa" %}selected{% endif %}>Completa</option>
+                                <option value="parcial" {% if form.jornada.value == "parcial" %}selected{% endif %}>Parcial</option>
+                                <option value="turnos" {% if form.jornada.value == "turnos" %}selected{% endif %}>Por turnos</option>
+                            </select>
+                            {% if form.jornada.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.jornada.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Tipo de Contrato -->
+                        <div class="form-group">
+                            <label for="id_tipo_contrato" class="form-label required">
+                                <i class="fas fa-file-contract text-gray-400 mr-2"></i>
+                                Tipo de Contrato
+                            </label>
+                            <select name="tipo_contrato" id="id_tipo_contrato" required 
+                                    class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Seleccione tipo...</option>
+                                <option value="indefinido" {% if form.tipo_contrato.value == "indefinido" %}selected{% endif %}>Indefinido</option>
+                                <option value="plazo_fijo" {% if form.tipo_contrato.value == "plazo_fijo" %}selected{% endif %}>Plazo Fijo</option>
+                                <option value="faena" {% if form.tipo_contrato.value == "faena" %}selected{% endif %}>Por Faena</option>
+                            </select>
+                            {% if form.tipo_contrato.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.tipo_contrato.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Fecha Inicio -->
+                        <div class="form-group">
+                            <label for="id_fecha_inicio" class="form-label required">
+                                <i class="fas fa-calendar-plus text-gray-400 mr-2"></i>
+                                Fecha de Inicio
+                            </label>
+                            <input type="date" name="fecha_inicio" id="id_fecha_inicio" 
+                                   required class="input-modern w-full px-4 py-2.5"
+                                   value="{{ form.fecha_inicio.value|default:'' }}">
+                            {% if form.fecha_inicio.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.fecha_inicio.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Fecha Término (condicional) -->
+                        <div class="form-group">
+                            <label for="id_fecha_termino" class="form-label">
+                                <i class="fas fa-calendar-minus text-gray-400 mr-2"></i>
+                                Fecha de Término
+                            </label>
+                            <input type="date" name="fecha_termino" id="id_fecha_termino" 
+                                   class="input-modern w-full px-4 py-2.5"
+                                   value="{{ form.fecha_termino.value|default:'' }}">
+                            <div class="form-helper">
+                                Solo para contratos a plazo fijo o por faena
+                            </div>
+                            {% if form.fecha_termino.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.fecha_termino.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 3: Sistema Previsional -->
+                <div class="pt-8 border-t border-gray-200">
+                    <h3 class="section-title text-xl font-semibold mb-6">
+                        <i class="fas fa-shield-alt mr-2"></i>
+                        Sistema Previsional
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- AFP -->
+                        <div class="form-group">
+                            <label for="id_afp" class="form-label required">
+                                <i class="fas fa-piggy-bank text-gray-400 mr-2"></i>
+                                AFP
+                            </label>
+                            <select name="afp" id="id_afp" required 
+                                    class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Seleccione AFP...</option>
+                                <option value="modelo" {% if form.afp.value == "modelo" %}selected{% endif %}>AFP Modelo</option>
+                                <option value="provida" {% if form.afp.value == "provida" %}selected{% endif %}>AFP Provida</option>
+                                <option value="cuprum" {% if form.afp.value == "cuprum" %}selected{% endif %}>AFP Cuprum</option>
+                                <option value="habitat" {% if form.afp.value == "habitat" %}selected{% endif %}>AFP Habitat</option>
+                                <option value="planvital" {% if form.afp.value == "planvital" %}selected{% endif %}>AFP PlanVital</option>
+                            </select>
+                            {% if form.afp.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.afp.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Sistema de Salud -->
+                        <div class="form-group">
+                            <label for="id_salud" class="form-label required">
+                                <i class="fas fa-heartbeat text-gray-400 mr-2"></i>
+                                Sistema de Salud
+                            </label>
+                            <select name="salud" id="id_salud" required 
+                                    class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Seleccione sistema...</option>
+                                <option value="fonasa" {% if form.salud.value == "fonasa" %}selected{% endif %}>Fonasa</option>
+                                <option value="isapre" {% if form.salud.value == "isapre" %}selected{% endif %}>Isapre</option>
+                                <option value="fuerzas armadas" {% if form.salud.value == "fuerzas armadas" %}selected{% endif %}>Fuerzas Armadas</option>
+                            </select>
+                            {% if form.salud.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.salud.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 4: Remuneraciones -->
+                <div class="pt-8 border-t border-gray-200">
+                    <h3 class="section-title text-xl font-semibold mb-6">
+                        <i class="fas fa-money-bill-wave mr-2"></i>
+                        Remuneraciones
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Sueldo Base -->
+                        <div class="form-group">
+                            <label for="id_sueldo_base" class="form-label required">
+                                <i class="fas fa-dollar-sign text-gray-400 mr-2"></i>
+                                Sueldo Base
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="sueldo_base" id="id_sueldo_base" 
+                                       required step="1" min="0" class="input-modern w-full px-4 py-2.5 pl-10"
+                                       value="{{ form.sueldo_base.value|default:'' }}"
+                                       placeholder="0">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    $
+                                </div>
+                            </div>
+                            <div class="form-helper">
+                                Bruto mensual
+                            </div>
+                            {% if form.sueldo_base.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.sueldo_base.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Sistema Gratificación -->
+                        <div class="form-group">
+                            <label for="id_sistema_gratificacion" class="form-label required">
+                                <i class="fas fa-gift text-gray-400 mr-2"></i>
+                                Sistema Gratificación
+                            </label>
+                            <select name="sistema_gratificacion" id="id_sistema_gratificacion" required 
+                                    class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Seleccione sistema...</option>
+                                <option value="art_47" {% if form.sistema_gratificacion.value == "art_47" %}selected{% endif %}>Proporcional a utilidades (Art. 47)</option>
+                                <option value="art_50" {% if form.sistema_gratificacion.value == "art_50" %}selected{% endif %}>25% del sueldo base (Art. 50)</option>
+                                <option value="sin_gratificacion" {% if form.sistema_gratificacion.value == "sin_gratificacion" %}selected{% endif %}>No aplica</option>
+                            </select>
+                            {% if form.sistema_gratificacion.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.sistema_gratificacion.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Tipo Gratificación -->
+                        <div class="form-group">
+                            <label for="id_tipo_gratificacion" class="form-label required">
+                                <i class="fas fa-percentage text-gray-400 mr-2"></i>
+                                Tipo Gratificación
+                            </label>
+                            <select name="tipo_gratificacion" id="id_tipo_gratificacion" required 
+                                    class="input-modern select-modern w-full px-4 py-2.5">
+                                <option value="">Seleccione tipo...</option>
+                                <option value="fija" {% if form.tipo_gratificacion.value == "fija" %}selected{% endif %}>Fija mensual (25%)</option>
+                                <option value="proporcional" {% if form.tipo_gratificacion.value == "proporcional" %}selected{% endif %}>Proporcional a utilidades</option>
+                            </select>
+                            {% if form.tipo_gratificacion.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.tipo_gratificacion.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <!-- Gratificación -->
+                        <div class="form-group">
+                            <label for="id_gratificacion" class="form-label">
+                                <i class="fas fa-gift text-gray-400 mr-2"></i>
+                                Gratificación
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="gratificacion" id="id_gratificacion" 
+                                       step="1" min="0" class="input-modern w-full px-4 py-2.5 pl-10"
+                                       value="{{ form.gratificacion.value|default:'0' }}"
+                                       placeholder="0">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    $
+                                </div>
+                            </div>
+                            <div class="form-helper">
+                                Calculada según sistema seleccionado
+                            </div>
+                            {% if form.gratificacion.errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.gratificacion.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Bonos Adicionales (Dinámicos) -->
+                        <div class="form-group">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-star text-gray-400 mr-2"></i>
+                                    Bonos Adicionales
+                                </label>
+                                <button type="button" 
+                                        onclick="agregarBono()"
+                                        class="text-sm bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1 rounded-lg transition-colors flex items-center gap-1">
+                                    <i class="fas fa-plus text-xs"></i>
+                                    Agregar Bono
+                                </button>
+                            </div>
+                            
+                            <div id="bonos-container">
+                                <!-- Bono inicial - CON CLASES CORREGIDAS -->
+                                <div class="bono-item" id="bono-0">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                Concepto
+                                            </label>
+                                            <input type="text" 
+                                                   name="bono_concepto[]" 
+                                                   class="input-modern w-full px-3 py-2 bono-concepto"
+                                                   placeholder="Ej: Colación, Movilización, etc."
+                                                   value=""
+                                                   oninput="updateSummary()">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                Monto ($)
+                                            </label>
+                                            <div class="relative">
+                                                <input type="number" 
+                                                       name="bono_monto[]" 
+                                                       class="input-modern w-full px-3 py-2 pl-8 bono-monto"
+                                                       placeholder="0"
+                                                       min="0"
+                                                       step="1"
+                                                       value="0"
+                                                       oninput="updateSummary()">
+                                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                                    $
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end mt-2">
+                                        <button type="button" 
+                                                onclick="eliminarBono(0)"
+                                                class="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
+                                            <i class="fas fa-trash text-xs"></i>
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-helper mt-2">
+                                Puede agregar múltiples bonos como colación, movilización, etc.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen del contrato -->
+                <div class="pt-8 border-t border-gray-200">
+                    <h3 class="section-title text-xl font-semibold mb-6">
+                        <i class="fas fa-file-alt mr-2"></i>
+                        Resumen del Contrato
+                    </h3>
+                    
+                    <div class="contract-summary">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Información del Trabajador</h4>
+                                <div class="space-y-1 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Nombre:</span>
+                                        <span id="summaryNombre" class="font-medium">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">RUT:</span>
+                                        <span id="summaryRut" class="font-medium">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Cargo:</span>
+                                        <span id="summaryCargo" class="font-medium">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Condiciones Laborales</h4>
+                                <div class="space-y-1 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Tipo:</span>
+                                        <span id="summaryTipo" class="font-medium">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Jornada:</span>
+                                        <span id="summaryJornada" class="font-medium">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Inicio:</span>
+                                        <span id="summaryInicio" class="font-medium">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-gray-200">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <div class="text-sm text-gray-500">Remuneración Total</div>
+                                    <div id="summaryTotal" class="text-2xl font-bold text-green-600">$0</div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-500">Sistema Previsional</div>
+                                    <div id="summaryPrevisional" class="text-lg font-medium">-</div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-500">Bonos Adicionales</div>
+                                    <div id="summaryBonos" class="text-lg font-medium">0 bonos</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="pt-8 border-t border-gray-200">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="text-sm text-gray-500">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <span>Sistema activo · {{ "hoy" }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <button type="button" 
+                                    class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                    id="cancelBtn">
+                                <i class="fas fa-times mr-2"></i>
+                                Cancelar
+                            </button>
+                            
+                            <button type="submit" 
+                                    class="btn-primary px-6 py-3 rounded-lg font-medium"
+                                    id="submitBtn">
+                                <i class="fas fa-file-contract mr-2"></i>
+                                Generar Contrato
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
-      </form>
-    </section>
-  </main>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Sistema de Contratos
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fas fa-shield-alt mr-1"></i> Legalmente válido</span>
+                <span><i class="fas fa-lock mr-1"></i> Seguro</span>
+                <span class="badge-success">
+                    <i class="fas fa-circle text-xs mr-1"></i>
+                    {{ alias|upper }}
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <!-- Scripts -->
+<script>
+    let bonoCounter = 1;
+    
+    // Función para agregar un nuevo bono
+    function agregarBono() {
+        const container = document.getElementById('bonos-container');
+        const newBono = document.createElement('div');
+        newBono.className = 'bono-item';
+        newBono.id = `bono-${bonoCounter}`;
+        
+        newBono.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Concepto
+                    </label>
+                    <input type="text" 
+                           name="bono_concepto[]" 
+                           class="input-modern w-full px-3 py-2 bono-concepto"
+                           placeholder="Ej: Colación, Movilización, etc."
+                           value=""
+                           oninput="updateSummary()">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Monto ($)
+                    </label>
+                    <div class="relative">
+                        <input type="number" 
+                               name="bono_monto[]" 
+                               class="input-modern w-full px-3 py-2 pl-8 bono-monto"
+                               placeholder="0"
+                               min="0"
+                               step="1"
+                               value="0"
+                               oninput="updateSummary()">
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            $
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end mt-2">
+                <button type="button" 
+                        onclick="eliminarBono(${bonoCounter})"
+                        class="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
+                    <i class="fas fa-trash text-xs"></i>
+                    Eliminar
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(newBono);
+        bonoCounter++;
+        updateSummary();
+    }
+    
+    // Función para eliminar un bono
+    function eliminarBono(id) {
+        const bono = document.getElementById(`bono-${id}`);
+        if (bono) {
+            // No permitir eliminar si solo queda uno
+            const totalBonos = document.querySelectorAll('.bono-item').length;
+            if (totalBonos > 1) {
+                bono.remove();
+                updateSummary();
+            } else {
+                alert('Debe mantener al menos un bono en la lista');
+            }
+        }
+    }
+    
+    // Calcular total de bonos - MÉTODO CORREGIDO
+    function calcularTotalBonos() {
+        let total = 0;
+        // Usar selectores por atributo name para capturar TODOS los bonos
+        const bonoMontos = document.querySelectorAll('input[name="bono_monto[]"]');
+        bonoMontos.forEach(input => {
+            const valor = parseFloat(input.value) || 0;
+            total += valor;
+        });
+        return total;
+    }
+    
+    // Contar bonos con concepto - MÉTODO CORREGIDO
+    function contarBonosConConcepto() {
+        let count = 0;
+        // Usar selectores por atributo name para capturar TODOS los bonos
+        const bonoConceptos = document.querySelectorAll('input[name="bono_concepto[]"]');
+        bonoConceptos.forEach(input => {
+            if (input.value.trim() !== '') {
+                count++;
+            }
+        });
+        return count;
+    }
+    
+    // Actualizar resumen en tiempo real
+    function updateSummary() {
+        // Datos personales
+        const nombre = document.getElementById('id_nombre').value || '-';
+        const rut = document.getElementById('id_rut_trabajador').value || '-';
+        const cargo = document.getElementById('id_cargo').value || '-';
+        
+        // Condiciones laborales
+        const tipoSelect = document.getElementById('id_tipo_contrato');
+        const tipo = tipoSelect.options[tipoSelect.selectedIndex]?.text || '-';
+        const jornadaSelect = document.getElementById('id_jornada');
+        const jornada = jornadaSelect.options[jornadaSelect.selectedIndex]?.text || '-';
+        const inicio = document.getElementById('id_fecha_inicio').value || '-';
+        
+        // Remuneraciones
+        const sueldo = parseFloat(document.getElementById('id_sueldo_base').value) || 0;
+        const gratificacion = parseFloat(document.getElementById('id_gratificacion').value) || 0;
+        const bonosTotal = calcularTotalBonos();
+        const total = sueldo + gratificacion + bonosTotal;
+        
+        // Previsional
+        const afpSelect = document.getElementById('id_afp');
+        const afp = afpSelect.options[afpSelect.selectedIndex]?.text || '-';
+        const saludSelect = document.getElementById('id_salud');
+        const salud = saludSelect.options[saludSelect.selectedIndex]?.text || '-';
+        
+        // Duración
+        const termino = document.getElementById('id_fecha_termino').value;
+        let duracion = 'Indefinido';
+        if (termino && inicio !== '-') {
+            const inicioDate = new Date(inicio);
+            const terminoDate = new Date(termino);
+            const diffTime = Math.abs(terminoDate - inicioDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            duracion = `${diffDays} días`;
+        }
+        
+        // Contar bonos
+        const totalBonos = contarBonosConConcepto();
+        
+        // Actualizar display
+        document.getElementById('summaryNombre').textContent = nombre;
+        document.getElementById('summaryRut').textContent = rut;
+        document.getElementById('summaryCargo').textContent = cargo;
+        document.getElementById('summaryTipo').textContent = tipo;
+        document.getElementById('summaryJornada').textContent = jornada;
+        document.getElementById('summaryInicio').textContent = inicio;
+        document.getElementById('summaryTotal').textContent = '$' + total.toLocaleString('es-CL');
+        document.getElementById('summaryPrevisional').textContent = `${afp} / ${salud}`;
+        document.getElementById('summaryBonos').textContent = `${totalBonos} bono${totalBonos !== 1 ? 's' : ''}`;
+    }
+    
+    // Función para validar RUT chileno - VERSIÓN CORREGIDA Y SIMPLIFICADA
+    function validateRUT(rut) {
+        // Si está vacío, devolver true (la validación de required se hará aparte)
+        if (!rut || rut.trim() === '') return true;
+        
+        // Limpiar el RUT: eliminar puntos, espacios y guiones
+        rut = rut.replace(/[\.\s\-]/g, '').toUpperCase();
+        
+        // Validar formato: debe tener al menos 8 caracteres (7 dígitos + dígito verificador)
+        if (rut.length < 8 || rut.length > 9) {
+            return false;
+        }
+        
+        // Validar que los primeros caracteres sean números
+        const cuerpo = rut.slice(0, -1);
+        const dv = rut.slice(-1);
+        
+        if (!/^\d+$/.test(cuerpo)) {
+            return false;
+        }
+        
+        // Validar que el dígito verificador sea número o K
+        if (!/^[\dK]$/.test(dv)) {
+            return false;
+        }
+        
+        // Calcular dígito verificador esperado usando el algoritmo oficial
+        let suma = 0;
+        let multiplo = 2;
+        
+        // Recorrer el cuerpo de derecha a izquierda
+        for (let i = cuerpo.length - 1; i >= 0; i--) {
+            suma += parseInt(cuerpo.charAt(i), 10) * multiplo;
+            multiplo = multiplo < 7 ? multiplo + 1 : 2;
+        }
+        
+        // Calcular dígito verificador esperado
+        const dvEsperado = 11 - (suma % 11);
+        
+        // Convertir a formato string
+        let dvCalculado = dvEsperado === 11 ? '0' : 
+                         dvEsperado === 10 ? 'K' : 
+                         dvEsperado.toString();
+        
+        // Comparar con el dígito ingresado
+        return dvCalculado === dv;
+    }
+    
+    // Escuchar cambios en todos los inputs
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('input', updateSummary);
+            input.addEventListener('change', updateSummary);
+        });
+        
+        // También agregar eventos a los bonos dinámicos
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('input[name="bono_concepto[]"], input[name="bono_monto[]"]')) {
+                updateSummary();
+            }
+        });
+        
+        // Actualizar inicialmente
+        updateSummary();
+        
+        // Validar fecha de término
+        document.getElementById('id_fecha_termino').addEventListener('change', function() {
+            const inicio = document.getElementById('id_fecha_inicio').value;
+            const termino = this.value;
+            
+            if (inicio && termino) {
+                const inicioDate = new Date(inicio);
+                const terminoDate = new Date(termino);
+                
+                if (terminoDate <= inicioDate) {
+                    alert('La fecha de término debe ser posterior a la fecha de inicio');
+                    this.value = '';
+                    updateSummary();
+                }
+            }
+        });
+        
+        // Calcular gratificación automáticamente
+        document.getElementById('id_sistema_gratificacion').addEventListener('change', function() {
+            const sistema = this.value;
+            const sueldoBase = parseFloat(document.getElementById('id_sueldo_base').value) || 0;
+            let gratificacion = 0;
+            
+            if (sistema === 'art_50' && sueldoBase > 0) {
+                gratificacion = Math.round(sueldoBase * 0.25); // 25% del sueldo base
+            }
+            
+            document.getElementById('id_gratificacion').value = gratificacion;
+            updateSummary();
+        });
+        
+        // También calcular cuando cambia el sueldo base
+        document.getElementById('id_sueldo_base').addEventListener('change', function() {
+            const sistema = document.getElementById('id_sistema_gratificacion').value;
+            const sueldoBase = parseFloat(this.value) || 0;
+            let gratificacion = 0;
+            
+            if (sistema === 'art_50' && sueldoBase > 0) {
+                gratificacion = Math.round(sueldoBase * 0.25); // 25% del sueldo base
+                document.getElementById('id_gratificacion').value = gratificacion;
+            }
+            
+            updateSummary();
+        });
+        
+        // Botón cancelar
+        document.getElementById('cancelBtn').addEventListener('click', function() {
+            if (confirm('¿Está seguro de cancelar? Los datos no guardados se perderán.')) {
+                window.location.href = '/trabajadores/{{ alias }}/contratos/';
+            }
+        });
+        
+        // Validación antes de enviar - VERSIÓN MEJORADA
+        const form = document.getElementById('contratoForm');
+        form.addEventListener('submit', function(event) {
+            // Validar RUT - USAR FUNCIÓN CORREGIDA
+            const rutInput = document.getElementById('id_rut_trabajador');
+            const rut = rutInput.value.trim();
+            
+            if (rut) {
+                if (!validateRUT(rut)) {
+                    event.preventDefault();
+                    alert('El RUT ingresado no es válido. Por favor ingrese un RUT válido.\n\nEjemplos válidos:\n• 11.111.111-1\n• 11111111-1\n• 11111111-K\n• 12345678-5');
+                    rutInput.focus();
+                    rutInput.select();
+                    return false;
+                }
+            }
+            
+            // Validar campos obligatorios
+            const requiredFields = ['nombre', 'cargo', 'jornada', 'tipo_contrato', 'fecha_inicio', 'sueldo_base', 'afp', 'salud', 'sistema_gratificacion', 'tipo_gratificacion'];
+            let missingFields = [];
+            
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById('id_' + fieldId);
+                if (!field.value.trim()) {
+                    missingFields.push(fieldId.replace('_', ' '));
+                }
+            });
+            
+            if (missingFields.length > 0) {
+                event.preventDefault();
+                alert('Por favor complete los siguientes campos obligatorios:\n\n• ' + missingFields.join('\n• '));
+                return false;
+            }
+            
+            // Confirmación final
+            const confirmar = confirm('¿Está seguro de generar el contrato?\n\nEsta acción creará un nuevo contrato laboral.');
+            if (!confirmar) {
+                event.preventDefault();
+                return false;
+            }
+            
+            // Mostrar indicador de carga
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generando...';
+            submitBtn.disabled = true;
+            
+            return true;
+        });
+    });
+    
+    // Formatear RUT automáticamente
+    document.getElementById('id_rut_trabajador').addEventListener('blur', function() {
+        let rut = this.value.trim();
+        
+        if (rut) {
+            // Eliminar puntos y guiones existentes
+            rut = rut.replace(/[\.\-]/g, '');
+            
+            // Separar número y dígito verificador
+            if (rut.length > 1) {
+                const cuerpo = rut.slice(0, -1);
+                const dv = rut.slice(-1).toUpperCase();
+                
+                // Formatear con puntos
+                let cuerpoFormateado = '';
+                for (let i = 0; i < cuerpo.length; i++) {
+                    if (i > 0 && (cuerpo.length - i) % 3 === 0) {
+                        cuerpoFormateado += '.';
+                    }
+                    cuerpoFormateado += cuerpo[i];
+                }
+                
+                this.value = cuerpoFormateado + '-' + dv;
+            }
+        }
+    });
+</script>
 
 </body>
 </html>

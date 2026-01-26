@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/3.4.0/css/bootstrap-colorpicker.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .config-card {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .config-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 1rem 1.5rem;
+        }
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #dee2e6;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .form-check-label {
+            cursor: pointer;
+        }
+        .btn-generate {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s;
+        }
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        .current-config {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+        .company-info {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="text-decoration-none text-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Volver al panel
+                        </a>
+                        <h4 class="mb-0 mt-2">{{ page_title }}</h4>
+                        <p class="text-muted mb-0">Configura y genera la app móvil para {{ empresa.nombre }}</p>
+                    </div>
+                    <div>
+                        {% if empresa.app_generada %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle me-1"></i>App generada
+                        </span>
+                        <span class="badge bg-info ms-2">v{{ empresa.version_app }}</span>
+                        {% else %}
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Sin app
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Company Info -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="company-info">
+                    <div class="d-flex align-items-center mb-3">
+                        {% if empresa.logo %}
+                        <img src="{{ empresa.logo.url }}" alt="Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;">
+                        {% endif %}
+                        <div class="ms-3">
+                            <h5 class="mb-1">{{ empresa.nombre }}</h5>
+                            <small class="text-muted">ID: {{ empresa.slug }}</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Servidor</small>
+                            <p class="mb-0">
+                                <code>{{ empresa.url_servidor|default:"No configurado" }}</code>
+                            </p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Última generación</small>
+                            <p class="mb-0">
+                                {{ empresa.fecha_generacion_app|default:"Nunca" }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <!-- Current Configuration -->
+                {% if empresa.app_generada %}
+                <div class="current-config">
+                    <h6 class="mb-3">
+                        <i class="bi bi-gear me-2"></i>Configuración actual
+                    </h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Colores:</small>
+                            <div class="d-flex align-items-center mt-1">
+                                <div class="color-preview" style="background-color: {{ empresa.color_app_primario|default:'#667eea' }};"></div>
+                                <span>{{ empresa.color_app_primario|default:'#667eea' }}</span>
+                            </div>
+                            <div class="d-flex align-items-center mt-1">
+                                <div class="color-preview" style="background-color: {{ empresa.color_app_secundario|default:'#764ba2' }};"></div>
+                                <span>{{ empresa.color_app_secundario|default:'#764ba2' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Funcionalidades activas:</small>
+                            <div class="mt-1">
+                                {% if config_app.habilitar_mapa %}<span class="badge bg-success me-1">Mapa</span>{% endif %}
+                                {% if config_app.habilitar_offline %}<span class="badge bg-success me-1">Offline</span>{% endif %}
+                                {% if config_app.validar_gps %}<span class="badge bg-success me-1">GPS</span>{% endif %}
+                                {% if config_app.sincronizacion_auto %}<span class="badge bg-success me-1">Auto-sync</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Configuration Form -->
+        <form method="POST" action="">
+            {% csrf_token %}
+            
+            <div class="row">
+                <!-- Basic Configuration -->
+                <div class="col-md-6">
+                    <div class="config-card card">
+                        <div class="config-header card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-palette me-2"></i>Configuración básica
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Server URL -->
+                            <div class="mb-3">
+                                <label class="form-label">URL del servidor</label>
+                                <input type="url" class="form-control" name="url_servidor" 
+                                       value="{{ empresa.url_servidor|default:'' }}" 
+                                       placeholder="https://tu-dominio.com" required>
+                                <small class="text-muted">URL base donde está alojado el sistema</small>
+                            </div>
+
+                            <!-- Colors -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Color primario</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text color-preview" 
+                                              style="background-color: {{ empresa.color_app_primario|default:'#667eea' }}" 
+                                              id="colorPrimarioPreview"></span>
+                                        <input type="text" class="form-control" name="color_primario" 
+                                               value="{{ empresa.color_app_primario|default:'#667eea' }}" 
+                                               id="colorPrimarioInput">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Color secundario</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text color-preview" 
+                                              style="background-color: {{ empresa.color_app_secundario|default:'#764ba2' }}" 
+                                              id="colorSecundarioPreview"></span>
+                                        <input type="text" class="form-control" name="color_secundario" 
+                                               value="{{ empresa.color_app_secundario|default:'#764ba2' }}" 
+                                               id="colorSecundarioInput">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Welcome Message -->
+                            <div class="mb-3">
+                                <label class="form-label">Mensaje de bienvenida</label>
+                                <textarea class="form-control" name="mensaje_bienvenida" rows="3" 
+                                          placeholder="Bienvenido a la app de {{ empresa.nombre }}">{{ config_app.mensaje_bienvenida|default:'' }}</textarea>
+                                <small class="text-muted">Se mostrará al iniciar la app</small>
+                            </div>
+
+                            <!-- Sync Interval -->
+                            <div class="mb-3">
+                                <label class="form-label">Intervalo de sincronización (minutos)</label>
+                                <input type="number" class="form-control" name="intervalo_sincronizacion" 
+                                       value="{{ config_app.intervalo_sincronizacion|default:'15' }}" 
+                                       min="1" max="1440">
+                                <small class="text-muted">Tiempo entre sincronizaciones automáticas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features Configuration -->
+                <div class="col-md-6">
+                    <div class="config-card card">
+                        <div class="config-header card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-sliders me-2"></i>Funcionalidades
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Feature Toggles -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="mostrar_logo" 
+                                           id="mostrarLogo" {% if config_app.mostrar_logo %}checked{% endif %}>
+                                    <label class="form-check-label" for="mostrarLogo">
+                                        <strong>Mostrar logo de la empresa</strong>
+                                        <p class="text-muted mb-0">Muestra el logo en la pantalla de inicio</p>
+                                    </label>
+                                </div>
+
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="habilitar_mapa" 
+                                           id="habilitarMapa" {% if config_app.habilitar_mapa %}checked{% endif %}>
+                                    <label class="form-check-label" for="habilitarMapa">
+                                        <strong>Habilitar mapa</strong>
+                                        <p class="text-muted mb-0">Permite ver ubicaciones en mapa</p>
+                                    </label>
+                                </div>
+
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="habilitar_offline" 
+                                           id="habilitarOffline" {% if config_app.habilitar_offline %}checked{% endif %}>
+                                    <label class="form-check-label" for="habilitarOffline">
+                                        <strong>Modo offline</strong>
+                                        <p class="text-muted mb-0">Permite trabajar sin conexión</p>
+                                    </label>
+                                </div>
+
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="validar_gps" 
+                                           id="validarGPS" {% if config_app.validar_gps %}checked{% endif %}>
+                                    <label class="form-check-label" for="validarGPS">
+                                        <strong>Validar GPS</strong>
+                                        <p class="text-muted mb-0">Requiere GPS activo para tomar lecturas</p>
+                                    </label>
+                                </div>
+
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="sincronizacion_auto" 
+                                           id="sincronizacionAuto" {% if config_app.sincronizacion_auto %}checked{% endif %}>
+                                    <label class="form-check-label" for="sincronizacionAuto">
+                                        <strong>Sincronización automática</strong>
+                                        <p class="text-muted mb-0">Sincroniza datos automáticamente</p>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate Button -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
+                            </a>
+                        </div>
+                        <div>
+                            {% if empresa.app_generada %}
+                            <button type="submit" class="btn-generate">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Actualizar app
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn-generate">
+                                <i class="bi bi-rocket-takeoff me-2"></i>Generar app
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Version Info -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle me-3" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <strong>Información de versión</strong>
+                            <p class="mb-0">
+                                {% if empresa.app_generada %}
+                                La próxima generación creará la versión <strong>{{ empresa.version_app|add:"0.1" }}</strong>. 
+                                {% else %}
+                                Esta será la primera versión (<strong>1.0.0</strong>) de la app.
+                                {% endif %}
+                                Se generará un nuevo código QR y archivo de configuración.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/3.4.0/js/bootstrap-colorpicker.min.js"></script>
+    <script>
+        // Color pickers
+        $(document).ready(function() {
+            // Color picker for primary color
+            $('#colorPrimarioInput').colorpicker({
+                format: 'hex',
+                useAlpha: false
+            }).on('colorpickerChange', function(e) {
+                $('#colorPrimarioPreview').css('background-color', e.color.toString());
+            });
+            
+            // Color picker for secondary color
+            $('#colorSecundarioInput').colorpicker({
+                format: 'hex',
+                useAlpha: false
+            }).on('colorpickerChange', function(e) {
+                $('#colorSecundarioPreview').css('background-color', e.color.toString());
+            });
+            
+            // Update color previews on page load
+            $('#colorPrimarioPreview').css('background-color', $('#colorPrimarioInput').val());
+            $('#colorSecundarioPreview').css('background-color', $('#colorSecundarioInput').val());
+            
+            // Show color picker when clicking preview
+            $('#colorPrimarioPreview').click(function() {
+                $('#colorPrimarioInput').colorpicker('show');
+            });
+            
+            $('#colorSecundarioPreview').click(function() {
+                $('#colorSecundarioInput').colorpicker('show');
+            });
+        });
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const serverUrl = document.querySelector('input[name="url_servidor"]').value;
+            if (!serverUrl) {
+                e.preventDefault();
+                alert('Por favor, ingresa la URL del servidor');
+                return false;
+            }
+            
+            // Confirm if updating existing app
+            {% if empresa.app_generada %}
+            if (!confirm('¿Estás seguro de actualizar la app? Esto generará una nueva versión.')) {
+                e.preventDefault();
+                return false;
+            }
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

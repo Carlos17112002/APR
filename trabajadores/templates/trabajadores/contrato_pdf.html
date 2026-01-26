@@ -2,85 +2,857 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Contrato laboral · {{ contrato.alias }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contrato Laboral · {{ alias }}</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      font-size: 12pt;
-      color: #333;
-      line-height: 1.6;
-      margin: 40px;
+    /* Variables de diseño modernas */
+    :root {
+      --primary-color: #1e3a8a;
+      --primary-light: #3b82f6;
+      --secondary-color: #111827;
+      --accent-color: #2563eb;
+      --accent-light: #dbeafe;
+      --border-color: #e5e7eb;
+      --text-color: #374151;
+      --text-light: #6b7280;
+      --light-bg: #f9fafb;
+      --card-bg: #ffffff;
+      --footer-color: #4b5563;
+      --success-color: #059669;
+      --warning-color: #d97706;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
     }
-    h1 {
-      text-align: center;
-      font-size: 16pt;
-      margin-bottom: 20px;
-    }
-    .section {
-      margin-bottom: 25px;
-    }
-    .label {
-      font-weight: bold;
-    }
-    .firma {
-      margin-top: 60px;
-      text-align: center;
-    }
-    .firma p {
+
+    /* Reset y estilos base */
+    * {
       margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    .footer {
-      font-size: 10pt;
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-size: 13px;
+      color: var(--text-color);
+      line-height: 1.6;
+      background: linear-gradient(135deg, #f6f9fc 0%, #f1f5f9 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Contenedor principal */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Encabezado */
+    .header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #1e40af 100%);
+      padding: 45px 60px 35px;
       text-align: center;
-      margin-top: 40px;
-      color: #777;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230f172a' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+      opacity: 0.1;
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      color: white;
+      margin: 0 0 12px 0;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header .subtitle {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 400;
+      margin: 0;
+      opacity: 0.9;
+    }
+
+    .badge-container {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 25px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 18px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge i {
+      font-size: 14px;
+    }
+
+    /* Cuerpo del documento */
+    .document-body {
+      padding: 50px 60px;
+    }
+
+    /* Secciones */
+    .section {
+      margin-bottom: 38px;
+      position: relative;
+    }
+
+    .section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 17px;
+      color: var(--primary-color);
+      margin: 0 0 22px 0;
+      font-weight: 700;
+      padding-bottom: 12px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 50px;
+      height: 3px;
+      background: linear-gradient(to right, var(--primary-light), var(--accent-color));
+      border-radius: 3px;
+    }
+
+    .section-title i {
+      font-size: 18px;
+      opacity: 0.8;
+    }
+
+    /* Grid de información */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 18px;
+      margin-top: 10px;
+    }
+
+    .info-card {
+      background: var(--light-bg);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent-light);
+    }
+
+    .info-item {
+      display: flex;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+
+    .info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: var(--secondary-color);
+      min-width: 160px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-label i {
+      color: var(--primary-light);
+      font-size: 14px;
+      width: 16px;
+      text-align: center;
+    }
+
+    .info-value {
+      color: var(--text-color);
+      flex: 1;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    /* Tarjeta de remuneración destacada */
+    .highlight-card {
+      background: linear-gradient(135deg, var(--accent-light) 0%, #eff6ff 100%);
+      border-radius: var(--radius-md);
+      padding: 25px 30px;
+      margin: 25px 0;
+      border: 2px solid var(--accent-light);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .highlight-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 6px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--primary-light), var(--accent-color));
+    }
+
+    .highlight-title {
+      font-size: 15px;
+      color: var(--primary-color);
+      margin: 0 0 20px 0;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .highlight-title i {
+      color: var(--success-color);
+    }
+
+    /* Firmas */
+    .signatures-section {
+      margin-top: 60px;
+      padding-top: 50px;
+      border-top: 2px solid var(--border-color);
+      position: relative;
+    }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 40px;
+      margin-top: 30px;
+    }
+
+    .signature-block {
+      text-align: center;
+      padding: 25px;
+      background: var(--light-bg);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .signature-line {
+      width: 85%;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--text-color), transparent);
+      margin: 50px auto 15px;
+    }
+
+    .signature-name {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--primary-color);
+      margin-top: 10px;
+    }
+
+    .signature-title {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    .signature-details {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 8px;
+      padding: 8px 0;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    /* Pie de página */
+    .footer {
+      margin-top: 70px;
+      padding: 25px 60px;
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      color: white;
+      text-align: center;
+      position: relative;
+    }
+
+    .footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--primary-light), var(--accent-color));
+    }
+
+    .footer-content {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .generated-info {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 10px;
+    }
+
+    .system-info {
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .legal-note {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 15px;
+      line-height: 1.5;
+    }
+
+    /* Elementos decorativos */
+    .watermark {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      opacity: 0.03;
+      font-size: 120px;
+      font-weight: 900;
+      color: var(--primary-color);
+      user-select: none;
+      pointer-events: none;
+      transform: rotate(-15deg);
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 30px;
+      left: 60px;
+      font-size: 11px;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Estado del contrato */
+    .contract-status {
+      position: absolute;
+      top: 40px;
+      right: 60px;
+      z-index: 10;
+    }
+
+    .status-badge {
+      background: linear-gradient(135deg, var(--success-color) 0%, #10b981 100%);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 15px;
+      }
+      
+      .container {
+        border-radius: var(--radius-md);
+      }
+      
+      .header {
+        padding: 35px 25px 25px;
+      }
+      
+      .header h1 {
+        font-size: 26px;
+      }
+      
+      .document-body {
+        padding: 35px 25px;
+      }
+      
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .signatures {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+      
+      .footer {
+        padding: 25px;
+      }
+      
+      .page-number {
+        left: 25px;
+        bottom: 20px;
+      }
+      
+      .contract-status {
+        top: 20px;
+        right: 25px;
+      }
+      
+      .watermark {
+        font-size: 80px;
+        bottom: 20px;
+        right: 20px;
+      }
+    }
+
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+      
+      .container {
+        box-shadow: none;
+        border: none;
+        border-radius: 0;
+        max-width: 100%;
+      }
+      
+      .info-card:hover,
+      .badge,
+      .status-badge {
+        box-shadow: none !important;
+        transform: none !important;
+      }
     }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+  <div class="container">
+    <!-- Estado del contrato -->
+    <div class="contract-status">
+      <div class="status-badge">
+        <i class="fas fa-file-contract"></i>
+        {{ contrato.get_tipo_contrato_display|upper }}
+      </div>
+    </div>
 
-  <h1>Contrato de Trabajo · Empresa {{ contrato.alias }}</h1>
+    <!-- Encabezado -->
+    <div class="header">
+      <div class="header-content">
+        <h1>CONTRATO DE TRABAJO</h1>
+        <p class="subtitle">Documento oficial de acuerdo laboral</p>
+        
+        <div class="badge-container">
+          <div class="badge">
+            <i class="fas fa-building"></i>
+            {{ empresa.nombre }}
+          </div>
+          <div class="badge">
+            <i class="fas fa-user-tie"></i>
+            {{ contrato.cargo }}
+          </div>
+          <div class="badge">
+            <i class="fas fa-clock"></i>
+            {{ contrato.get_jornada_display }}
+          </div>
+          <div class="badge">
+            <i class="fas fa-hashtag"></i>
+            Código: {{ contrato.id }}
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <div class="section">
-    <p>Entre la empresa <strong>{{ contrato.alias }}</strong> y el trabajador <strong>{{ contrato.nombre }}</strong>, RUT <strong>{{ contrato.rut_trabajador }}</strong>, se celebra el siguiente contrato laboral conforme a la legislación vigente.</p>
+    <!-- Cuerpo del documento -->
+    <div class="document-body">
+      <!-- Sección: Partes del contrato -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-users"></i>
+          PARTES CONTRATANTES
+        </h2>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-building"></i>
+                Empresa:
+              </div>
+              <div class="info-value">
+                <strong>{{ empresa.nombre }}</strong><br>
+                <span style="font-size: 12px; color: var(--text-light);">
+                  {{ empresa.rut|default:"RUT no disponible" }} · {{ empresa.direccion|default:"" }}
+                </span>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-user"></i>
+                Trabajador:
+              </div>
+              <div class="info-value">{{ contrato.nombre }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-id-card"></i>
+                RUT:
+              </div>
+              <div class="info-value">
+                <code style="background: var(--light-bg); padding: 3px 8px; border-radius: 4px; font-family: monospace;">
+                  {{ contrato.rut_trabajador }}
+                </code>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Detalles del contrato -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-file-alt"></i>
+          DETALLES DEL CONTRATO
+        </h2>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-briefcase"></i>
+                Cargo:
+              </div>
+              <div class="info-value">{{ contrato.cargo }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-calendar-day"></i>
+                Jornada:
+              </div>
+              <div class="info-value">{{ contrato.get_jornada_display }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-handshake"></i>
+                Tipo:
+              </div>
+              <div class="info-value">{{ contrato.get_tipo_contrato_display }}</div>
+            </div>
+          </div>
+          
+          <div class="info-card">
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-play-circle"></i>
+                Inicio:
+              </div>
+              <div class="info-value">
+                <strong>{{ contrato.fecha_inicio|date:"d/m/Y" }}</strong>
+              </div>
+            </div>
+            {% if contrato.fecha_termino %}
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-flag-checkered"></i>
+                Término:
+              </div>
+              <div class="info-value">
+                <strong>{{ contrato.fecha_termino|date:"d/m/Y" }}</strong>
+              </div>
+            </div>
+            {% endif %}
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-calendar-alt"></i>
+                Duración:
+              </div>
+              <div class="info-value">
+                {% if contrato.fecha_termino %}
+                  {% with inicio=contrato.fecha_inicio termino=contrato.fecha_termino %}
+                    {% if inicio and termino %}
+                      {% with dias=termino|timeuntil:inicio %}
+                        {{ dias }}
+                      {% endwith %}
+                    {% else %}
+                      Indefinida
+                    {% endif %}
+                  {% endwith %}
+                {% else %}
+                  Indefinida
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Previsional -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-shield-alt"></i>
+          SISTEMA PREVISIONAL
+        </h2>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-piggy-bank"></i>
+                AFP:
+              </div>
+              <div class="info-value">{{ contrato.get_afp_display|default:"No especificado" }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-heartbeat"></i>
+                Salud:
+              </div>
+              <div class="info-value">{{ contrato.get_salud_display|default:"No especificado" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Remuneración -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-money-bill-wave"></i>
+          REMUNERACIÓN
+        </h2>
+        
+        <div class="highlight-card">
+          <h3 class="highlight-title">
+            <i class="fas fa-chart-line"></i>
+            Detalle de Remuneraciones
+          </h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-wallet"></i>
+                Sueldo base:
+              </div>
+              <div class="info-value">
+                <span style="font-size: 18px; font-weight: 700; color: var(--primary-color);">
+                  ${{ contrato.sueldo_base|floatformat:0 }}
+                </span>
+                <span style="font-size: 12px; color: var(--text-light); display: block; margin-top: 3px;">
+                  Mensual bruto
+                </span>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-gift"></i>
+                Gratificación:
+              </div>
+              <div class="info-value">
+                <span style="font-size: 16px; font-weight: 600; color: var(--success-color);">
+                  ${{ contrato.gratificacion|floatformat:0|default:"0" }}
+                </span>
+                <span style="font-size: 12px; color: var(--text-light); display: block; margin-top: 3px;">
+                  {{ contrato.get_sistema_gratificacion_display|default:"" }}
+                </span>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-star"></i>
+                Bonos:
+              </div>
+              <div class="info-value">
+                <span style="font-size: 16px; font-weight: 600; color: var(--warning-color);">
+                  ${{ contrato.bonos|floatformat:0|default:"0" }}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Total de remuneraciones -->
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed var(--border-color);">
+            <div class="info-item">
+              <div class="info-label">
+                <i class="fas fa-calculator"></i>
+                Remuneración total:
+              </div>
+              <div class="info-value">
+                <span style="font-size: 22px; font-weight: 800; color: var(--success-color);">
+                  ${% widthratio contrato.sueldo_base|add:contrato.gratificacion|add:contrato.bonos 1 1|floatformat:0 %}
+                </span>
+                <span style="font-size: 12px; color: var(--text-light); display: block; margin-top: 3px;">
+                  Total mensual (Sueldo + Gratificación + Bonos)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: var(--light-bg); border-radius: var(--radius-md); border-left: 3px solid var(--primary-light);">
+          <p style="margin: 0; font-size: 13px; color: var(--text-color);">
+            <i class="fas fa-info-circle" style="color: var(--primary-light); margin-right: 8px;"></i>
+            El trabajador recibirá su remuneración de forma mensual, conforme a lo establecido en la legislación laboral vigente. Los pagos se realizarán dentro de los primeros cinco días hábiles de cada mes.
+          </p>
+        </div>
+      </div>
+
+      <!-- Sección: Declaración -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-balance-scale"></i>
+          DECLARACIÓN Y CLÁUSULAS
+        </h2>
+        <div style="background: var(--light-bg); padding: 25px; border-radius: var(--radius-md);">
+          <p style="margin-bottom: 15px; line-height: 1.7;">
+            Ambas partes declaran haber leído y comprendido íntegramente el contenido del presente contrato, aceptando libre y voluntariamente todas sus cláusulas, y firmando en señal de conformidad mutua.
+          </p>
+          <p style="margin-bottom: 15px; line-height: 1.7;">
+            Este contrato se rige por las disposiciones del Código del Trabajo de Chile, la legislación laboral vigente y las normativas aplicables en materia de seguridad social.
+          </p>
+          <p style="margin: 0; line-height: 1.7; font-style: italic; color: var(--text-light);">
+            Cualquier modificación a este documento deberá realizarse por escrito y con el consentimiento de ambas partes.
+          </p>
+        </div>
+      </div>
+
+      <!-- Firmas -->
+      <div class="signatures-section">
+        <h2 class="section-title">
+          <i class="fas fa-signature"></i>
+          FIRMAS DE CONFORMIDAD
+        </h2>
+        
+        <div class="signatures">
+          <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-name">{{ contrato.nombre }}</div>
+            <div class="signature-title">TRABAJADOR</div>
+            <div class="signature-details">
+              RUT: {{ contrato.rut_trabajador }}<br>
+              Firma y cédula de identidad
+            </div>
+          </div>
+
+          <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-name">REPRESENTANTE LEGAL</div>
+            <div class="signature-title">{{ empresa.nombre|upper }}</div>
+            <div class="signature-details">
+              Fecha: __________________<br>
+              Sello y firma autorizada
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Marca de agua -->
+    <div class="watermark">
+      CONTRATO
+    </div>
+
+    <!-- Número de página -->
+    <div class="page-number">
+      <i class="far fa-file-alt"></i>
+      Página 1 de 1
+    </div>
+
+    <!-- Pie de página -->
+    <div class="footer">
+      <div class="footer-content">
+        <div class="generated-info">
+          <i class="fas fa-calendar-day"></i>
+          Contrato generado automáticamente el {% now "d/m/Y H:i" %}
+        </div>
+        <div class="system-info">
+          <i class="fas fa-shield-alt"></i>
+          Sistema SSR · Panel Fiscal-Laboral
+        </div>
+        <div class="legal-note">
+          Documento válido sin firma autógrafa de acuerdo al Artículo 4 de la Ley N°19.799 sobre Documentos Electrónicos, Firma Electrónica y Servicios de Certificación.
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="section">
-    <p><span class="label">Cargo:</span> {{ contrato.cargo }}</p>
-    <p><span class="label">Jornada:</span> {{ contrato.get_jornada_display }}</p>
-    <p><span class="label">Tipo de contrato:</span> {{ contrato.get_tipo_contrato_display }}</p>
-    <p><span class="label">Fecha de inicio:</span> {{ contrato.fecha_inicio }}</p>
-    {% if contrato.fecha_termino %}
-      <p><span class="label">Fecha de término:</span> {{ contrato.fecha_termino }}</p>
-    {% endif %}
-  </div>
-
-  <div class="section">
-    <p><span class="label">Sueldo base:</span> ${{ contrato.sueldo_base }}</p>
-    <p><span class="label">Gratificación:</span> ${{ contrato.gratificacion }}</p>
-    <p><span class="label">Bonos:</span> ${{ contrato.bonos }}</p>
-    <p>El trabajador recibirá su remuneración de forma mensual, según lo establecido en la legislación laboral vigente.</p>
-  </div>
-
-  <div class="section">
-    <p>Ambas partes declaran haber leído y comprendido el contenido del presente contrato, firmando en señal de conformidad.</p>
-  </div>
-
-  <div class="firma">
-    <p>__________________________</p>
-    <p><strong>{{ contrato.nombre }}</strong></p>
-    <p>Trabajador</p>
-  </div>
-
-  <div class="firma" style="margin-top: 40px;">
-    <p>__________________________</p>
-    <p><strong>Representante Legal</strong></p>
-    <p>Empresa {{ contrato.alias }}</p>
-  </div>
-
-  <div class="footer">
-    Contrato generado automáticamente el {{ contrato.creado|date:"d/m/Y" }} · Sistema SSR · Panel Fiscal-Laboral
-  </div>
-
+  <!-- Script para mejoras interactivas -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Añadir animación sutil a las tarjetas
+      const cards = document.querySelectorAll('.info-card');
+      cards.forEach((card, index) => {
+        card.style.transitionDelay = `${index * 0.05}s`;
+      });
+      
+      // Formatear números con separadores de miles
+      const formatNumber = (num) => {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      };
+      
+      // Formatear montos en la página
+      document.querySelectorAll('.info-value span').forEach(span => {
+        const text = span.textContent;
+        if (text.startsWith('$')) {
+          const number = text.substring(1).replace(/\./g, '');
+          if (!isNaN(number) && number.trim() !== '') {
+            span.textContent = '$' + formatNumber(parseInt(number));
+          }
+        }
+      });
+    });
+  </script>
 </body>
 </html>
