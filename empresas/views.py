@@ -762,105 +762,499 @@ def crear_admin_empresa(request, slug):
 import os
 import json
 import time
-import sqlite3
+import shutil
+import traceback
+from datetime import datetime
 from django.conf import settings
-from django.shortcuts import get_object_or_404, redirect
-from django.db import connections
+from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from .models import Empresa, EliminacionEmpresa
 
-def eliminar_empresa(request, slug):
-    if request.method == 'POST' and request.user.is_superuser:
-        empresa = get_object_or_404(Empresa, slug=slug)
-        alias = f'db_{slug}'
-        
+def cerrar_conexiones_archivo(ruta_archivo, max_intentos=3):
+    """
+    Intenta cerrar y eliminar un archivo que está siendo usado.
+    """
+    for intento in range(max_intentos):
         try:
-            # 1. Cerrar todas las conexiones posibles
-            if alias in connections:
+            if os.path.exists(ruta_archivo):
+                os.remove(ruta_archivo)
+                return True, f"Archivo eliminado en intento {intento + 1}"
+            else:
+                return True, "Archivo no existe"
+        except PermissionError:
+            if intento < max_intentos - 1:
+                print(f"[SSR] Intento {intento + 1} fallado, esperando...")
+                time.sleep(1)  # Esperar 1 segundo
+            else:
+                # Último intento: renombrar el archivo
                 try:
-                    connections[alias].close()
-                    del connections[alias]
-                except:
-                    pass
-            
-            # 2. Forzar cierre de conexiones SQLite
-            db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
-            
-            # Intentar eliminar archivo .db-wal y .db-shm si existen
-            wal_path = db_path + '-wal'
-            shm_path = db_path + '-shm'
-            
-            for temp_file in [wal_path, shm_path]:
-                if os.path.exists(temp_file):
-                    try:
-                        os.remove(temp_file)
-                    except:
-                        pass
-            
-            # 3. Eliminar base física con reintentos
-            if os.path.exists(db_path):
-                for intento in range(3):
-                    try:
-                        os.remove(db_path)
-                        break
-                    except PermissionError:
-                        if intento < 2:
-                            time.sleep(1)  # Esperar 1 segundo antes de reintentar
-                        else:
-                            # Guardar en registro de auditoría el error
-                            EliminacionEmpresa.objects.create(
-                                nombre=empresa.nombre,
-                                slug=empresa.slug,
-                                ejecutado_por=request.user,
-                                error=f"No se pudo eliminar archivo: {db_path}"
-                            )
-                            messages.error(request, 'No se pudo eliminar la base de datos. Puede estar en uso.')
-                            return redirect('dashboard_admin_ssr')
-            
-            # 4. Eliminar alias del JSON externo
-            alias_json_path = os.path.join(settings.BASE_DIR, 'asesora_ssr', 'empresas_alias.json')
-            if os.path.exists(alias_json_path):
-                try:
-                    with open(alias_json_path, 'r') as f:
-                        aliases = json.load(f)
-                    
-                    if slug in aliases:
-                        aliases.remove(slug)
-                        
-                    with open(alias_json_path, 'w') as f:
-                        json.dump(aliases, f, indent=2)
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    nuevo_nombre = f"{ruta_archivo}.eliminado_{timestamp}"
+                    os.rename(ruta_archivo, nuevo_nombre)
+                    return True, f"Archivo renombrado a {nuevo_nombre}"
                 except Exception as e:
-                    # Continuar aunque falle el JSON
-                    print(f"Error actualizando JSON: {e}")
-            
-            # 5. Registrar en historial de auditoría
-            EliminacionEmpresa.objects.create(
-                nombre=empresa.nombre,
-                slug=empresa.slug,
-                ejecutado_por=request.user,
-                completado=True
-            )
-            
-            # 6. Eliminar registro en modelo Empresa
-            empresa.delete()
-            
-            # 7. Eliminar logs por alias
-            log_path = os.path.join(settings.BASES_DIR, f'{slug}_log.txt')
-            if os.path.exists(log_path):
-                try:
-                    os.remove(log_path)
-                except:
-                    pass
-            
-            messages.success(request, f'Empresa {empresa.nombre} eliminada exitosamente')
-            
+                    return False, f"No se pudo eliminar ni renombrar: {str(e)}"
         except Exception as e:
-            messages.error(request, f'Error al eliminar empresa: {str(e)}')
-        
+            return False, f"Error: {str(e)}"
+    
+    return False, "Máximo de intentos alcanzado"
+
+def obtener_info_empresa_segura(empresa):
+    """
+    Obtiene información de la empresa de forma segura, usando getattr.
+    """
+    info = {
+        'nombre': empresa.nombre,
+        'slug': empresa.slug,
+    }
+    
+    # Campos que podrían no existir en el modelo
+    campos_opcionales = ['ruc', 'direccion', 'telefono', 'email', 'fecha_creacion']
+    
+    for campo in campos_opcionales:
+        if hasattr(empresa, campo):
+            valor = getattr(empresa, campo)
+            if campo == 'fecha_creacion' and valor:
+                info[campo] = valor.isoformat()
+            else:
+                info[campo] = valor
+        else:
+            info[campo] = None
+    
+    return info
+
+@login_required
+def eliminar_empresa(request, slug):
+    """
+    Elimina una empresa y todos sus datos asociados.
+    """
+    # ===== VERIFICAR PERMISOS =====
+    if not request.user.is_superuser:
+        messages.error(request, 'No tiene permisos para eliminar empresas.')
         return redirect('dashboard_admin_ssr')
     
-    messages.error(request, 'Método no permitido')
+    empresa = get_object_or_404(Empresa, slug=slug)
+    
+    # ===== SI ES GET, MOSTRAR CONFIRMACIÓN =====
+    if request.method != 'POST':
+        # Preparar información básica para mostrar
+        alias = f'db_{slug}'
+        db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
+        
+        context = {
+            'empresa': empresa,
+            'bd_existe': os.path.exists(db_path),
+            'bd_tamano': f"{os.path.getsize(db_path) / 1024:.1f} KB" if os.path.exists(db_path) else 'No existe',
+        }
+        return render(request, 'empresas/confirmar_eliminacion.html', context)
+    
+    # ===== INICIO PROCESO DE ELIMINACIÓN =====
+    alias = f'db_{slug}'
+    nombre_empresa = empresa.nombre
+    logs = []
+    
+    try:
+        logs.append(f"=== ELIMINACIÓN EMPRESA: {nombre_empresa} ({slug}) ===")
+        logs.append(f"Iniciada por: {request.user.username}")
+        logs.append(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logs.append("=" * 50)
+        
+        # ===== PASO 1: REMOVER DE CONFIGURACIÓN =====
+        logs.append("\n[1] Removiendo configuración...")
+        
+        # Remover de settings.DATABASES si existe
+        if alias in settings.DATABASES:
+            del settings.DATABASES[alias]
+            logs.append("  ✓ Removido de settings.DATABASES")
+        else:
+            logs.append("  ℹ️  No estaba en settings.DATABASES")
+        
+        # Remover de empresas_alias.json si existe
+        alias_json_path = os.path.join(settings.BASE_DIR, 'asesora_ssr', 'empresas_alias.json')
+        if os.path.exists(alias_json_path):
+            try:
+                with open(alias_json_path, 'r') as f:
+                    aliases = json.load(f)
+                
+                if slug in aliases:
+                    aliases.remove(slug)
+                    
+                with open(alias_json_path, 'w') as f:
+                    json.dump(aliases, f, indent=2)
+                logs.append("  ✓ Removido de empresas_alias.json")
+            except Exception as e:
+                logs.append(f"  ⚠️  Error actualizando JSON: {str(e)}")
+        
+        # ===== PASO 2: ELIMINAR BASE DE DATOS =====
+        logs.append("\n[2] Eliminando base de datos...")
+        
+        db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
+        archivos_bd = [
+            db_path,
+            db_path + '-wal',
+            db_path + '-shm',
+            db_path.replace('.sqlite3', '.db'),
+        ]
+        
+        eliminados = 0
+        for archivo in archivos_bd:
+            if os.path.exists(archivo):
+                success, mensaje = cerrar_conexiones_archivo(archivo)
+                if success:
+                    eliminados += 1
+                    logs.append(f"  ✓ {os.path.basename(archivo)}: {mensaje}")
+                else:
+                    logs.append(f"  ✗ {os.path.basename(archivo)}: {mensaje}")
+            else:
+                logs.append(f"  ℹ️  {os.path.basename(archivo)} no existe")
+        
+        logs.append(f"  Resumen: {eliminados}/{len(archivos_bd)} archivos eliminados")
+        
+        # ===== PASO 3: ELIMINAR DIRECTORIOS =====
+        logs.append("\n[3] Eliminando directorios...")
+        
+        directorios = {
+            'app_movil': os.path.join(settings.BASE_DIR, 'apps_moviles', 'apps_generadas', slug),
+            'media': os.path.join(settings.MEDIA_ROOT, 'empresas', slug),
+            'logos': os.path.join(settings.MEDIA_ROOT, 'logos', slug),
+        }
+        
+        directorios_eliminados = 0
+        for nombre, ruta in directorios.items():
+            if os.path.exists(ruta):
+                try:
+                    # Contar archivos antes de eliminar
+                    archivos = 0
+                    for root, dirs, files in os.walk(ruta):
+                        archivos += len(files)
+                    
+                    shutil.rmtree(ruta)
+                    directorios_eliminados += 1
+                    logs.append(f"  ✓ {nombre}: {archivos} archivos eliminados")
+                except Exception as e:
+                    logs.append(f"  ✗ {nombre}: Error {str(e)}")
+            else:
+                logs.append(f"  ℹ️  {nombre}: No existe")
+        
+        logs.append(f"  Resumen: {directorios_eliminados}/{len(directorios)} directorios eliminados")
+        
+        # ===== PASO 4: ELIMINAR ARCHIVOS DE LOG =====
+        logs.append("\n[4] Eliminando archivos de log...")
+        
+        archivos_log = [
+            os.path.join(settings.BASES_DIR, f'{slug}_log.txt'),
+            os.path.join(settings.BASE_DIR, 'logs', f'{slug}.log'),
+        ]
+        
+        logs_eliminados = 0
+        for log_file in archivos_log:
+            if os.path.exists(log_file):
+                try:
+                    os.remove(log_file)
+                    logs_eliminados += 1
+                    logs.append(f"  ✓ {os.path.basename(log_file)} eliminado")
+                except Exception as e:
+                    logs.append(f"  ✗ {os.path.basename(log_file)}: Error {str(e)}")
+            else:
+                logs.append(f"  ℹ️  {os.path.basename(log_file)} no existe")
+        
+        # ===== PASO 5: REGISTRAR AUDITORÍA (ANTES de eliminar empresa) =====
+        logs.append("\n[5] Registrando auditoría...")
+        
+        try:
+            # Obtener información de la empresa de forma segura
+            empresa_info = obtener_info_empresa_segura(empresa)
+            
+            eliminacion_registro = EliminacionEmpresa.objects.create(
+                nombre=nombre_empresa,
+                slug=slug,
+                ejecutado_por=request.user.username,
+                completado=True,
+                detalles=json.dumps({
+                    'empresa_info': empresa_info,
+                    'archivos_bd_eliminados': eliminados,
+                    'directorios_eliminados': directorios_eliminados,
+                    'logs_eliminados': logs_eliminados,
+                    'fecha_eliminacion': datetime.now().isoformat(),
+                    'logs': logs
+                }, ensure_ascii=False, indent=2)
+            )
+            logs.append(f"  ✓ Registro creado (ID: {eliminacion_registro.id})")
+        except Exception as e:
+            logs.append(f"  ⚠️  Error creando auditoría: {str(e)}")
+            # Continuar aunque falle la auditoría
+        
+        # ===== PASO 6: ELIMINAR REGISTRO DE EMPRESA =====
+        logs.append("\n[6] Eliminando registro de empresa...")
+        
+        try:
+            with transaction.atomic():
+                # Guardar información antes de eliminar (para logs)
+                empresa_info_final = obtener_info_empresa_segura(empresa)
+                
+                # Eliminar empresa
+                empresa.delete()
+                logs.append(f"  ✓ Empresa eliminada de la base de datos")
+                logs.append(f"  Información eliminada: {json.dumps(empresa_info_final, ensure_ascii=False)}")
+        except Exception as e:
+            logs.append(f"  ❌ Error eliminando empresa: {str(e)}")
+            raise
+        
+        # ===== FINALIZAR =====
+        logs.append("\n" + "=" * 50)
+        logs.append("✅ ELIMINACIÓN COMPLETADA EXITOSAMENTE")
+        logs.append(f"Resumen final:")
+        logs.append(f"  • Archivos BD: {eliminados}/{len(archivos_bd)}")
+        logs.append(f"  • Directorios: {directorios_eliminados}/{len(directorios)}")
+        logs.append(f"  • Logs: {logs_eliminados}/{len(archivos_log)}")
+        logs.append(f"  • Empresa: {nombre_empresa}")
+        logs.append("=" * 50)
+        
+        # Guardar logs en archivo
+        try:
+            log_dir = os.path.join(settings.BASE_DIR, 'logs', 'eliminaciones')
+            os.makedirs(log_dir, exist_ok=True)
+            
+            log_file = os.path.join(log_dir, f'eliminacion_{slug}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+            with open(log_file, 'w', encoding='utf-8') as f:
+                f.write("\n".join(logs))
+            
+            print(f"[SSR] Log guardado en: {log_file}")
+        except Exception as e:
+            print(f"[SSR] Error guardando log: {e}")
+        
+        # Mostrar logs en consola
+        print("\n".join(logs))
+        
+        # Mensaje de éxito para el usuario
+        messages.success(request, f'Empresa "{nombre_empresa}" eliminada exitosamente.')
+        
+    except Exception as e:
+        # ===== MANEJO DE ERRORES =====
+        error_traceback = traceback.format_exc()
+        
+        logs.append("\n" + "=" * 50)
+        logs.append("❌ ERROR EN ELIMINACIÓN")
+        logs.append(f"Tipo: {type(e).__name__}")
+        logs.append(f"Mensaje: {str(e)}")
+        logs.append("\nTraceback completo:")
+        logs.append(error_traceback)
+        logs.append("=" * 50)
+        
+        # Registrar error en auditoría
+        try:
+            empresa_info = obtener_info_empresa_segura(empresa)
+            
+            EliminacionEmpresa.objects.create(
+                nombre=nombre_empresa,
+                slug=slug,
+                ejecutado_por=request.user.username,
+                completado=False,
+                error=f"{type(e).__name__}: {str(e)[:200]}",
+                detalles=json.dumps({
+                    'empresa_info': empresa_info,
+                    'error_traceback': error_traceback,
+                    'fecha_error': datetime.now().isoformat(),
+                    'logs': logs
+                }, ensure_ascii=False, indent=2)
+            )
+        except:
+            pass
+        
+        # Guardar log de error
+        try:
+            log_dir = os.path.join(settings.BASE_DIR, 'logs', 'eliminaciones')
+            os.makedirs(log_dir, exist_ok=True)
+            
+            log_file = os.path.join(log_dir, f'error_{slug}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+            with open(log_file, 'w', encoding='utf-8') as f:
+                f.write("\n".join(logs))
+        except:
+            pass
+        
+        # Mostrar error al usuario
+        messages.error(request, f'Error al eliminar empresa "{nombre_empresa}": {type(e).__name__}: {str(e)}')
+        
+        # Mostrar logs en consola
+        print("\n".join(logs))
+    
     return redirect('dashboard_admin_ssr')
+
+# ===== FUNCIONES AUXILIARES =====
+
+def obtener_datos_empresa(empresa):
+    """
+    Obtiene información para mostrar en la confirmación.
+    """
+    datos = {
+        'nombre': empresa.nombre,
+        'slug': empresa.slug,
+    }
+    
+    # Campos opcionales
+    campos = ['ruc', 'direccion', 'telefono', 'email', 'fecha_creacion']
+    for campo in campos:
+        if hasattr(empresa, campo):
+            valor = getattr(empresa, campo)
+            if campo == 'fecha_creacion' and valor:
+                datos[campo] = valor.strftime('%d/%m/%Y')
+            else:
+                datos[campo] = valor or 'No especificado'
+        else:
+            datos[campo] = 'No disponible'
+    
+    # Verificar base de datos
+    alias = f'db_{empresa.slug}'
+    db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
+    
+    if os.path.exists(db_path):
+        try:
+            tamano = os.path.getsize(db_path)
+            datos['bd_existe'] = True
+            datos['bd_tamano'] = f"{tamano / 1024:.1f} KB"
+            
+            # Intentar conectar para ver tablas
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
+            datos['bd_tablas'] = cursor.fetchone()[0]
+            conn.close()
+        except:
+            datos['bd_existe'] = True
+            datos['bd_tamano'] = 'Error al leer'
+            datos['bd_tablas'] = 'Error'
+    else:
+        datos['bd_existe'] = False
+        datos['bd_tamano'] = 'No existe'
+        datos['bd_tablas'] = 0
+    
+    return datos
+
+def obtener_datos_empresa(empresa):
+    """Obtiene información detallada de la empresa."""
+    try:
+        datos = {
+            'nombre': empresa.nombre,
+            'slug': empresa.slug,
+            'ruc': empresa.ruc,
+            'direccion': empresa.direccion,
+            'telefono': empresa.telefono,
+            'email': empresa.email,
+            'fecha_creacion': empresa.fecha_creacion.strftime('%d/%m/%Y') if empresa.fecha_creacion else 'N/A',
+        }
+        
+        # Verificar base de datos
+        alias = f'db_{empresa.slug}'
+        db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
+        
+        if os.path.exists(db_path):
+            tamano = os.path.getsize(db_path)
+            datos['bd_existe'] = True
+            datos['bd_tamano'] = f"{tamano / 1024:.1f} KB"
+        else:
+            datos['bd_existe'] = False
+            datos['bd_tamano'] = 'No existe'
+        
+        # Verificar usuarios
+        try:
+            num_usuarios = Usuario.objects.filter(empresa_slug=empresa.slug).count()
+            datos['num_usuarios'] = num_usuarios
+        except:
+            datos['num_usuarios'] = 'Error'
+        
+        return datos
+        
+    except Exception as e:
+        return {
+            'error': f"Error obteniendo datos: {str(e)}",
+            'nombre': empresa.nombre,
+            'slug': empresa.slug
+        }
+
+def obtener_datos_empresa(empresa):
+    """
+    Obtiene información detallada de la empresa para mostrar en confirmación.
+    """
+    try:
+        datos = {
+            'nombre': empresa.nombre,
+            'slug': empresa.slug,
+            'ruc': empresa.ruc,
+            'direccion': empresa.direccion,
+            'telefono': empresa.telefono,
+            'email': empresa.email,
+            'fecha_creacion': empresa.fecha_creacion.strftime('%d/%m/%Y') if empresa.fecha_creacion else 'N/A',
+        }
+        
+        # Verificar base de datos
+        alias = f'db_{empresa.slug}'
+        db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
+        
+        if os.path.exists(db_path):
+            tamano = os.path.getsize(db_path)
+            datos['bd_existe'] = True
+            datos['bd_tamano'] = f"{tamano / 1024:.1f} KB"
+            
+            # Intentar conectar para obtener stats
+            try:
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                
+                # Obtener número de tablas
+                cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
+                datos['bd_tablas'] = cursor.fetchone()[0]
+                
+                # Obtener tabla django_migrations para ver migraciones
+                cursor.execute("SELECT COUNT(*) FROM django_migrations")
+                datos['bd_migraciones'] = cursor.fetchone()[0]
+                
+                conn.close()
+            except:
+                datos['bd_tablas'] = 'Error'
+                datos['bd_migraciones'] = 'Error'
+        else:
+            datos['bd_existe'] = False
+            datos['bd_tamano'] = 'No existe'
+        
+        # Verificar usuarios
+        try:
+            num_usuarios = Usuario.objects.filter(empresa_slug=empresa.slug).count()
+            datos['num_usuarios'] = num_usuarios
+        except:
+            datos['num_usuarios'] = 'Error'
+        
+        # Verificar directorios
+        directorios = {
+            'app_movil': os.path.join(settings.BASE_DIR, 'apps_moviles', 'apps_generadas', empresa.slug),
+            'media': os.path.join(settings.MEDIA_ROOT, 'empresas', empresa.slug),
+        }
+        
+        datos['directorios'] = {}
+        for nombre, path in directorios.items():
+            if os.path.exists(path):
+                try:
+                    num_archivos = sum([len(files) for r, d, files in os.walk(path)])
+                    datos['directorios'][nombre] = {
+                        'existe': True,
+                        'archivos': num_archivos,
+                        'ruta': path
+                    }
+                except:
+                    datos['directorios'][nombre] = {'existe': True, 'archivos': 'Error'}
+            else:
+                datos['directorios'][nombre] = {'existe': False}
+        
+        return datos
+        
+    except Exception as e:
+        return {
+            'error': f"Error obteniendo datos: {str(e)}",
+            'nombre': empresa.nombre,
+            'slug': empresa.slug
+        }
 
 from boletas.helpers import generar_boletas_por_alias
 from empresas.models import Empresa

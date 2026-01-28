@@ -1,0 +1,24 @@
+[2026-01-27 10:10:58] [ERROR] === INICIO ELIMINACIÓN EMPRESA: apr-santiago ===
+Usuario: carlos (ceplazacastillo@gmail.com)
+Hora: 2026-01-27 10:10:58
+IP: 127.0.0.1
+============================================================
+📋 EMPRESA A ELIMINAR: APR SANTIAGO
+  - Slug: apr-santiago
+  - Alias BD: db_apr-santiago
+  - Fecha creación: 2026-01-26 14:28:46.761524+00:00
+
+🔌 PASO 1: Cerrando conexiones...
+
+============================================================
+❌ ERROR EN ELIMINACIÓN
+Tipo: TypeError
+Mensaje: argument of type 'Local' is not iterable
+
+Traceback completo:
+Traceback (most recent call last):
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\empresas\views.py", line 840, in eliminar_empresa
+    if alias in connections._connections:
+TypeError: argument of type 'Local' is not iterable
+
+============================================================

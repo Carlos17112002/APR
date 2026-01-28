@@ -1,0 +1,55 @@
+=== INICIO ELIMINACIÓN EMPRESA: apr-santiago ===
+Usuario: carlos (ceplazacastillo@gmail.com)
+Hora: 2026-01-27 10:15:44
+IP: 127.0.0.1
+============================================================
+📋 EMPRESA A ELIMINAR: APR SANTIAGO
+  - Slug: apr-santiago
+  - Alias BD: db_apr-santiago
+
+🔌 PASO 1: Cerrando conexiones...
+  ✓ Alias removido de settings.DATABASES
+  Total conexiones cerradas: 0
+
+🗑️  PASO 2: Eliminando archivos de base de datos...
+  ❌ No se pudo eliminar C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\bases\db_apr-santiago.sqlite3: [WinError 32] El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso: 'C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-santiago.sqlite3'
+  ℹ️  db_apr-santiago.sqlite3-wal no existe
+  ℹ️  db_apr-santiago.sqlite3-shm no existe
+  ℹ️  db_apr-santiago.db no existe
+  Total archivos BD eliminados: 0
+
+📁 PASO 3: Eliminando directorios...
+  ℹ️  app_movil: Directorio no existe
+  ℹ️  media_empresa: Directorio no existe
+  ℹ️  logos: Directorio no existe
+  ℹ️  logs_empresa: Directorio no existe
+  ℹ️  backups: Directorio no existe
+  Total directorios eliminados: 0
+
+📝 PASO 4: Eliminando archivos de log...
+  Total logs eliminados: 0
+
+📄 PASO 5: Actualizando configuración...
+  ✓ Alias apr-santiago removido del JSON
+
+👥 PASO 6: Eliminando usuarios...
+  ❌ Error eliminando usuarios: name 'Usuario' is not defined
+
+📋 PASO 7: Registrando auditoría...
+  ❌ Error creando auditoría: local variable 'num_usuarios' referenced before assignment
+
+🏢 PASO 8: Eliminando registro de empresa...
+  ❌ Error eliminando empresa: 'Empresa' object has no attribute 'ruc'
+
+============================================================
+❌ ERROR EN ELIMINACIÓN
+Tipo: AttributeError
+Mensaje: 'Empresa' object has no attribute 'ruc'
+
+Traceback completo:
+Traceback (most recent call last):
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\empresas\views.py", line 1015, in eliminar_empresa
+    'ruc': empresa.ruc,
+AttributeError: 'Empresa' object has no attribute 'ruc'
+
+============================================================

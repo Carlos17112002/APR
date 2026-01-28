@@ -1,0 +1,87 @@
+=== ELIMINACIÓN EMPRESA: VATICANO (vaticano) ===
+Iniciada por: carlos
+Fecha: 2026-01-27 10:28:09
+==================================================
+
+[1] Removiendo configuración...
+  ✓ Removido de settings.DATABASES
+  ✓ Removido de empresas_alias.json
+
+[2] Eliminando base de datos...
+  ✗ db_vaticano.sqlite3: No se pudo eliminar ni renombrar: [WinError 32] El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso: 'C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_vaticano.sqlite3' -> 'C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_vaticano.sqlite3.eliminado_20260127_102811'
+  ℹ️  db_vaticano.sqlite3-wal no existe
+  ℹ️  db_vaticano.sqlite3-shm no existe
+  ℹ️  db_vaticano.db no existe
+  Resumen: 0/4 archivos eliminados
+
+[3] Eliminando directorios...
+  ℹ️  app_movil: No existe
+  ℹ️  media: No existe
+  ℹ️  logos: No existe
+  Resumen: 0/3 directorios eliminados
+
+[4] Eliminando archivos de log...
+  ℹ️  vaticano_log.txt no existe
+  ℹ️  vaticano.log no existe
+
+[5] Registrando auditoría...
+  ⚠️  Error creando auditoría: Cannot assign "'carlos'": "EliminacionEmpresa.ejecutado_por" must be a "User" instance.
+
+[6] Eliminando registro de empresa...
+  ❌ Error eliminando empresa: column lecturas_lecturamovil.empresa_id does not exist
+LINE 1: ...uramovil"."id" FROM "lecturas_lecturamovil" WHERE "lecturas_...
+                                                             ^
+
+
+==================================================
+❌ ERROR EN ELIMINACIÓN
+Tipo: ProgrammingError
+Mensaje: column lecturas_lecturamovil.empresa_id does not exist
+LINE 1: ...uramovil"."id" FROM "lecturas_lecturamovil" WHERE "lecturas_...
+                                                             ^
+
+
+Traceback completo:
+Traceback (most recent call last):
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+psycopg2.errors.UndefinedColumn: column lecturas_lecturamovil.empresa_id does not exist
+LINE 1: ...uramovil"."id" FROM "lecturas_lecturamovil" WHERE "lecturas_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\empresas\views.py", line 998, in eliminar_empresa
+    empresa.delete()
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\models\base.py", line 1131, in delete
+    collector.collect([self], keep_parents=keep_parents)
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\models\deletion.py", line 348, in collect
+    if getattr(on_delete, "lazy_sub_objs", False) or sub_objs:
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\models\query.py", line 412, in __bool__
+    self._fetch_all()
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\models\query.py", line 1881, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\models\sql\compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\backends\utils.py", line 102, in execute
+    return super().execute(sql, params)
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\backends\utils.py", line 67, in execute
+    return self._execute_with_wrappers(
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\backends\utils.py", line 80, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\javie\OneDrive\Documentos\OneDrive\Desktop\SSR_ASESORA\asesora_ssr\env\lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+django.db.utils.ProgrammingError: column lecturas_lecturamovil.empresa_id does not exist
+LINE 1: ...uramovil"."id" FROM "lecturas_lecturamovil" WHERE "lecturas_...
+                                                             ^
+
+
+==================================================

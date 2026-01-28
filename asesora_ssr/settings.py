@@ -99,7 +99,7 @@ import dj_database_url
 BASES_DIR = os.path.join(BASE_DIR, 'bases')
 
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Add these at the top of your settings.py
 import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse, parse_qsl
