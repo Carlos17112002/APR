@@ -7,354 +7,836 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+        }
+        
         body {
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .qr-container {
-            max-width: 800px;
+        
+        .qr-master-container {
+            max-width: 1000px;
             margin: 2rem auto;
-            padding: 2rem;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
         }
-        .qr-image {
-            width: 300px;
-            height: 300px;
-            margin: 0 auto;
+        
+        .qr-master-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--primary-gradient);
+        }
+        
+        .qr-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 2.5rem 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .qr-header::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1%, transparent 1%);
+            background-size: 30px 30px;
+            opacity: 0.3;
+        }
+        
+        .qr-content {
+            padding: 3rem;
+        }
+        
+        .qr-display-container {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+        
+        .qr-display-container:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+        }
+        
+        .qr-image-wrapper {
+            width: 320px;
+            height: 320px;
+            margin: 0 auto 1.5rem;
             padding: 20px;
             background: white;
-            border: 2px dashed #dee2e6;
-            border-radius: 10px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            position: relative;
         }
-        .download-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        
+        .qr-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .qr-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: var(--primary-gradient);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+            z-index: 10;
+        }
+        
+        .company-info {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .action-btn {
+            background: var(--primary-gradient);
             color: white;
             border: none;
-            padding: 10px 25px;
+            padding: 12px 28px;
             border-radius: 50px;
             font-weight: 600;
             transition: all 0.3s;
-        }
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        .company-logo {
-            max-height: 60px;
-            max-width: 200px;
-            object-fit: contain;
-        }
-        .back-btn {
-            color: #6c757d;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             text-decoration: none;
-            font-weight: 500;
         }
-        .back-btn:hover {
-            color: #495057;
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            color: white;
         }
-        .data-preview {
-            font-family: monospace;
-            font-size: 0.85rem;
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-            max-height: 100px;
-            overflow-y: auto;
+        
+        .secondary-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
         }
+        
+        .secondary-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
         .tab-content {
             border: 1px solid #dee2e6;
             border-top: none;
-            padding: 20px;
-            border-radius: 0 0 5px 5px;
+            padding: 2rem;
+            border-radius: 0 0 12px 12px;
+            background: white;
         }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: #495057;
+            background: #f8f9fa;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .data-preview {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            max-height: 120px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+        
         .token-display {
             font-family: 'Courier New', monospace;
             font-size: 0.8rem;
             background: #f8f9fa;
-            padding: 5px 10px;
-            border-radius: 4px;
+            padding: 8px 12px;
+            border-radius: 6px;
             word-break: break-all;
+            border: 1px solid #e9ecef;
         }
+        
         .json-preview {
             max-height: 300px;
             overflow-y: auto;
             font-size: 0.8rem;
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
+            padding: 1rem;
+            border-radius: 8px;
             border: 1px solid #dee2e6;
+            line-height: 1.6;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        
+        .render-badge {
+            background: linear-gradient(135deg, #46b98a 0%, #2d9cdb 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .url-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 1px solid #e9ecef;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        
+        .copy-btn {
+            transition: all 0.2s;
+            border-radius: 6px;
+        }
+        
+        .copy-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .success-animation {
+            animation: successPop 0.5s ease;
+        }
+        
+        @keyframes successPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .instruction-card {
+            background: #f0f2ff;
+            border: 1px solid #d0d5ff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 50%;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+        
+        .flutter-badge {
+            background: linear-gradient(135deg, #02569B 0%, #13B9FD 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .qr-stats {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.5rem;
         }
     </style>
 </head>
 <body>
-    <div class="container py-4">
-        <!-- Header -->
+    <div class="container-fluid py-4">
+        <!-- Back Navigation -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="back-btn">
-                        <i class="bi bi-arrow-left"></i> Volver al panel
-                    </a>
-                    <h4 class="mb-0">{{ page_title }}</h4>
-                    <div style="width: 100px;"></div>
-                </div>
+                <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
+                   class="text-decoration-none d-inline-flex align-items-center text-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    <span>Volver al panel de {{ empresa.nombre }}</span>
+                </a>
             </div>
         </div>
 
-        <!-- QR Card -->
-        <div class="qr-container">
-            <!-- Información de la empresa -->
-            <div class="text-center mb-4">
-                {% if empresa.logo %}
-                    <img src="{{ empresa.logo.url }}" alt="Logo {{ empresa.nombre }}" class="company-logo mb-3">
-                {% endif %}
-                <h3 class="fw-bold mb-2">{{ empresa.nombre }}</h3>
-                <p class="text-muted mb-1">Versión: {{ empresa.version_app }}</p>
-                <p class="text-muted">
-                    <i class="bi bi-people me-1"></i> {{ total_clientes }} clientes | 
-                    <i class="bi bi-map me-1"></i> {{ total_sectores }} sectores
-                </p>
-            </div>
-
-            <!-- QR -->
-            <div class="text-center mb-4">
-                <div class="qr-image mb-3">
-                    <img src="{{ qr_url }}" alt="QR Code" class="img-fluid">
-                </div>
-                <p class="text-muted mb-2">Escanea este código con la app móvil</p>
-                <p class="small text-muted mb-0">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Tamaño QR: {{ qr_data_length }} caracteres
-                </p>
-            </div>
-
-            <!-- Tabs para información -->
-            <ul class="nav nav-tabs mb-3" id="infoTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="preview-tab" data-bs-toggle="tab" 
-                            data-bs-target="#preview" type="button" role="tab">
-                        <i class="bi bi-eye me-2"></i>Vista Previa
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="data-tab" data-bs-toggle="tab" 
-                            data-bs-target="#data" type="button" role="tab">
-                        <i class="bi bi-code-slash me-2"></i>Datos del QR
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="instructions-tab" data-bs-toggle="tab" 
-                            data-bs-target="#instructions" type="button" role="tab">
-                        <i class="bi bi-info-circle me-2"></i>Instrucciones
-                    </button>
-                </li>
-            </ul>
-
-            <div class="tab-content" id="infoTabsContent">
-                <!-- Tab 1: Vista Previa -->
-                <div class="tab-pane fade show active" id="preview" role="tabpanel">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6><i class="bi bi-building me-2"></i>Información de la empresa</h6>
-                            <ul class="list-unstyled">
-                                <li><strong>Nombre:</strong> {{ empresa.nombre }}</li>
-                                <li><strong>Slug:</strong> {{ empresa.slug }}</li>
-                                <li><strong>Versión App:</strong> {{ empresa.version_app }}</li>
-                                <li><strong>URL Servidor:</strong> {{ empresa.url_servidor }}</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h6><i class="bi bi-database me-2"></i>Datos cargados</h6>
-                            <ul class="list-unstyled">
-                                <li><strong>Clientes:</strong> {{ total_clientes }}</li>
-                                <li><strong>Sectores:</strong> {{ total_sectores }}</li>
-                                <li><strong>Generado:</strong> {{ empresa.fecha_generacion_app|date:"d/m/Y H:i" }}</li>
-                                <li><strong>Estrategia:</strong> Universal</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    {% if mensaje_especial %}
-                    <div class="alert alert-info mt-3">
-                        <i class="bi bi-info-circle me-2"></i>
-                        {{ mensaje_especial }}
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Tab 2: Datos del QR -->
-                <div class="tab-pane fade" id="data" role="tabpanel">
-                    <h6>Contenido del QR ({{ qr_data_length }} caracteres):</h6>
-                    <div class="data-preview mb-3">
-                        {{ qr_data_preview }}
-                    </div>
-                    
-                    <h6>Información de configuración:</h6>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header bg-light">
-                                    <i class="bi bi-qr-code me-2"></i>Datos del QR
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm mb-0">
-                                        <tbody>
-                                            <tr>
-                                                <th scope="row">Tipo:</th>
-                                                <td><span class="badge bg-primary">universal</span></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Empresa Slug:</th>
-                                                <td><code>{{ empresa.slug }}</code></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Token:</th>
-                                                <td>
-                                                    <div class="token-display">
-                                                        {{ token|truncatechars:30 }}
-                                                        {% if token|length > 30 %}
-                                                        <span class="text-muted">...</span>
-                                                        {% endif %}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Total Clientes:</th>
-                                                <td>{{ total_clientes }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Versión QR:</th>
-                                                <td>1</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+        <!-- Main QR Container -->
+        <div class="qr-master-container">
+            <!-- Header -->
+            <div class="qr-header">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center">
+                            {% if empresa.logo %}
+                            <div class="me-4 flex-shrink-0">
+                                <img src="{{ empresa.logo.url }}" 
+                                     alt="Logo {{ empresa.nombre }}"
+                                     style="max-height: 70px; max-width: 200px; object-fit: contain; background: white; padding: 8px; border-radius: 8px;">
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header bg-light">
-                                    <i class="bi bi-link-45deg me-2"></i>Endpoints
-                                </div>
-                                <div class="card-body">
-                                    <p class="small mb-2"><strong>Configuración:</strong></p>
-                                    <div class="token-display small mb-3">
-                                        {{ api_url }}
-                                    </div>
-                                    
-                                    <p class="small mb-2"><strong>Descarga de clientes:</strong></p>
-                                    <div class="token-display small">
-                                        {{ request.scheme }}://{{ request.get_host }}/apps/descargar-clientes/{{ empresa.slug }}/?token={{ token }}
-                                    </div>
-                                </div>
+                            {% endif %}
+                            <div>
+                                <h1 class="mb-2 fw-bold">{{ empresa.nombre }}</h1>
+                                <p class="mb-0 opacity-90" style="font-size: 1.1rem;">
+                                    {{ empresa.descripcion|default:"Aplicación móvil de lecturas" }}
+                                </p>
                             </div>
                         </div>
                     </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                            <span class="badge bg-light text-dark py-2 px-3">
+                                <i class="bi bi-qr-code me-1"></i>QR de configuración
+                            </span>
+                            <span class="badge-version bg-light text-dark py-2 px-3">
+                                <i class="bi bi-tag me-1"></i>v{{ empresa.version_app }}
+                            </span>
+                            {% if empresa.url_servidor and 'onrender.com' in empresa.url_servidor %}
+                            <span class="render-badge">
+                                <i class="bi bi-cloud me-1"></i>Render.com
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR Content -->
+            <div class="qr-content">
+                <!-- QR Display -->
+                <div class="qr-display-container">
+                    <span class="qr-badge">
+                        <i class="bi bi-qr-code-scan me-1"></i>ESCANEAR
+                    </span>
                     
-                    <!-- JSON Preview -->
-                    <h6>JSON completo del QR:</h6>
-                    <div class="json-preview mb-3">
-{
-  "t": "universal",
-  "e": "{{ empresa.slug }}",
-  "tk": "{{ token }}",
-  "u": "{{ api_url }}",
-  "cn": "{{ total_clientes }}",
-  "v": "1"
-}
+                    <div class="qr-image-wrapper">
+                        <img src="{{ qr_url }}" alt="QR Code para {{ empresa.nombre }}" class="qr-image">
                     </div>
                     
-                    <div class="text-center">
-                        <button class="btn btn-sm btn-outline-primary" onclick="copyJson()">
-                            <i class="bi bi-clipboard me-1"></i>Copiar JSON
+                    <h4 class="fw-bold mb-2">Escanea con la app móvil</h4>
+                    <p class="text-muted mb-4">
+                        Abre la app SSR Lecturas y escanea este código para configurar automáticamente<br>
+                        <span class="d-inline-flex align-items-center mt-1">
+                            <span class="flutter-badge me-2">
+                                <i class="bi bi-phone me-1"></i>Flutter
+                            </span>
+                            <small>Compatible con Android e iOS</small>
+                        </span>
+                    </p>
+                    
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        <a href="{{ qr_url }}" 
+                           download="qr_{{ empresa.slug }}.png" 
+                           class="action-btn">
+                            <i class="bi bi-download me-2"></i>Descargar QR
+                        </a>
+                        <button onclick="printQR()" class="secondary-btn">
+                            <i class="bi bi-printer me-2"></i>Imprimir QR
                         </button>
                     </div>
                 </div>
 
-                <!-- Tab 3: Instrucciones -->
-                <div class="tab-pane fade" id="instructions" role="tabpanel">
-                    <h6><i class="bi bi-phone me-2"></i>Instrucciones para usar el QR:</h6>
-                    <ol>
-                        <li class="mb-2">Abre la app móvil SSR en tu teléfono</li>
-                        <li class="mb-2">Ve a la pantalla "Configurar App"</li>
-                        <li class="mb-2">Toca el botón "Escanear QR"</li>
-                        <li class="mb-2">Apunta la cámara hacia este código QR</li>
-                        <li class="mb-2">La app cargará automáticamente la configuración de {{ empresa.nombre }}</li>
-                        <li class="mb-2">Los datos se sincronizarán automáticamente</li>
-                        <li>¡Listo! Ya puedes usar la app con los datos de esta empresa</li>
-                    </ol>
-                    
-                    <div class="alert alert-success mt-3">
-                        <i class="bi bi-check-circle me-2"></i>
-                        <strong>Estrategia Universal:</strong> Este QR funciona para todas las empresas, 
-                        sin importar la cantidad de clientes. Usa un token de acceso seguro.
+                <!-- Stats -->
+                <div class="qr-stats mb-4">
+                    <div class="row">
+                        <div class="col-3">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ total_clientes }}</div>
+                                <div class="stat-label">Clientes</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ total_sectores }}</div>
+                                <div class="stat-label">Sectores</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ qr_data_length }}</div>
+                                <div class="stat-label">Caracteres QR</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ empresa.version_app }}</div>
+                                <div class="stat-label">Versión</div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="alert alert-info mt-3">
-                        <i class="bi bi-lightbulb me-2"></i>
-                        <strong>Tip:</strong> Si el QR no se escanea bien, puedes usar la URL de descarga 
-                        o compartir el token manualmente.
+                </div>
+
+                <!-- Information Tabs -->
+                <ul class="nav nav-tabs mb-0" id="infoTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="config-tab" data-bs-toggle="tab" 
+                                data-bs-target="#config" type="button" role="tab">
+                            <i class="bi bi-gear me-2"></i>Configuración
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="json-tab" data-bs-toggle="tab" 
+                                data-bs-target="#json" type="button" role="tab">
+                            <i class="bi bi-code-slash me-2"></i>JSON del QR
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="help-tab" data-bs-toggle="tab" 
+                                data-bs-target="#help" type="button" role="tab">
+                            <i class="bi bi-question-circle me-2"></i>Ayuda
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="urls-tab" data-bs-toggle="tab" 
+                                data-bs-target="#urls" type="button" role="tab">
+                            <i class="bi bi-link-45deg me-2"></i>URLs & Tokens
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="infoTabsContent">
+                    <!-- Config Tab -->
+                    <div class="tab-pane fade show active" id="config" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="mb-3"><i class="bi bi-building me-2"></i>Información de empresa</h5>
+                                <div class="company-info">
+                                    <div class="mb-3">
+                                        <label class="small text-muted d-block">Nombre de empresa</label>
+                                        <strong>{{ empresa.nombre }}</strong>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="small text-muted d-block">Identificador único</label>
+                                        <code class="text-dark">{{ empresa.slug }}</code>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="small text-muted d-block">Versión de app</label>
+                                        <span class="badge bg-primary">v{{ empresa.version_app }}</span>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="small text-muted d-block">Última generación</label>
+                                        <i class="bi bi-calendar me-1"></i>
+                                        {{ empresa.fecha_generacion_app|date:"d/m/Y H:i" }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5 class="mb-3"><i class="bi bi-database me-2"></i>Datos incluidos</h5>
+                                <div class="company-info">
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted">Total de clientes</span>
+                                            <span class="badge bg-primary rounded-pill">{{ total_clientes }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar" 
+                                                 style="width: {% widthratio total_clientes 1000 100 %}%; background: var(--primary-gradient);"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted">Sectores disponibles</span>
+                                            <span class="badge bg-primary rounded-pill">{{ total_sectores }}</span>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for sector in sectores_sample %}
+                                            <span class="badge bg-light text-dark">{{ sector }}</span>
+                                            {% endfor %}
+                                            {% if total_sectores > 5 %}
+                                            <span class="badge bg-light text-dark">+{{ total_sectores|add:"-5" }} más</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-info mb-0">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong>Estrategia universal:</strong> Este QR funciona para todos los clientes.
+                                        Los datos se descargan automáticamente después del escaneo.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if mensaje_especial %}
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            {{ mensaje_especial }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- JSON Tab -->
+                    <div class="tab-pane fade" id="json" role="tabpanel">
+                        <h5 class="mb-3"><i class="bi bi-code me-2"></i>Contenido del código QR</h5>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">JSON completo del QR:</label>
+                            <div class="json-preview">
+{
+  "u": "{{ api_url }}",
+  "e": "{{ empresa.slug }}",
+  "tk": "{{ token }}",
+  "cn": {{ total_clientes }},
+  "sn": {{ total_sectores }},
+  "v": "1",
+  "t": "universal",
+  "ts": "{{ timestamp|date:'U' }}",
+  "h": "{{ request.scheme }}://{{ request.get_host }}",
+  {% if empresa.url_servidor and 'onrender.com' in empresa.url_servidor %}
+  "rd": true,
+  "ru": "{{ empresa.url_servidor }}",
+  {% endif %}
+  "note": "QR generado para {{ empresa.nombre }}"
+}
+                            </div>
+                            <div class="text-end mt-2">
+                                <button class="btn btn-sm btn-primary" onclick="copyJson()">
+                                    <i class="bi bi-clipboard me-1"></i>Copiar JSON
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <i class="bi bi-info-circle me-2"></i>Campos del JSON
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm mb-0">
+                                            <tbody>
+                                                <tr>
+                                                    <td><code>u</code></td>
+                                                    <td>URL de configuración</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>e</code></td>
+                                                    <td>Slug de empresa</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>tk</code></td>
+                                                    <td>Token de acceso</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>cn</code></td>
+                                                    <td>Número de clientes</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>v</code></td>
+                                                    <td>Versión del formato</td>
+                                                </tr>
+                                                {% if empresa.url_servidor and 'onrender.com' in empresa.url_servidor %}
+                                                <tr>
+                                                    <td><code>rd</code></td>
+                                                    <td>Render.com activo</td>
+                                                </tr>
+                                                {% endif %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <i class="bi bi-shield-lock me-2"></i>Seguridad
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="mb-0">
+                                            <li class="mb-2">
+                                                <i class="bi bi-check-circle text-success me-2"></i>
+                                                Token válido por 24 horas
+                                            </li>
+                                            <li class="mb-2">
+                                                <i class="bi bi-check-circle text-success me-2"></i>
+                                                Cifrado HTTPS activo
+                                            </li>
+                                            <li class="mb-2">
+                                                <i class="bi bi-check-circle text-success me-2"></i>
+                                                Acceso por IP restringido
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-check-circle text-success me-2"></i>
+                                                Revisión automática de firmas
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Help Tab -->
+                    <div class="tab-pane fade" id="help" role="tabpanel">
+                        <h5 class="mb-4"><i class="bi bi-phone me-2"></i>Cómo usar este QR</h5>
+                        
+                        <div class="instruction-card">
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <h6 class="mb-1">Descarga la app</h6>
+                                    <p class="mb-0 small text-muted">
+                                        Instala "SSR Lecturas" desde Google Play Store o App Store
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <h6 class="mb-1">Abre la app</h6>
+                                    <p class="mb-0 small text-muted">
+                                        Ejecuta la aplicación y toca "Configurar App"
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <h6 class="mb-1">Escanear QR</h6>
+                                    <p class="mb-0 small text-muted">
+                                        Toca "Escanear QR" y apunta la cámara hacia este código
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="step-number">4</div>
+                                <div>
+                                    <h6 class="mb-1">Configuración automática</h6>
+                                    <p class="mb-0 small text-muted">
+                                        La app cargará automáticamente todos los datos de {{ empresa.nombre }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start">
+                                <div class="step-number">5</div>
+                                <div>
+                                    <h6 class="mb-1">¡Listo para usar!</h6>
+                                    <p class="mb-0 small text-muted">
+                                        Comienza a tomar lecturas inmediatamente
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="alert alert-success">
+                                    <h6><i class="bi bi-check-circle me-2"></i>Funcionalidades Flutter</h6>
+                                    <ul class="mb-0 small">
+                                        <li>Conversión automática localhost → Render.com</li>
+                                        <li>Reconexión automática si falla</li>
+                                        <li>Cache de datos offline</li>
+                                        <li>Validación GPS integrada</li>
+                                        <li>Sincronización automática</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-lightbulb me-2"></i>Consejos</h6>
+                                    <ul class="mb-0 small">
+                                        <li>Asegúrate de tener buena iluminación</li>
+                                        <li>Mantén el QR a 15-30 cm de la cámara</li>
+                                        <li>Si falla, descarga el QR y escanéalo desde la galería</li>
+                                        <li>Verifica que la app tenga permisos de cámara</li>
+                                        <li>El móvil debe tener conexión a internet</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- URLs & Tokens Tab -->
+                    <div class="tab-pane fade" id="urls" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <h6><i class="bi bi-link-45deg me-2"></i>URL de configuración</h6>
+                                    <div class="url-container mb-2">
+                                        {{ api_url }}
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            URL que contiene la configuración completa
+                                        </small>
+                                        <button class="btn btn-sm btn-outline-primary copy-btn" 
+                                                onclick="copyText('{{ api_url }}', this)">
+                                            <i class="bi bi-clipboard"></i> Copiar
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h6><i class="bi bi-cloud me-2"></i>URL del servidor</h6>
+                                    <div class="url-container mb-2">
+                                        {{ empresa.url_servidor|default:"https://apr-8nm9.onrender.com" }}
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            {% if empresa.url_servidor and 'onrender.com' in empresa.url_servidor %}
+                                            <span class="text-success">
+                                                <i class="bi bi-check-circle me-1"></i>Servidor en Render.com
+                                            </span>
+                                            {% else %}
+                                            Servidor local
+                                            {% endif %}
+                                        </small>
+                                        <button class="btn btn-sm btn-outline-primary copy-btn" 
+                                                onclick="copyText('{{ empresa.url_servidor|default:"https://apr-8nm9.onrender.com" }}', this)">
+                                            <i class="bi bi-clipboard"></i> Copiar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <h6><i class="bi bi-key me-2"></i>Token de acceso</h6>
+                                    <div class="token-display mb-2">
+                                        {{ token }}
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            Válido por 24 horas
+                                        </small>
+                                        <button class="btn btn-sm btn-outline-primary copy-btn" 
+                                                onclick="copyText('{{ token }}', this)">
+                                            <i class="bi bi-clipboard"></i> Copiar
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-warning">
+                                    <h6><i class="bi bi-shield-exclamation me-2"></i>Notas de seguridad</h6>
+                                    <ul class="mb-0 small">
+                                        <li>Este token es único para esta sesión</li>
+                                        <li>Se regenera cada vez que se crea un nuevo QR</li>
+                                        <li>No compartas el token públicamente</li>
+                                        <li>Si el token es comprometido, genera un nuevo QR</li>
+                                        <li>Los tokens expiran automáticamente después de 24 horas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <div class="btn-group" role="group">
+                                <a href="{{ api_url }}" 
+                                   target="_blank" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-cloud-download me-2"></i>Probar API
+                                </a>
+                                <button onclick="shareQR()" class="btn btn-outline-success">
+                                    <i class="bi bi-share me-2"></i>Compartir QR
+                                </button>
+                                <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Volver
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- URL de descarga -->
-            <div class="mt-4">
-                <label class="form-label fw-bold mb-2">
-                    <i class="bi bi-link-45deg me-2"></i>URL de descarga directa:
-                </label>
-                <div class="input-group">
-                    <input type="text" class="form-control" value="{{ api_url }}" readonly id="downloadUrl">
-                    <button class="btn btn-outline-secondary" type="button" onclick="copyUrl()">
-                        <i class="bi bi-clipboard"></i>
-                    </button>
-                </div>
-                <small class="text-muted">
-                    Usa esta URL si el QR no funciona. Incluye el token de acceso automáticamente.
-                </small>
-            </div>
-
-            <!-- Token de acceso -->
-            <div class="mt-3">
-                <label class="form-label fw-bold mb-2">
-                    <i class="bi bi-key me-2"></i>Token de acceso:
-                </label>
-                <div class="input-group">
-                    <input type="text" class="form-control" value="{{ token }}" readonly id="tokenInput">
-                    <button class="btn btn-outline-secondary" type="button" onclick="copyToken()">
-                        <i class="bi bi-clipboard"></i>
-                    </button>
-                </div>
-                <small class="text-muted">
-                    Token único para esta sesión. Válido por 24 horas o hasta generar un nuevo QR.
-                </small>
-            </div>
-
-            <!-- Botones de acción -->
-            <div class="d-flex justify-content-center gap-3 mt-4">
-                <a href="{{ qr_url }}" download="qr_{{ empresa.slug }}.png" class="download-btn">
-                    <i class="bi bi-download me-2"></i>Descargar QR
-                </a>
-                <a href="{{ api_url }}" target="_blank" class="btn btn-outline-primary">
-                    <i class="bi bi-cloud-download me-2"></i>Probar API
-                </a>
-                <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
-                   class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Volver
-                </a>
             </div>
         </div>
 
-        <!-- Mensajes -->
+        <!-- Messages -->
         {% if messages %}
         <div class="mt-4">
             {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'danger' %}bi-exclamation-triangle{% else %}bi-info-circle{% endif %} me-3"></i>
+                    <div class="flex-grow-1">{{ message }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -362,76 +844,155 @@
     </div>
 
     <script>
-        function copyUrl() {
-            const urlInput = document.getElementById('downloadUrl');
-            urlInput.select();
-            urlInput.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(urlInput.value);
+        // Función para copiar texto
+        function copyText(text, buttonElement) {
+            if (!text) {
+                showNotification('No hay texto para copiar', 'warning');
+                return;
+            }
             
-            // Mostrar notificación
-            const btn = event.target.closest('button');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check2"></i> Copiado';
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-success');
-            
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-secondary');
-            }, 2000);
+            navigator.clipboard.writeText(text).then(() => {
+                // Cambiar icono del botón
+                const icon = buttonElement.querySelector('i');
+                const originalClass = icon.className;
+                icon.className = 'bi bi-check2';
+                
+                // Añadir animación
+                buttonElement.classList.add('success-animation');
+                buttonElement.classList.remove('btn-outline-primary');
+                buttonElement.classList.add('btn-success');
+                
+                // Mostrar notificación
+                showNotification('Texto copiado al portapapeles', 'success');
+                
+                // Restaurar después de 2 segundos
+                setTimeout(() => {
+                    icon.className = originalClass;
+                    buttonElement.classList.remove('success-animation', 'btn-success');
+                    buttonElement.classList.add('btn-outline-primary');
+                }, 2000);
+                
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+                showNotification('Error al copiar al portapapeles', 'danger');
+            });
         }
         
-        function copyToken() {
-            const tokenInput = document.getElementById('tokenInput');
-            tokenInput.select();
-            tokenInput.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(tokenInput.value);
-            
-            // Mostrar notificación
-            const btn = event.target.closest('button');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check2"></i> Copiado';
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-success');
-            
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-secondary');
-            }, 2000);
-        }
-        
+        // Función para copiar JSON
         function copyJson() {
             const jsonContent = `{
-  "t": "universal",
+  "u": "{{ api_url }}",
   "e": "{{ empresa.slug }}",
   "tk": "{{ token }}",
-  "u": "{{ api_url }}",
-  "cn": "{{ total_clientes }}",
-  "v": "1"
+  "cn": {{ total_clientes }},
+  "sn": {{ total_sectores }},
+  "v": "1",
+  "t": "universal",
+  "ts": "{{ timestamp|date:'U' }}",
+  "h": "{{ request.scheme }}://{{ request.get_host }}",
+  {% if empresa.url_servidor and 'onrender.com' in empresa.url_servidor %}
+  "rd": true,
+  "ru": "{{ empresa.url_servidor }}",
+  {% endif %}
+  "note": "QR generado para {{ empresa.nombre }}"
 }`;
             
-            navigator.clipboard.writeText(jsonContent);
-            
-            // Mostrar notificación
-            const btn = event.target;
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check2 me-1"></i>JSON copiado';
-            btn.classList.remove('btn-outline-primary');
-            btn.classList.add('btn-success');
-            
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-primary');
-            }, 2000);
+            copyText(jsonContent, event.target);
         }
         
-        // Inicializar tooltips de Bootstrap
+        // Función para imprimir QR
+        function printQR() {
+            const printContent = `
+                <html>
+                <head>
+                    <title>QR {{ empresa.nombre }}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .print-container { text-align: center; }
+                        .qr-image { max-width: 400px; margin: 20px auto; }
+                        .company-info { margin: 20px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-container">
+                        <h2>{{ empresa.nombre }}</h2>
+                        <p>QR de configuración para app móvil</p>
+                        <div class="qr-image">
+                            <img src="{{ qr_url }}" style="width: 100%;" alt="QR Code">
+                        </div>
+                        <div class="company-info">
+                            <p><strong>Versión:</strong> {{ empresa.version_app }}</p>
+                            <p><strong>Clientes:</strong> {{ total_clientes }}</p>
+                            <p><strong>Generado:</strong> {{ empresa.fecha_generacion_app|date:"d/m/Y H:i" }}</p>
+                            <p><strong>URL:</strong> {{ empresa.url_servidor|default:"https://apr-8nm9.onrender.com" }}</p>
+                        </div>
+                        <p><small>Escanea con la app SSR Lecturas para configurar automáticamente</small></p>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 250);
+        }
+        
+        // Función para compartir QR
+        function shareQR() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'QR de configuración - {{ empresa.nombre }}',
+                    text: 'Escanea este QR con la app SSR Lecturas para configurar {{ empresa.nombre }}',
+                    url: window.location.href,
+                })
+                .then(() => console.log('Compartido exitosamente'))
+                .catch((error) => console.log('Error al compartir:', error));
+            } else {
+                copyText(window.location.href, event.target);
+                showNotification('URL copiada al portapapeles. Compártela manualmente.', 'info');
+            }
+        }
+        
+        // Función para mostrar notificaciones
+        function showNotification(message, type) {
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = `
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            notification.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi ${type === 'success' ? 'bi-check-circle' : type === 'warning' ? 'bi-exclamation-triangle' : 'bi-x-circle'} me-3"></i>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Agregar al documento
+            document.body.appendChild(notification);
+            
+            // Auto-eliminar después de 3 segundos
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+        
+        // Inicializar tooltips
         document.addEventListener('DOMContentLoaded', function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
         });

@@ -7,53 +7,103 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            --info-gradient: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            --warning-gradient: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            --purple-gradient: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+        }
+        
         body {
             background-color: #f8f9fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 30px;
         }
+        
         .stat-card {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-            height: 100%;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-        }
-        .stat-icon {
-            width: 50px;
-            height: 50px;
             border-radius: 12px;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 1.5rem;
+            margin: 0 auto 18px;
+            font-size: 1.75rem;
+            background: var(--primary-gradient);
+            color: white;
         }
+        
+        .stat-icon.phone { background: var(--secondary-gradient); }
+        .stat-icon.cloud { background: var(--info-gradient); }
+        .stat-icon.calendar { background: var(--warning-gradient); }
+        .stat-icon.gear { background: var(--purple-gradient); }
+        
         .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.5rem;
+            font-weight: 800;
             margin-bottom: 5px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
+        
         .stat-label {
             color: #6c757d;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 1px;
+            margin-bottom: 8px;
         }
+        
         .company-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
+            background: var(--primary-gradient);
+            border-radius: 20px;
             color: white;
-            padding: 30px;
-            margin-bottom: 30px;
+            padding: 35px 40px;
+            margin-bottom: 35px;
+            position: relative;
+            overflow: hidden;
         }
+        
+        .company-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1%, transparent 1%);
+            background-size: 20px 20px;
+            opacity: 0.3;
+            z-index: 0;
+        }
+        
+        .company-header > * {
+            position: relative;
+            z-index: 1;
+        }
+        
         .action-btn {
-            padding: 10px 25px;
+            padding: 12px 28px;
             border-radius: 50px;
             font-weight: 600;
             text-decoration: none;
@@ -61,145 +111,345 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
         }
+        
         .btn-generate {
             background: white;
             color: #764ba2;
-            border: 2px solid white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
+        
         .btn-generate:hover {
-            background: transparent;
-            color: white;
-            transform: translateY(-2px);
+            background: rgba(255,255,255,0.95);
+            color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
+        
         .btn-secondary-action {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.15);
             color: white;
             border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
         }
+        
         .btn-secondary-action:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.25);
             color: white;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            border-color: rgba(255,255,255,0.5);
         }
+        
         .device-status {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             display: inline-block;
             margin-right: 8px;
+            position: relative;
         }
+        
         .status-online {
             background-color: #4caf50;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+            animation: pulse 2s infinite;
         }
+        
         .status-offline {
             background-color: #f44336;
         }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+        
         .config-badge {
             background-color: #e3f2fd;
             color: #1976d2;
-            padding: 5px 10px;
-            border-radius: 5px;
+            padding: 6px 12px;
+            border-radius: 8px;
             font-size: 0.85rem;
-            margin-right: 5px;
-            margin-bottom: 5px;
-            display: inline-block;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 500;
         }
+        
+        .config-badge i {
+            margin-right: 4px;
+        }
+        
         .quick-actions {
             background: white;
-            border-radius: 15px;
-            padding: 25px;
+            border-radius: 18px;
+            padding: 30px;
             margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.05);
         }
+        
         .quick-action-btn {
             display: flex;
             align-items: center;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 18px;
+            border-radius: 12px;
             background: #f8f9fa;
             color: #495057;
             text-decoration: none;
             transition: all 0.3s;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(0,0,0,0.05);
         }
+        
         .quick-action-btn:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             color: white;
-            transform: translateX(5px);
+            transform: translateX(8px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
         }
+        
         .quick-action-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 10px;
+            width: 48px;
+            height: 48px;
+            background: var(--primary-gradient);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            margin-right: 15px;
+            margin-right: 18px;
             flex-shrink: 0;
+            transition: all 0.3s;
         }
+        
         .quick-action-btn:hover .quick-action-icon {
             background: white;
             color: #764ba2;
+            transform: scale(1.1);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            padding: 20px 25px;
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            padding-top: 18px;
+            padding-bottom: 18px;
+        }
+        
+        .table td {
+            padding-top: 16px;
+            padding-bottom: 16px;
+            vertical-align: middle;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        
+        .color-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        
+        .badge-version {
+            background: var(--warning-gradient);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+        
+        .qr-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        
+        /* Nuevos estilos para Render.com */
+        .render-badge {
+            background: linear-gradient(135deg, #46b98a 0%, #2d9cdb 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .url-display {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            border: 1px solid #e9ecef;
+        }
+        
+        .copy-btn {
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .success-animation {
+            animation: successPop 0.5s ease;
+        }
+        
+        @keyframes successPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .empty-state {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        
+        .empty-state-icon {
+            font-size: 3.5rem;
+            color: #adb5bd;
+            margin-bottom: 20px;
+            opacity: 0.7;
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid py-4">
+    <div class="container-fluid py-4 px-xl-5">
         <!-- Back Button -->
         <div class="row mb-4">
             <div class="col-12">
-                <a href="{% url 'apps_moviles:panel_apps_moviles' %}" class="text-decoration-none text-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Volver al panel general
+                <a href="{% url 'apps_moviles:panel_apps_moviles' %}" class="text-decoration-none text-secondary d-inline-flex align-items-center">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    <span>Volver al panel general</span>
                 </a>
             </div>
         </div>
 
         <!-- Company Header -->
         <div class="company-header">
+            {% if empresa.app_generada %}
+            <div class="qr-badge d-none d-md-flex align-items-center">
+                <i class="bi bi-qr-code me-2"></i>
+                <span>QR Disponible</span>
+            </div>
+            {% endif %}
+            
             <div class="row align-items-center">
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center">
+                <div class="col-lg-7">
+                    <div class="d-flex align-items-start">
                         {% if empresa.logo %}
-                        <img src="{{ empresa.logo.url }}" alt="Logo {{ empresa.nombre }}" 
-                             style="max-height: 80px; max-width: 200px; object-fit: contain; margin-right: 20px; background: white; padding: 10px; border-radius: 10px;">
+                        <div class="flex-shrink-0 me-4">
+                            <img src="{{ empresa.logo.url }}" alt="Logo {{ empresa.nombre }}" 
+                                 class="img-fluid rounded-3 shadow"
+                                 style="max-height: 100px; max-width: 200px; object-fit: contain; background: white; padding: 12px;">
+                        </div>
                         {% endif %}
-                        <div>
-                            <h2 class="mb-1">{{ empresa.nombre }}</h2>
-                            <p class="mb-0 opacity-75">{{ empresa.descripcion|default:"App móvil de mediciones" }}</p>
-                            <div class="mt-2">
-                                <span class="badge bg-light text-dark me-2">ID: {{ empresa.slug }}</span>
+                        <div class="flex-grow-1">
+                            <h1 class="mb-2">{{ empresa.nombre }}</h1>
+                            <p class="mb-3 opacity-85" style="font-size: 1.1rem;">
+                                {{ empresa.descripcion|default:"Aplicación móvil para gestión de lecturas de medidores" }}
+                            </p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge bg-light text-dark py-2 px-3 rounded-pill">
+                                    <i class="bi bi-hash me-1"></i>ID: {{ empresa.slug }}
+                                </span>
+                                
                                 {% if empresa.app_generada %}
-                                <span class="badge bg-success">
-                                    <i class="bi bi-check-circle me-1"></i>v{{ empresa.version_app }}
+                                <span class="badge-version">
+                                    <i class="bi bi-check-circle me-2"></i>v{{ empresa.version_app }}
                                 </span>
                                 {% else %}
-                                <span class="badge bg-warning">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>Sin app
+                                <span class="badge bg-warning py-2 px-3 rounded-pill">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>App no generada
+                                </span>
+                                {% endif %}
+                                
+                                {% if empresa.url_servidor and 'onrender.com' in empresa.url_servidor %}
+                                <span class="render-badge">
+                                    <i class="bi bi-cloud me-2"></i>Render.com
                                 </span>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6 text-md-end mt-3 mt-md-0">
-                    <div class="d-flex flex-column flex-md-row gap-3 justify-content-md-end">
-                        <a href="{% url 'apps_moviles:generar_app_empresa' empresa.slug %}" class="action-btn btn-generate">
-                            <i class="bi bi-{% if empresa.app_generada %}arrow-clockwise{% else %}rocket-takeoff{% endif %} me-2"></i>
+                <div class="col-lg-5 mt-4 mt-lg-0">
+                    <div class="d-flex flex-column flex-lg-row gap-3 justify-content-lg-end">
+                        <a href="{% url 'apps_moviles:generar_app_empresa' empresa.slug %}" 
+                           class="action-btn btn-generate">
+                            <i class="bi {% if empresa.app_generada %}bi-arrow-clockwise{% else %}bi-rocket-takeoff{% endif %} me-2"></i>
                             {% if empresa.app_generada %}Actualizar app{% else %}Generar app{% endif %}
                         </a>
+                        
                         {% if empresa.app_generada %}
-                        <a href="{% url 'apps_moviles:ver_qr_app' empresa.slug %}" class="action-btn btn-secondary-action">
-                            <i class="bi bi-qr-code me-2"></i>Ver QR
-                        </a>
+                        <div class="d-flex gap-3">
+                            <a href="{% url 'apps_moviles:ver_qr_app' empresa.slug %}" 
+                               class="action-btn btn-secondary-action">
+                                <i class="bi bi-qr-code me-2"></i>Ver QR
+                            </a>
+                            <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" 
+                               class="action-btn btn-secondary-action">
+                                <i class="bi bi-phone me-2"></i>Dispositivos
+                            </a>
+                        </div>
                         {% endif %}
-                        <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" class="action-btn btn-secondary-action">
-                            <i class="bi bi-phone me-2"></i>Dispositivos
-                        </a>
                     </div>
+                    
+                    <!-- URL del servidor -->
+                    {% if empresa.url_servidor %}
+                    <div class="mt-4">
+                        <div class="url-display">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-truncate">{{ empresa.url_servidor }}</span>
+                                <button class="btn btn-sm btn-outline-light copy-btn ms-3" 
+                                        onclick="copyToClipboard('{{ empresa.url_servidor }}', this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <small class="text-white opacity-75 mt-2 d-block">
+                            <i class="bi bi-info-circle me-1"></i>
+                            URL del servidor para la app móvil
+                        </small>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -209,9 +459,13 @@
         <div class="row mb-4">
             <div class="col-12">
                 {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'danger' %}bi-exclamation-triangle{% else %}bi-info-circle{% endif %} me-3" 
+                           style="font-size: 1.2rem;"></i>
+                        <div class="flex-grow-1">{{ message }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -219,85 +473,98 @@
         {% endif %}
 
         <!-- Statistics -->
-        <div class="row mb-4">
-            <div class="col-md-3 col-sm-6 mb-4">
+        <div class="row mb-5">
+            <div class="col-xl-3 col-md-6 mb-4">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); color: white;">
+                    <div class="stat-icon phone">
                         <i class="bi bi-phone"></i>
                     </div>
                     <div class="stat-number">{{ total_dispositivos }}</div>
                     <div class="stat-label">Dispositivos</div>
-                    <small class="text-success">
-                        {{ dispositivos_activos }} activos
-                    </small>
+                    <div class="mt-3">
+                        <span class="badge bg-success bg-opacity-10 text-success py-2 px-3 rounded-pill">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {{ dispositivos_activos }} activos
+                        </span>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3 col-sm-6 mb-4">
+            
+            <div class="col-xl-3 col-md-6 mb-4">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: white;">
+                    <div class="stat-icon cloud">
                         <i class="bi bi-cloud-arrow-up"></i>
                     </div>
                     <div class="stat-number">{{ lecturas_hoy }}</div>
                     <div class="stat-label">Lecturas hoy</div>
-                    <small class="text-info">
-                        {{ lecturas_mes }} este mes
-                    </small>
+                    <div class="mt-3">
+                        <span class="badge bg-info bg-opacity-10 text-info py-2 px-3 rounded-pill">
+                            <i class="bi bi-calendar-month me-1"></i>
+                            {{ lecturas_mes }} este mes
+                        </span>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3 col-sm-6 mb-4">
+            
+            <div class="col-xl-3 col-md-6 mb-4">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white;">
+                    <div class="stat-icon calendar">
                         <i class="bi bi-calendar-check"></i>
                     </div>
                     <div class="stat-number">
                         {% if empresa.app_generada %}
-                        {{ empresa.version_app }}
+                        v{{ empresa.version_app }}
                         {% else %}
                         -
                         {% endif %}
                     </div>
                     <div class="stat-label">Versión app</div>
-                    <small class="text-warning">
+                    <div class="mt-3">
                         {% if empresa.fecha_generacion_app %}
-                        {{ empresa.fecha_generacion_app|date:"d/m/Y" }}
+                        <small class="text-warning d-block">
+                            <i class="bi bi-clock me-1"></i>
+                            {{ empresa.fecha_generacion_app|date:"d/m/Y H:i" }}
+                        </small>
                         {% else %}
-                        No generada
+                        <small class="text-muted">No generada</small>
                         {% endif %}
-                    </small>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3 col-sm-6 mb-4">
+            
+            <div class="col-xl-3 col-md-6 mb-4">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%); color: white;">
+                    <div class="stat-icon gear">
                         <i class="bi bi-gear"></i>
                     </div>
-                    <div class="stat-number">
-                        {{ config_app.get_active_features_count }}
-                    </div>
+                    <div class="stat-number">{{ config_app.get_active_features_count }}</div>
                     <div class="stat-label">Funciones activas</div>
-                    <small class="text-purple">
-                        de {{ config_app.get_total_features }} disponibles
-                    </small>
+                    <div class="mt-3">
+                        <small class="text-purple">
+                            de {{ config_app.get_total_features }} disponibles
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Actions & Recent Devices -->
+        <!-- Quick Actions & Content -->
         <div class="row">
             <!-- Quick Actions -->
             <div class="col-lg-4 mb-4">
                 <div class="quick-actions">
-                    <h5 class="mb-4">
-                        <i class="bi bi-lightning me-2"></i>Acciones rápidas
+                    <h5 class="mb-4 d-flex align-items-center">
+                        <i class="bi bi-lightning me-2"></i>
+                        <span>Acciones rápidas</span>
                     </h5>
                     
                     <a href="{% url 'apps_moviles:generar_app_empresa' empresa.slug %}" class="quick-action-btn">
                         <div class="quick-action-icon">
-                            <i class="bi bi-{% if empresa.app_generada %}arrow-clockwise{% else %}rocket-takeoff{% endif %}"></i>
+                            <i class="bi {% if empresa.app_generada %}bi-arrow-clockwise{% else %}bi-rocket-takeoff{% endif %}"></i>
                         </div>
                         <div>
                             <strong>{% if empresa.app_generada %}Actualizar app{% else %}Generar app{% endif %}</strong>
-                            <p class="mb-0 small">Configura y genera la app móvil</p>
+                            <p class="mb-0 small opacity-75">Configura y genera la app móvil</p>
                         </div>
                     </a>
                     
@@ -307,7 +574,7 @@
                         </div>
                         <div>
                             <strong>Gestionar dispositivos</strong>
-                            <p class="mb-0 small">Agregar, editar o eliminar</p>
+                            <p class="mb-0 small opacity-75">Administrar dispositivos registrados</p>
                         </div>
                     </a>
                     
@@ -318,7 +585,7 @@
                         </div>
                         <div>
                             <strong>Ver QR de descarga</strong>
-                            <p class="mb-0 small">Compartir para instalar app</p>
+                            <p class="mb-0 small opacity-75">Compartir para instalar la app</p>
                         </div>
                     </a>
                     
@@ -328,43 +595,91 @@
                         </div>
                         <div>
                             <strong>Descargar configuración</strong>
-                            <p class="mb-0 small">Archivo JSON de configuración</p>
+                            <p class="mb-0 small opacity-75">Archivo JSON de configuración</p>
                         </div>
                     </a>
                     {% endif %}
                     
-                    <!-- Configuration Status -->
-                    <div class="mt-4 pt-3 border-top">
-                        <h6 class="mb-3">
-                            <i class="bi bi-toggle-on me-2"></i>Configuración activa
-                        </h6>
-                        <div>
-                            {% if config_app.habilitar_mapa %}<span class="config-badge">Mapa</span>{% endif %}
-                            {% if config_app.habilitar_offline %}<span class="config-badge">Offline</span>{% endif %}
-                            {% if config_app.validar_gps %}<span class="config-badge">GPS</span>{% endif %}
-                            {% if config_app.sincronizacion_auto %}<span class="config-badge">Auto-sync</span>{% endif %}
-                            {% if config_app.mostrar_logo %}<span class="config-badge">Logo</span>{% endif %}
+                    <!-- Información de Render.com -->
+                    {% if empresa.url_servidor and 'onrender.com' in empresa.url_servidor %}
+                    <div class="alert alert-info mt-4 mb-0">
+                        <div class="d-flex">
+                            <i class="bi bi-cloud-check fs-5 me-3"></i>
+                            <div>
+                                <strong class="d-block mb-1">Servidor en Render.com</strong>
+                                <p class="mb-0 small">
+                                    La app móvil se conectará automáticamente a esta URL.
+                                    <a href="https://dashboard.render.com" target="_blank" class="alert-link">Ver dashboard</a>
+                                </p>
+                            </div>
                         </div>
-                        {% if config_app.mensaje_bienvenida %}
-                        <div class="mt-3">
-                            <small class="text-muted">Mensaje de bienvenida:</small>
-                            <p class="mb-0 small">{{ config_app.mensaje_bienvenida|truncatechars:60 }}</p>
-                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Configuration Status -->
+                <div class="quick-actions mt-4">
+                    <h5 class="mb-3 d-flex align-items-center">
+                        <i class="bi bi-toggle-on me-2"></i>
+                        <span>Configuración activa</span>
+                    </h5>
+                    
+                    <div class="mb-4">
+                        {% if config_app.habilitar_mapa %}
+                        <span class="config-badge">
+                            <i class="bi bi-map"></i> Mapa
+                        </span>
+                        {% endif %}
+                        
+                        {% if config_app.habilitar_offline %}
+                        <span class="config-badge">
+                            <i class="bi bi-wifi-off"></i> Offline
+                        </span>
+                        {% endif %}
+                        
+                        {% if config_app.validar_gps %}
+                        <span class="config-badge">
+                            <i class="bi bi-geo-alt"></i> GPS
+                        </span>
+                        {% endif %}
+                        
+                        {% if config_app.sincronizacion_auto %}
+                        <span class="config-badge">
+                            <i class="bi bi-arrow-repeat"></i> Auto-sync
+                        </span>
+                        {% endif %}
+                        
+                        {% if config_app.mostrar_logo %}
+                        <span class="config-badge">
+                            <i class="bi bi-image"></i> Logo
+                        </span>
                         {% endif %}
                     </div>
+                    
+                    {% if config_app.mensaje_bienvenida %}
+                    <div class="pt-3 border-top">
+                        <label class="form-label small text-muted mb-2">Mensaje de bienvenida:</label>
+                        <div class="bg-light rounded p-3">
+                            <p class="mb-0 small">{{ config_app.mensaje_bienvenida }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Recent Devices -->
+            <!-- Main Content -->
             <div class="col-lg-8">
-                <div class="card">
+                <!-- Recent Devices -->
+                <div class="card mb-4">
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="bi bi-device-phone me-2"></i>Dispositivos recientes
+                            <h5 class="mb-0 d-flex align-items-center">
+                                <i class="bi bi-device-phone me-2"></i>
+                                <span>Dispositivos recientes</span>
                             </h5>
-                            <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" class="btn btn-sm btn-outline-primary">
-                                Ver todos <i class="bi bi-arrow-right ms-1"></i>
+                            <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" 
+                               class="btn btn-sm btn-outline-primary d-flex align-items-center">
+                                Ver todos <i class="bi bi-arrow-right ms-2"></i>
                             </a>
                         </div>
                     </div>
@@ -379,45 +694,62 @@
                                         <th>Estado</th>
                                         <th>Última conexión</th>
                                         <th>Lecturas</th>
-                                        <th>Acciones</th>
+                                        <th class="text-end">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for dispositivo in dispositivos|slice:":5" %}
                                     <tr>
                                         <td>
-                                            <strong>{{ dispositivo.nombre_dispositivo }}</strong>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-phone me-2 text-primary"></i>
+                                                <div>
+                                                    <strong class="d-block">{{ dispositivo.nombre_dispositivo }}</strong>
+                                                    <small class="text-muted">{{ dispositivo.modelo|default:"No especificado" }}</small>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>
-                                            <code>{{ dispositivo.identificador|truncatechars:15 }}</code>
+                                            <code class="text-dark">{{ dispositivo.identificador|truncatechars:20 }}</code>
                                         </td>
                                         <td>
                                             {% if dispositivo.activo %}
-                                            <span class="device-status status-online"></span>
-                                            <span class="text-success">Activo</span>
+                                            <span class="d-flex align-items-center">
+                                                <span class="device-status status-online"></span>
+                                                <span class="text-success fw-semibold">Activo</span>
+                                            </span>
                                             {% else %}
-                                            <span class="device-status status-offline"></span>
-                                            <span class="text-danger">Inactivo</span>
+                                            <span class="d-flex align-items-center">
+                                                <span class="device-status status-offline"></span>
+                                                <span class="text-danger fw-semibold">Inactivo</span>
+                                            </span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if dispositivo.ultima_conexion %}
-                                            <small>{{ dispositivo.ultima_conexion|timesince }}</small>
+                                            <div class="d-flex flex-column">
+                                                <small class="text-dark">{{ dispositivo.ultima_conexion|date:"d/m/Y" }}</small>
+                                                <small class="text-muted">{{ dispositivo.ultima_conexion|date:"H:i" }}</small>
+                                            </div>
                                             {% else %}
-                                            <small class="text-muted">Nunca</small>
+                                            <small class="text-muted fst-italic">Nunca conectado</small>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">
+                                            <span class="badge bg-primary bg-opacity-10 text-primary py-2 px-3">
                                                 {{ dispositivo.lecturas.count }}
                                             </span>
                                         </td>
-                                        <td>
-                                            <form method="POST" action="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" class="d-inline">
+                                        <td class="text-end">
+                                            <form method="POST" 
+                                                  action="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" 
+                                                  class="d-inline">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="action" value="toggle_activo">
                                                 <input type="hidden" name="dispositivo_id" value="{{ dispositivo.id }}">
-                                                <button type="submit" class="btn btn-sm {% if dispositivo.activo %}btn-warning{% else %}btn-success{% endif %}">
+                                                <button type="submit" 
+                                                        class="btn btn-sm {% if dispositivo.activo %}btn-outline-warning{% else %}btn-outline-success{% endif %} btn-sm"
+                                                        title="{% if dispositivo.activo %}Desactivar{% else %}Activar{% endif %}">
                                                     {% if dispositivo.activo %}
                                                     <i class="bi bi-pause"></i>
                                                     {% else %}
@@ -432,13 +764,14 @@
                             </table>
                         </div>
                         {% else %}
-                        <div class="text-center py-5">
-                            <div class="mb-3">
-                                <i class="bi bi-device-phone" style="font-size: 3rem; color: #dee2e6;"></i>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="bi bi-device-phone"></i>
                             </div>
                             <h5 class="text-muted mb-2">No hay dispositivos registrados</h5>
-                            <p class="text-muted">Agrega dispositivos para comenzar a usar la app</p>
-                            <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" class="btn btn-primary">
+                            <p class="text-muted mb-4">Agrega dispositivos para comenzar a usar la aplicación móvil</p>
+                            <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" 
+                               class="btn btn-primary">
                                 <i class="bi bi-plus-circle me-2"></i>Agregar dispositivo
                             </a>
                         </div>
@@ -447,47 +780,94 @@
                 </div>
 
                 <!-- Server Configuration -->
-                <div class="card mt-4">
+                <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="bi bi-server me-2"></i>Configuración del servidor
+                        <h5 class="mb-0 d-flex align-items-center">
+                            <i class="bi bi-server me-2"></i>
+                            <span>Configuración del servidor</span>
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
+                        <div class="row g-4">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted">URL del servidor</label>
+                                <div>
+                                    <label class="form-label text-muted mb-2">URL del servidor</label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" value="{{ empresa.url_servidor|default:'No configurado' }}" readonly>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ empresa.url_servidor }}')">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               value="{{ empresa.url_servidor|default:'https://apr-8nm9.onrender.com' }}" 
+                                               readonly
+                                               id="serverUrlInput">
+                                        <button class="btn btn-outline-secondary copy-btn" 
+                                                type="button" 
+                                                onclick="copyToClipboard('{{ empresa.url_servidor|default:"https://apr-8nm9.onrender.com" }}', this)">
                                             <i class="bi bi-clipboard"></i>
                                         </button>
                                     </div>
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Los dispositivos se conectarán a esta URL
+                                    </small>
                                 </div>
                             </div>
+                            
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted">Colores de la app</label>
-                                    <div class="d-flex align-items-center">
-                                        <div class="color-preview me-2" style="background-color: {{ empresa.color_app_primario|default:'#667eea' }};"></div>
-                                        <span>{{ empresa.color_app_primario|default:'#667eea' }}</span>
-                                        <div class="color-preview mx-2" style="background-color: {{ empresa.color_app_secundario|default:'#764ba2' }};"></div>
-                                        <span>{{ empresa.color_app_secundario|default:'#764ba2' }}</span>
+                                <div>
+                                    <label class="form-label text-muted mb-3">Colores de la app</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-preview me-2" 
+                                                 style="background-color: {{ empresa.color_app_primario|default:'#667eea' }};"></div>
+                                            <div>
+                                                <small class="d-block text-muted">Primario</small>
+                                                <strong>{{ empresa.color_app_primario|default:'#667eea' }}</strong>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-preview me-2" 
+                                                 style="background-color: {{ empresa.color_app_secundario|default:'#764ba2' }};"></div>
+                                            <div>
+                                                <small class="d-block text-muted">Secundario</small>
+                                                <strong>{{ empresa.color_app_secundario|default:'#764ba2' }}</strong>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
                         {% if empresa.app_generada %}
-                        <div class="alert alert-info mt-3">
+                        <div class="alert alert-success mt-4">
                             <div class="d-flex align-items-center">
-                                <i class="bi bi-info-circle me-3"></i>
+                                <i class="bi bi-check-circle fs-4 me-3"></i>
                                 <div>
-                                    <strong>App generada correctamente</strong>
+                                    <strong class="d-block">App generada correctamente</strong>
                                     <p class="mb-0">
                                         Última generación: {{ empresa.fecha_generacion_app|date:"d/m/Y H:i" }}
-                                        | <a href="{% url 'apps_moviles:ver_qr_app' empresa.slug %}" class="alert-link">Ver QR de descarga</a>
+                                        | 
+                                        <a href="{% url 'apps_moviles:ver_qr_app' empresa.slug %}" class="alert-link fw-semibold">
+                                            <i class="bi bi-qr-code me-1"></i>Ver QR de descarga
+                                        </a>
+                                        |
+                                        <a href="{% url 'apps_moviles:descargar_config_grande' empresa.slug %}" class="alert-link fw-semibold">
+                                            <i class="bi bi-download me-1"></i>Descargar configuración
+                                        </a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning mt-4">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle fs-4 me-3"></i>
+                                <div>
+                                    <strong class="d-block">App no generada</strong>
+                                    <p class="mb-0">
+                                        Genera la aplicación móvil para que los dispositivos puedan conectarse.
+                                        <a href="{% url 'apps_moviles:generar_app_empresa' empresa.slug %}" class="alert-link fw-semibold">
+                                            <i class="bi bi-rocket-takeoff me-1"></i>Generar app ahora
+                                        </a>
                                     </p>
                                 </div>
                             </div>
@@ -500,27 +880,88 @@
     </div>
 
     <script>
-        function copyToClipboard(text) {
-            if (!text || text === 'No configurado') {
-                alert('No hay texto para copiar');
+        // Función mejorada para copiar al portapapeles
+        function copyToClipboard(text, buttonElement) {
+            if (!text) {
+                showNotification('No hay texto para copiar', 'warning');
                 return;
             }
             
             navigator.clipboard.writeText(text).then(() => {
-                // Mostrar notificación
-                const originalText = event.target.innerHTML;
-                event.target.innerHTML = '<i class="bi bi-check2"></i>';
-                event.target.classList.remove('btn-outline-secondary');
-                event.target.classList.add('btn-success');
+                // Cambiar icono del botón
+                const icon = buttonElement.querySelector('i');
+                const originalClass = icon.className;
+                icon.className = 'bi bi-check2';
                 
+                // Añadir animación
+                buttonElement.classList.add('success-animation');
+                buttonElement.classList.remove('btn-outline-secondary');
+                buttonElement.classList.add('btn-success');
+                
+                // Mostrar notificación
+                showNotification('URL copiada al portapapeles', 'success');
+                
+                // Restaurar después de 2 segundos
                 setTimeout(() => {
-                    event.target.innerHTML = originalText;
-                    event.target.classList.remove('btn-success');
-                    event.target.classList.add('btn-outline-secondary');
+                    icon.className = originalClass;
+                    buttonElement.classList.remove('success-animation', 'btn-success');
+                    buttonElement.classList.add('btn-outline-secondary');
                 }, 2000);
+                
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+                showNotification('Error al copiar al portapapeles', 'danger');
             });
         }
+        
+        // Función para mostrar notificaciones
+        function showNotification(message, type) {
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = `
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            notification.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi ${type === 'success' ? 'bi-check-circle' : type === 'warning' ? 'bi-exclamation-triangle' : 'bi-x-circle'} me-3"></i>
+                    <div>${message}</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Agregar al documento
+            document.body.appendChild(notification);
+            
+            // Auto-eliminar después de 3 segundos
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+        
+        // Mejorar comportamiento de los botones de copia
+        document.addEventListener('DOMContentLoaded', function() {
+            // Añadir tooltips a los botones de copia
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            copyButtons.forEach(btn => {
+                btn.setAttribute('title', 'Copiar al portapapeles');
+                btn.setAttribute('data-bs-toggle', 'tooltip');
+            });
+            
+            // Inicializar tooltips de Bootstrap
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
     </script>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
