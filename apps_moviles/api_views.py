@@ -1,14 +1,13 @@
 # apps_moviles/api_views.py
 import json
-import socket
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.conf import settings
 from empresas.models import Empresa
-from clientes.models import Cliente, Medidor
-from lecturas.models import Lectura
+from clientes.models import Cliente
+from lecturas.models import LecturaMovil
 
 def obtener_url_base(request, for_qr=False):
     """
@@ -69,10 +68,15 @@ def api_config_app(request, empresa_slug):
             sectores_qs = Cliente.objects.using(alias_db).values_list('sector', flat=True).distinct()
             sectores = [str(sector) for sector in sectores_qs if sector]
             
-            # Obtener último período de lectura
+            # Obtener último período de lectura (usando LecturaMovil)
             try:
-                ultima_lectura = Lectura.objects.using(alias_db).order_by('-fecha_lectura').first()
-                ultimo_periodo = ultima_lectura.periodo if ultima_lectura else timezone.now().strftime('%Y-%m')
+                ultima_lectura = LecturaMovil.objects.using(alias_db).order_by('-fecha_creacion').first()
+                if ultima_lectura and hasattr(ultima_lectura, 'periodo'):
+                    ultimo_periodo = ultima_lectura.periodo
+                elif ultima_lectura and hasattr(ultima_lectura, 'fecha_lectura'):
+                    ultimo_periodo = ultima_lectura.fecha_lectura.strftime('%Y-%m')
+                else:
+                    ultimo_periodo = timezone.now().strftime('%Y-%m')
             except:
                 ultimo_periodo = timezone.now().strftime('%Y-%m')
                 
@@ -236,43 +240,49 @@ def api_clientes(request, empresa_slug):
             
             clientes_data = []
             for cliente in clientes:
-                # Obtener medidores del cliente
-                try:
-                    medidores = Medidor.objects.using(alias_db).filter(cliente=cliente)
-                    medidores_list = []
-                    
-                    for medidor in medidores:
-                        medidores_list.append({
-                            'id': medidor.id,
-                            'numero': medidor.numero or f"M{medidor.id}",
-                            'tipo': getattr(medidor, 'tipo', 'Agua'),
-                            'marca': getattr(medidor, 'marca', ''),
-                            'modelo': getattr(medidor, 'modelo', ''),
-                            'ubicacion': getattr(medidor, 'ubicacion', ''),
-                            'ultima_lectura': getattr(medidor, 'ultima_lectura', None),
-                            'estado': getattr(medidor, 'estado', 'Activo'),
-                        })
-                except Exception as e:
-                    print(f"Error obteniendo medidores: {e}")
-                    medidores_list = []
+                # En tu modelo, el medidor está en el cliente mismo, no como modelo separado
+                # Extraer información del medidor del cliente
+                medidor_info = []
+                
+                # Si el cliente tiene campo 'medidor', lo usamos
+                if hasattr(cliente, 'medidor') and cliente.medidor:
+                    medidor_info.append({
+                        'id': cliente.id,  # Usamos el ID del cliente como ID del medidor
+                        'numero': cliente.medidor,
+                        'tipo': getattr(cliente, 'tipo_medidor', 'Agua'),
+                        'marca': getattr(cliente, 'marca_medidor', ''),
+                        'modelo': getattr(cliente, 'modelo_medidor', ''),
+                        'ubicacion': getattr(cliente, 'ubicacion_medidor', 'Exterior'),
+                        'estado': getattr(cliente, 'estado_medidor', 'Activo'),
+                    })
+                else:
+                    # Si no tiene medidor específico, creamos uno genérico
+                    medidor_info.append({
+                        'id': cliente.id,
+                        'numero': f"M{cliente.id:04d}",
+                        'tipo': 'Agua',
+                        'ubicacion': 'Exterior',
+                        'estado': 'Activo',
+                    })
                 
                 clientes_data.append({
                     'id': cliente.id,
-                    'codigo': cliente.rut or cliente.codigo or f"CL{cliente.id:04d}",
+                    'codigo': cliente.rut or getattr(cliente, 'codigo', f"CL{cliente.id:04d}"),
                     'nombre': cliente.nombre,
                     'direccion': cliente.direccion or '',
                     'sector': cliente.sector or 'General',
                     'comuna': getattr(cliente, 'comuna', ''),
                     'telefono': cliente.telefono or '',
-                    'email': cliente.email or '',
+                    'email': getattr(cliente, 'email', ''),
                     'latitud': float(cliente.latitude) if cliente.latitude else -33.45694,
                     'longitud': float(cliente.longitude) if cliente.longitude else -70.64827,
                     'estado': getattr(cliente, 'estado', 'Activo'),
                     'observaciones': getattr(cliente, 'observaciones', ''),
-                    'medidores': medidores_list,
+                    'medidores': medidor_info,
                     'metadata': {
                         'tiene_coordenadas': bool(cliente.latitude and cliente.longitude),
-                        'total_medidores': len(medidores_list),
+                        'tiene_medidor': bool(hasattr(cliente, 'medidor') and cliente.medidor),
+                        'ultima_lectura': getattr(cliente, 'ultima_lectura', None),
                     }
                 })
             
@@ -315,8 +325,12 @@ def api_clientes(request, empresa_slug):
                         'id': 1,
                         'numero': 'MED001',
                         'tipo': 'Agua',
-                        'ultima_lectura': None
-                    }]
+                        'ubicacion': 'Exterior',
+                    }],
+                    'metadata': {
+                        'tiene_coordenadas': True,
+                        'tiene_medidor': True,
+                    }
                 }],
                 'timestamp': timezone.now().isoformat(),
                 'note': 'Datos de ejemplo por error en base de datos'
@@ -356,13 +370,14 @@ def api_segmentos(request, empresa_slug):
             for cliente in clientes:
                 clientes_data.append({
                     'id': cliente.id,
-                    'codigo': cliente.rut or f"CL{cliente.id:04d}",
+                    'codigo': cliente.rut or getattr(cliente, 'codigo', f"CL{cliente.id:04d}"),
                     'nombre': cliente.nombre,
                     'direccion': cliente.direccion or '',
                     'sector': cliente.sector or 'General',
                     'latitud': float(cliente.latitude) if cliente.latitude else -33.45694,
                     'longitud': float(cliente.longitude) if cliente.longitude else -70.64827,
                     'estado': getattr(cliente, 'estado', 'Activo'),
+                    'medidor': getattr(cliente, 'medidor', f"M{cliente.id:04d}"),
                 })
             
             next_offset = offset + limit if offset + limit < total else None
@@ -386,6 +401,8 @@ def api_segmentos(request, empresa_slug):
             
         except Exception as e:
             print(f"❌ Error obteniendo segmentos: {e}")
+            import traceback
+            traceback.print_exc()
             
             # Datos de ejemplo
             return JsonResponse({
@@ -406,6 +423,7 @@ def api_segmentos(request, empresa_slug):
                     'latitud': -33.45694,
                     'longitud': -70.64827,
                     'estado': 'Activo',
+                    'medidor': 'MED001',
                 }],
                 'next_offset': None,
                 'has_more': False,
@@ -415,6 +433,9 @@ def api_segmentos(request, empresa_slug):
             
     except Exception as e:
         print(f"❌ Error general en segmentos: {e}")
+        import traceback
+        traceback.print_exc()
+        
         return JsonResponse({
             'success': False,
             'error': str(e),
@@ -461,7 +482,7 @@ def subir_lecturas(request):
             
             print(f"📊 Recibiendo {len(lecturas)} lecturas desde app móvil")
             
-            # Aquí procesarías y guardarías las lecturas
+            # Aquí procesarías y guardarías las lecturas usando LecturaMovil
             # Por ahora solo confirmamos recepción
             
             return JsonResponse({
@@ -494,7 +515,7 @@ def sincronizar_datos(request, empresa_slug):
         
         print(f"🔄 Sincronizando datos para {empresa.nombre}")
         
-        # Aquí implementarías la lógica de sincronización
+        # Aquí implementarías la lógica de sincronización usando LecturaMovil
         # Por ahora solo devolvemos confirmación
         
         return JsonResponse({
@@ -512,6 +533,10 @@ def sincronizar_datos(request, empresa_slug):
         })
         
     except Exception as e:
+        print(f"❌ Error en sincronizar_datos: {e}")
+        import traceback
+        traceback.print_exc()
+        
         return JsonResponse({
             'success': False,
             'error': 'SYNC_ERROR',
