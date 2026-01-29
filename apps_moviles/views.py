@@ -289,8 +289,13 @@ def ver_qr_app(request, empresa_slug):
 # ESTRATEGIA ÚNICA - QR UNIVERSAL
 # ============================================================================
 
+# En tu código donde generas el QR (views.py de apps_moviles)
 def _crear_qr_unico(request, empresa, total_clientes):
-    """Crea QR usando la estrategia única universal"""
+    """Crea QR que apunta a la URL pública de Render"""
+    
+    # URL pública de Render
+    RENDER_URL = "https://apr-8nm9.onrender.com"
+    
     # Generar token único
     token_unico = hashlib.sha256(
         f"{empresa.slug}-UNIVERSAL-{time.time()}".encode()
@@ -304,17 +309,29 @@ def _crear_qr_unico(request, empresa, total_clientes):
         'total_clientes': total_clientes,
     }
     
-    # Datos para el QR
-    qr_info = {
-        't': 'universal',       # type = universal (único tipo)
-        'e': empresa.slug,      # empresa slug
-        'tk': token_unico,      # token
-        'u': f'{request.scheme}://{request.get_host()}/apps/api/config/{empresa.slug}/?token={token_unico}',
-        'cn': total_clientes,   # client count
-        'v': 1                  # versión
+    # URL pública para la app móvil
+    url_publica = f'{RENDER_URL}/apps/api/config/{empresa.slug}/?token={token_unico}'
+    
+    # Crear JSON para el QR
+    qr_data = {
+        't': 'universal',                     # type
+        'e': empresa.slug,                    # empresa slug
+        'tk': token_unico,                    # token
+        'u': url_publica,                     # URL PÚBLICA
+        'cn': total_clientes,                 # client count
+        'v': '1.0.0',                         # version
+        'empresa_nombre': empresa.nombre,
+        'color_primario': empresa.color_app_primario or '#10b981',
+        'color_secundario': empresa.color_app_secundario or '#047857',
+        'base_url': f"{RENDER_URL}/api/{empresa.slug}/",  # URL PÚBLICA
+        'config_url': url_publica,
+        'servidor_url': RENDER_URL,
+        'is_public_url': True,
     }
     
-    return json.dumps(qr_info, separators=(',', ':'), ensure_ascii=False)
+    print(f"🔗 QR generado con URL pública: {url_publica}")
+    
+    return json.dumps(qr_data, separators=(',', ':'), ensure_ascii=False)
 
 def _ver_qr_universal(request, empresa, total_clientes, total_sectores):
     """Muestra QR usando la estrategia universal"""
@@ -788,3 +805,4 @@ def debug_config_json(request, empresa_slug):
 def api_publica_config(request, empresa_slug):
     """Alias para mantener compatibilidad"""
     return api_descargar_config(request, empresa_slug)
+

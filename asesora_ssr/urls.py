@@ -58,6 +58,7 @@ urlpatterns = [
     path('ssr-tools/', include('ssr_tools.urls')),  # 🔧 ssr_tools URLs
     path('', include('empresas.urls')),
     path('apps-moviles/', include('apps_moviles.urls')),
+    path('apps/api/', include('apps_moviles.api_urls')),
 
 
 
