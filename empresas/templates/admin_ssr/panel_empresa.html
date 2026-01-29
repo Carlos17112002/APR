@@ -199,6 +199,31 @@
       0% { background-position: -200% 0; }
       100% { background-position: 200% 0; }
     }
+    
+    /* Estilos para la sección de app móvil */
+    .app-mobile-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .download-badge {
+      background: linear-gradient(135deg, #46b98a 0%, #2d9cdb 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .flutter-badge {
+      background: linear-gradient(135deg, #02569B 0%, #13B9FD 100%);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
@@ -504,6 +529,360 @@
           </div>
         </a>
       </div>
+    </section>
+
+    <!-- SECCIÓN DE APLICACIÓN MÓVIL SSR -->
+    <section class="mb-10">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Aplicación Móvil SSR</h2>
+          <p class="text-gray-600 mt-1">Configura y distribuye la app para tomar lecturas</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="download-badge">
+            <i class="fas fa-qrcode mr-1"></i>
+            Compatible Android & iOS
+          </span>
+          <span class="flutter-badge">
+            <i class="fas fa-code mr-1"></i>
+            Flutter
+          </span>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Información de la App -->
+        <div class="app-mobile-gradient rounded-xl p-6 text-white">
+          <div class="flex items-start mb-4">
+            <div class="h-14 w-14 rounded-xl bg-white/20 flex items-center justify-center mr-4">
+              <i class="fas fa-mobile-alt text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold mb-1">SSR Lecturas Móvil</h3>
+              <p class="opacity-90 text-sm">Toma lecturas de medidores con tu teléfono</p>
+            </div>
+          </div>
+          
+          <ul class="space-y-2 mb-6">
+            <li class="flex items-center text-sm">
+              <i class="fas fa-check-circle mr-2 opacity-80"></i>
+              Escanea códigos QR para configurar automáticamente
+            </li>
+            <li class="flex items-center text-sm">
+              <i class="fas fa-check-circle mr-2 opacity-80"></i>
+              Trabaja sin conexión a internet (modo offline)
+            </li>
+            <li class="flex items-center text-sm">
+              <i class="fas fa-check-circle mr-2 opacity-80"></i>
+              Valida ubicación exacta con GPS
+            </li>
+            <li class="flex items-center text-sm">
+              <i class="fas fa-check-circle mr-2 opacity-80"></i>
+              Sincroniza automáticamente cuando hay conexión
+            </li>
+            <li class="flex items-center text-sm">
+              <i class="fas fa-check-circle mr-2 opacity-80"></i>
+              Interfaz intuitiva y fácil de usar
+            </li>
+          </ul>
+          
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-white/20 rounded-lg p-3 text-center">
+              <div class="text-lg font-bold">100%</div>
+              <div class="text-xs opacity-90">Nativo</div>
+            </div>
+            <div class="bg-white/20 rounded-lg p-3 text-center">
+              <div class="text-lg font-bold">Android</div>
+              <div class="text-xs opacity-90">+ iOS</div>
+            </div>
+          </div>
+          
+          <div class="text-sm opacity-80">
+            <i class="fas fa-cloud mr-2"></i>
+            <span>Servidor en Render.com: https://apr-8nm9.onrender.com</span>
+          </div>
+        </div>
+        
+        <!-- Acciones y Estado -->
+        <div class="bg-white card-shadow rounded-xl p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Estado y Acciones</h3>
+          
+          <!-- Estado Actual -->
+          <div class="mb-6 p-4 border border-gray-200 rounded-lg">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium text-gray-700">Estado de la App</span>
+              {% if empresa.app_generada %}
+              <span class="status-badge bg-emerald-100 text-emerald-800">
+                <i class="fas fa-check-circle mr-1"></i>
+                Generada
+              </span>
+              {% else %}
+              <span class="status-badge bg-amber-100 text-amber-800">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                No Generada
+              </span>
+              {% endif %}
+            </div>
+            
+            {% if empresa.app_generada %}
+            <div class="space-y-2 text-sm text-gray-600">
+              <div class="flex justify-between">
+                <span>Versión:</span>
+                <span class="font-medium">v{{ empresa.version_app|default:"1.0.0" }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Última generación:</span>
+                <span>{{ empresa.fecha_generacion_app|date:"d/m/Y H:i"|default:"No disponible" }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Dispositivos registrados:</span>
+                <span>{{ total_dispositivos|default:"0" }}</span>
+              </div>
+            </div>
+            {% else %}
+            <div class="text-center py-3">
+              <i class="fas fa-mobile-alt text-3xl text-gray-300 mb-2"></i>
+              <p class="text-sm text-gray-500">La app móvil aún no ha sido generada</p>
+              <p class="text-xs text-gray-400 mt-1">Configura y genera la app para comenzar</p>
+            </div>
+            {% endif %}
+          </div>
+          
+          <!-- Botones de Acción -->
+          <div class="space-y-3">
+            <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
+               class="flex items-center p-3 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors">
+              <div class="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
+                <i class="fas fa-cog text-emerald-600"></i>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium text-gray-900">Configurar App</p>
+                <p class="text-xs text-gray-500 mt-0.5">Personalizar colores, logo y opciones</p>
+              </div>
+              <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+            
+            {% if empresa.app_generada %}
+            <a href="{% url 'apps_moviles:ver_qr_app' empresa.slug %}" 
+               class="flex items-center p-3 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
+              <div class="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                <i class="fas fa-qrcode text-blue-600"></i>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium text-gray-900">Ver QR de Descarga</p>
+                <p class="text-xs text-gray-500 mt-0.5">Compartir para instalar la app</p>
+              </div>
+              <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+            
+            <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" 
+               class="flex items-center p-3 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors">
+              <div class="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+                <i class="fas fa-phone-alt text-purple-600"></i>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium text-gray-900">Gestionar Dispositivos</p>
+                <p class="text-xs text-gray-500 mt-0.5">Ver móviles registrados y su actividad</p>
+              </div>
+              <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+            {% else %}
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-amber-600 mt-0.5 mr-3"></i>
+                <div>
+                  <p class="font-medium text-amber-800">Primero debes generar la app</p>
+                  <p class="text-sm text-amber-700 mt-1">Configura la aplicación antes de poder descargarla o generar el QR</p>
+                  <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
+                     class="inline-block mt-2 text-sm text-amber-600 hover:text-amber-800">
+                    <i class="fas fa-arrow-right mr-1"></i>Ir a configurar
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- SECCIÓN DE DESCARGA DE APLICACIÓN (NUEVA) -->
+      {% if empresa.app_generada %}
+      <div class="mt-6 bg-white card-shadow rounded-xl p-6 border border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">
+          <i class="fas fa-download mr-2"></i>Descargar Aplicación
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Para Android -->
+          <div class="border border-emerald-200 rounded-lg p-5 bg-emerald-50">
+            <div class="flex items-center mb-3">
+              <div class="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
+                <i class="fab fa-android text-emerald-600 text-xl"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-gray-900">Android APK</h4>
+                <p class="text-sm text-gray-600">Instalación directa</p>
+              </div>
+            </div>
+            
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Versión:</span>
+                <span class="font-medium">1.0.0</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Tamaño:</span>
+                <span class="font-medium">~25 MB</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Android:</span>
+                <span class="font-medium">5.0+</span>
+              </div>
+            </div>
+            
+            <div class="space-y-2">
+              <a href="/media/apps/app-release.apk" 
+                 class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3 rounded-lg font-medium transition-colors">
+                <i class="fas fa-download mr-2"></i>Descargar APK
+              </a>
+              
+              <div class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-info-circle mr-1"></i>
+                Puede requerir permitir "Orígenes desconocidos" en configuraciones
+              </div>
+            </div>
+          </div>
+          
+          <!-- Para iOS (menú desplegable) -->
+          <div class="border border-blue-200 rounded-lg p-5 bg-blue-50">
+            <div class="flex items-center mb-3">
+              <div class="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                <i class="fab fa-apple text-blue-600 text-xl"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-gray-900">iOS</h4>
+                <p class="text-sm text-gray-600">TestFlight o App Store</p>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <p class="text-sm text-gray-600 mb-2">
+                Para iOS, la app debe estar en TestFlight o App Store.
+              </p>
+              
+              <div class="space-y-2">
+                <div class="flex items-center text-sm">
+                  <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                  <span>Requiere invitación de TestFlight</span>
+                </div>
+                <div class="flex items-center text-sm">
+                  <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                  <span>Solo disponible para betatesters</span>
+                </div>
+              </div>
+            </div>
+            
+            <button onclick="mostrarModalIOS()" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-lg font-medium transition-colors">
+              <i class="fas fa-info-circle mr-2"></i>Más Información
+            </button>
+          </div>
+        </div>
+        
+        <!-- Instrucciones de instalación -->
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <h4 class="font-medium text-gray-900 mb-3">
+            <i class="fas fa-graduation-cap mr-2"></i>Instrucciones de Instalación
+          </h4>
+          
+          <div class="space-y-3">
+            <div class="flex items-start">
+              <div class="h-6 w-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">1</div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Descarga el APK</p>
+                <p class="text-xs text-gray-600">Toca el botón "Descargar APK" arriba</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="h-6 w-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">2</div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Permite instalaciones desconocidas</p>
+                <p class="text-xs text-gray-600">
+                  Ve a Configuración → Seguridad → Orígenes desconocidos
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="h-6 w-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">3</div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Instala la aplicación</p>
+                <p class="text-xs text-gray-600">Abre el archivo descargado y sigue las instrucciones</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="h-6 w-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">4</div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Configura con QR</p>
+                <p class="text-xs text-gray-600">Escanea el QR de configuración para cargar los datos</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Estadísticas de Dispositivos -->
+      {% if empresa.app_generada %}
+      <div class="mt-6 bg-white card-shadow rounded-xl p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Estadísticas de Uso</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">Dispositivos Activos</p>
+                <p class="text-2xl font-bold text-gray-900">{{ dispositivos_activos|default:"0" }}</p>
+              </div>
+              <div class="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <i class="fas fa-signal text-emerald-600"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">Lecturas desde App</p>
+                <p class="text-2xl font-bold text-gray-900">{{ lecturas_app|default:"0" }}</p>
+              </div>
+              <div class="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                <i class="fas fa-mobile-alt text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">Última Sincronización</p>
+                <p class="text-2xl font-bold text-gray-900">
+                  {% if ultima_sincronizacion %}
+                    {{ ultima_sincronizacion|timesince }}
+                  {% else %}
+                    Nunca
+                  {% endif %}
+                </p>
+              </div>
+              <div class="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                <i class="fas fa-sync-alt text-purple-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </section>
     
     <!-- Sección de Gráficos y Análisis -->
@@ -900,6 +1279,63 @@
           </div>
           <button onclick="actualizarMapaLecturas()" class="text-emerald-600 hover:text-emerald-800">
             <i class="fas fa-sync-alt mr-1"></i> Actualizar mapa
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para iOS -->
+  <div id="modalIOS" class="modal-overlay hidden">
+    <div class="modal-content w-full max-w-md">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-gray-900">iOS - TestFlight</h3>
+          <button onclick="cerrarModalIOS()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="mb-6">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div class="flex items-center">
+              <i class="fab fa-apple text-blue-600 text-xl mr-3"></i>
+              <div>
+                <p class="font-medium text-gray-900">TestFlight</p>
+                <p class="text-sm text-gray-600">Programa de beta testing de Apple</p>
+              </div>
+            </div>
+          </div>
+          
+          <p class="text-sm text-gray-600 mb-4">
+            Para instalar la app en iOS, necesitas:
+          </p>
+          
+          <ul class="space-y-2 text-sm text-gray-700">
+            <li class="flex items-start">
+              <i class="fas fa-check text-emerald-500 mt-0.5 mr-2"></i>
+              <span>Ser invitado como betatester</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-check text-emerald-500 mt-0.5 mr-2"></i>
+              <span>Tener la app TestFlight instalada</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-check text-emerald-500 mt-0.5 mr-2"></i>
+              <span>Aceptar la invitación por correo</span>
+            </li>
+          </ul>
+        </div>
+        
+        <div class="text-center">
+          <a href="https://testflight.apple.com" 
+             target="_blank"
+             class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium">
+            <i class="fab fa-apple mr-2"></i>Ir a TestFlight
+          </a>
+          <button onclick="cerrarModalIOS()" 
+                  class="ml-3 px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+            Cerrar
           </button>
         </div>
       </div>
@@ -1449,6 +1885,17 @@
       setTimeout(() => {
         mostrarNotificacion('Mapa actualizado correctamente', 'success');
       }, 1500);
+    }
+    
+    // Funciones para modales de iOS
+    function mostrarModalIOS() {
+      document.getElementById('modalIOS').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarModalIOS() {
+      document.getElementById('modalIOS').classList.add('hidden');
+      document.body.style.overflow = 'auto';
     }
     
     // Funciones de generación de boletas

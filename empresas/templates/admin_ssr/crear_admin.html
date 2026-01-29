@@ -5,30 +5,228 @@
   <title>Crear Admin para {{ slug }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+      min-height: 100vh;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 100, 0, 0.08);
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .input-focus:focus {
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-gradient {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(5, 150, 105, 0.2);
+    }
+    
+    .btn-gradient:active {
+      transform: translateY(0);
+    }
+    
+    .btn-gradient::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1, 1) translate(-50%);
+      transform-origin: 50% 50%;
+    }
+    
+    .btn-gradient:focus:not(:active)::after {
+      animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+      0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+      }
+      100% {
+        transform: scale(20, 20);
+        opacity: 0;
+      }
+    }
+    
+    .back-link {
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .back-link:hover {
+      padding-left: 10px;
+      color: #1d4ed8;
+    }
+    
+    .back-link::before {
+      content: '←';
+      position: absolute;
+      left: -15px;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    
+    .back-link:hover::before {
+      opacity: 1;
+      left: -5px;
+    }
+    
+    .slug-badge {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      margin-left: 8px;
+    }
+    
+    .slug-badge i {
+      margin-right: 6px;
+      font-size: 0.9em;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="text-gray-800">
 
-  <div class="max-w-xl mx-auto py-10 px-6">
-    <h1 class="text-3xl font-bold text-green-700 mb-6">Crear Admin para <span class="font-mono">{{ slug }}</span></h1>
-
-    <form method="post" class="bg-white rounded-lg shadow p-6 space-y-4">
-      {% csrf_token %}
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Nombre</label>
-        <input type="text" name="nombre" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-lg">
+      <!-- Encabezado -->
+      <div class="text-center mb-8">
+        <div class="flex items-center justify-center mb-4">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 flex items-center justify-center mr-3 shadow-lg">
+            <i class="fas fa-user-plus text-white text-xl"></i>
+          </div>
+          <h1 class="text-3xl font-bold gradient-text">Nuevo Administrador</h1>
+        </div>
+        <p class="text-gray-600 mb-2">Crear cuenta de administrador para:</p>
+        <div class="inline-flex items-center">
+          <span class="text-lg font-semibold text-gray-800">Proyecto:</span>
+          <div class="slug-badge">
+            <i class="fas fa-hashtag"></i>
+            <span class="font-mono">{{ slug }}</span>
+          </div>
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Email</label>
-        <input type="email" name="email" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+      <!-- Formulario -->
+      <div class="glass-card rounded-2xl p-8">
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          
+          <!-- Campo Nombre -->
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <i class="fas fa-user text-emerald-600 mr-2"></i>
+              <label class="block text-sm font-semibold text-gray-700">Nombre Completo</label>
+            </div>
+            <div class="relative">
+              <input 
+                type="text" 
+                name="nombre" 
+                required 
+                class="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl input-focus focus:outline-none transition-all duration-300"
+                placeholder="Ingrese el nombre completo"
+              >
+              <i class="fas fa-user-circle absolute left-3 top-3.5 text-gray-400"></i>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Nombre del nuevo administrador del sistema</p>
+          </div>
+
+          <!-- Campo Email -->
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <i class="fas fa-envelope text-emerald-600 mr-2"></i>
+              <label class="block text-sm font-semibold text-gray-700">Correo Electrónico</label>
+            </div>
+            <div class="relative">
+              <input 
+                type="email" 
+                name="email" 
+                required 
+                class="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl input-focus focus:outline-none transition-all duration-300"
+                placeholder="admin@ejemplo.com"
+              >
+              <i class="fas fa-at absolute left-3 top-3.5 text-gray-400"></i>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Se enviarán las credenciales de acceso a este correo</p>
+          </div>
+
+          <!-- Botones -->
+          <div class="pt-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 border-t border-gray-100">
+            <a 
+              href="{% url 'dashboard_admin_ssr' %}" 
+              class="back-link text-gray-600 hover:text-blue-600 font-medium flex items-center"
+            >
+              <i class="fas fa-arrow-left mr-2"></i>
+              Volver al Panel
+            </a>
+            <button 
+              type="submit" 
+              class="btn-gradient text-white font-semibold px-6 py-3 rounded-xl flex items-center shadow-md"
+            >
+              <i class="fas fa-user-plus mr-2"></i>
+              Crear Administrador
+            </button>
+          </div>
+        </form>
+        
+        <!-- Nota informativa -->
+        <div class="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-100">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-blue-800">Información importante</h3>
+              <div class="mt-2 text-sm text-blue-700">
+                <p>El nuevo administrador recibirá un correo con las instrucciones para acceder al sistema y podrá gestionar todos los aspectos del proyecto <span class="font-semibold">{{ slug }}</span>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="pt-4 flex justify-between items-center">
-        <a href="{% url 'dashboard_admin_ssr' %}" class="text-blue-600 hover:underline">Volver al Panel</a>
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Crear Admin</button>
+      <!-- Footer -->
+      <div class="text-center mt-8 text-gray-500 text-sm">
+        <p>Sistema de Administración • <span class="font-mono">{{ slug }}</span></p>
+        <p class="mt-1">© 2024 Todos los derechos reservados</p>
       </div>
-    </form>
+    </div>
   </div>
 
 </body>

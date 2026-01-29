@@ -321,6 +321,24 @@
             letter-spacing: 1px;
             margin-top: 0.5rem;
         }
+        
+        /* Estilos para el badge de tipo de usuario */
+        .user-type-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .superadmin-badge {
+            background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%);
+            color: white;
+        }
+        
+        .admin-badge {
+            background: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -328,11 +346,46 @@
         <!-- Back Navigation -->
         <div class="row mb-4">
             <div class="col-12">
-                <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
-                   class="text-decoration-none d-inline-flex align-items-center text-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>
-                    <span>Volver al panel de {{ empresa.nombre }}</span>
-                </a>
+                <div class="d-flex justify-content-between align-items-center">
+                    <!-- Botón de volver con lógica condicional -->
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.is_superuser %}
+                            <!-- Superadmin - va al panel general -->
+                            <a href="{% url 'dashboard_admin_ssr' %}" 
+                               class="text-decoration-none d-inline-flex align-items-center text-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                <span>Volver al Panel Principal</span>
+                            </a>
+                            <span class="user-type-badge superadmin-badge">
+                                <i class="bi bi-shield-fill me-1"></i>Superadmin
+                            </span>
+                        {% elif request.user.is_staff %}
+                            <!-- Admin de empresa - va al panel de su empresa -->
+                            <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
+                               class="text-decoration-none d-inline-flex align-items-center text-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                <span>Volver al Panel de {{ empresa.nombre }}</span>
+                            </a>
+                            <span class="user-type-badge admin-badge">
+                                <i class="bi bi-person-fill-gear me-1"></i>Admin Empresa
+                            </span>
+                        {% else %}
+                            <!-- Usuario normal (si aplica) -->
+                            <a href="{% url 'panel_empresa' empresa.slug %}"
+                               class="text-decoration-none d-inline-flex align-items-center text-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                <span>Volver al Panel</span>
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <!-- Usuario no autenticado -->
+                        <a href="{% url 'login' %}" 
+                           class="text-decoration-none d-inline-flex align-items-center text-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            <span>Iniciar Sesión</span>
+                        </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -816,10 +869,30 @@
                                 <button onclick="shareQR()" class="btn btn-outline-success">
                                     <i class="bi bi-share me-2"></i>Compartir QR
                                 </button>
-                                <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
-                                   class="btn btn-outline-secondary">
-                                    <i class="bi bi-arrow-left me-2"></i>Volver
-                                </a>
+                                <!-- Botón condicional en el tab de URLs -->
+                                {% if request.user.is_authenticated %}
+                                    {% if request.user.is_superuser %}
+                                        <a href="{% url 'dashboard_admin_ssr' %}" 
+                                           class="btn btn-outline-secondary">
+                                            <i class="bi bi-arrow-left me-2"></i>Volver al Panel
+                                        </a>
+                                    {% elif request.user.is_staff %}
+                                        <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" 
+                                           class="btn btn-outline-secondary">
+                                            <i class="bi bi-arrow-left me-2"></i>Volver a {{ empresa.nombre }}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'dashboard_admin_ssr' %}" 
+                                           class="btn btn-outline-secondary">
+                                            <i class="bi bi-arrow-left me-2"></i>Volver
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'login' %}" 
+                                       class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i>Iniciar Sesión
+                                    </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
