@@ -36,10 +36,7 @@ def listado_lecturas_app(request, alias):
     empresa = get_object_or_404(Empresa, slug=alias)
     
     # Verificar que el usuario tiene acceso a esta empresa
-    if not request.user.is_superuser and empresa not in request.user.empresas.all():
-        return render(request, '403.html', status=403)
-    
-    # Obtener filtros
+
     filtros = {
         'mes': request.GET.get('mes', 'all'),
         'anio': request.GET.get('anio', 'all'),

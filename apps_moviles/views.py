@@ -228,7 +228,7 @@ def generar_app_empresa(request, empresa_slug):
                 'qr_strategy': qr_strategy,
             }
             
-            return render(request, 'apps_moviles/qr_generado.html', context)
+            return render(request, 'apps_moviles/ver_qr.html', context)
             
         except Exception as e:
             messages.error(request, f'❌ Error: {str(e)}')

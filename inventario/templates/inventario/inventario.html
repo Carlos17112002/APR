@@ -2,150 +2,176 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Inventario - {{ empresa.nombre }}</title>
+  <title>Inventario · {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Íconos de FontAwesome -->
+  <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    body {
+    * {
       font-family: 'Inter', sans-serif;
     }
     
-    .gradient-bg {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    /* Estilos mínimos personalizados */
+    .stats-card {
+      transition: all 0.2s ease;
     }
-    
-    .card-shadow {
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    .stats-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.06);
     }
-    
     .table-row-hover:hover {
-      background-color: #f8fafc;
+      background-color: #f9fafb;
     }
-    
     .status-badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       padding: 0.25rem 0.75rem;
       border-radius: 9999px;
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 500;
+      white-space: nowrap;
     }
     
-    .btn-primary {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      transition: all 0.2s ease;
+    /* Estilos para modales */
+    .modal-overlay {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
     }
-    
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.2);
+    .modal-content {
+      animation: modalSlideIn 0.2s ease;
+    }
+    @keyframes modalSlideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
   </style>
 </head>
-<body class="gradient-bg text-gray-800">
+<body class="bg-gray-50">
 
-  <!-- Navbar Moderna -->
-  <nav class="bg-white border-b border-gray-200 shadow-sm">
+  <!-- Navbar consistente con panel SSR -->
+  <header class="bg-emerald-700 text-white sticky top-0 z-20 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-16">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div class="h-8 w-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <i class="fas fa-box text-white text-sm"></i>
-            </div>
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo + Empresa -->
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 bg-white/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-box text-white text-sm"></i>
           </div>
-          <div class="ml-3">
-            <h1 class="text-lg font-semibold text-gray-900">Inventario</h1>
-            <p class="text-xs text-gray-500">{{ empresa.nombre }}</p>
+          <div>
+            <h1 class="font-semibold text-base">{{ empresa.nombre|truncatechars:25 }}</h1>
+            <p class="text-xs text-emerald-100">Gestión de Inventario</p>
           </div>
         </div>
         
-        <div class="flex items-center space-x-4">
-          <a href="{% url 'panel_empresa' slug=slug %}" class="text-sm font-medium text-emerald-600 hover:text-emerald-800 transition-colors">
-            <i class="fas fa-arrow-left mr-1"></i> Volver al panel
+        <!-- Navegación -->
+        <div class="flex items-center gap-3">
+          <a href="{% url 'panel_empresa' slug=slug %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fas fa-arrow-left text-xs"></i>
+            <span class="hidden sm:inline">Volver al panel</span>
           </a>
-          <a href="{% url 'logout_ssr' %}" class="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-md hover:bg-gray-100 transition-colors">
-            <i class="fas fa-sign-out-alt mr-1.5"></i>Cerrar Sesión
+          <a href="{% url 'logout_ssr' %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fas fa-sign-out-alt text-xs"></i>
+            <span class="hidden sm:inline">Salir</span>
           </a>
         </div>
       </div>
     </div>
-  </nav>
+  </header>
 
+  <!-- Contenido principal -->
   <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     
-    <!-- Header de página -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Gestión de Inventario</h1>
-      <p class="text-gray-600 mt-2">Agrega, visualiza y administra los ítems de tu inventario.</p>
+    <!-- Header de página simplificado -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900">Inventario</h1>
+        <p class="text-sm text-gray-500 mt-1">Administra los productos y existencias de {{ empresa.nombre }}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="bg-white px-3 py-1.5 rounded-lg shadow-sm text-sm flex items-center gap-1.5">
+          <i class="fas fa-cubes text-emerald-600"></i>
+          {{ items|length }} ítems
+        </span>
+      </div>
     </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <!-- Grid principal: 1/3 formulario + 2/3 tabla -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
-      <!-- Panel lateral - Formulario para agregar ítem -->
+      <!-- Columna 1: Formulario sticky -->
       <div class="lg:col-span-1">
-        <div class="bg-white rounded-xl card-shadow p-6 sticky top-6">
-          <div class="flex items-center mb-6">
-            <div class="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
-              <i class="fas fa-plus text-emerald-600"></i>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 sticky top-20">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="h-9 w-9 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+              <i class="fas fa-plus"></i>
             </div>
-            <h2 class="text-xl font-semibold text-gray-900">Agregar Nuevo Ítem</h2>
+            <h2 class="font-semibold text-gray-900">Agregar Ítem</h2>
           </div>
           
-          <form method="POST" action="{% url 'agregar_item' slug=slug %}" class="space-y-6">
+          <form method="POST" action="{% url 'agregar_item' slug=slug %}" class="space-y-4">
             {% csrf_token %}
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-tag mr-1.5 text-gray-400"></i>Nombre del ítem
+              <label class="block text-xs font-medium text-gray-600 uppercase tracking-wider mb-1.5">
+                <i class="fas fa-tag mr-1 text-gray-400"></i>Nombre
               </label>
               <input type="text" name="nombre" required 
-                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                     placeholder="Ej. Laptop Dell XPS 13">
+                     class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                     placeholder="Ej. Laptop, Escritorio...">
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-hashtag mr-1.5 text-gray-400"></i>Cantidad
+              <label class="block text-xs font-medium text-gray-600 uppercase tracking-wider mb-1.5">
+                <i class="fas fa-hashtag mr-1 text-gray-400"></i>Cantidad
               </label>
               <input type="number" name="cantidad" min="0" required 
-                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                     class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                      placeholder="0">
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-folder mr-1.5 text-gray-400"></i>Categoría
-              </label>
-              <select name="categoria" 
-                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <i class="fas fa-folder mr-1 text-gray-400"></i>Categoría
+                </label>
+                <button type="button" onclick="abrirModalCategorias()" 
+                        class="text-xs text-emerald-600 hover:text-emerald-800 font-medium flex items-center gap-1">
+                  <i class="fas fa-plus-circle"></i> Nueva
+                </button>
+              </div>
+              <select name="categoria" id="categoriaSelect"
+                      class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white">
                 <option value="general">General</option>
                 <option value="consumo">Consumo</option>
                 <option value="tecnología">Tecnología</option>
                 <option value="oficina">Oficina</option>
                 <option value="limpieza">Limpieza</option>
+                <!-- Las categorías personalizadas se agregarán aquí vía JavaScript -->
               </select>
             </div>
             
-            <button type="submit" class="w-full btn-primary text-white font-medium py-3.5 px-4 rounded-lg">
-              <i class="fas fa-save mr-2"></i>Guardar Ítem
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm flex items-center justify-center gap-2 mt-2">
+              <i class="fas fa-save"></i>
+              Guardar Ítem
             </button>
           </form>
           
-          <div class="mt-8 pt-6 border-t border-gray-100">
-            <h3 class="text-sm font-medium text-gray-700 mb-3">Resumen rápido</h3>
+          <!-- Resumen rápido compacto -->
+          <div class="mt-6 pt-5 border-t border-gray-100">
+            <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">Resumen</h3>
             <div class="grid grid-cols-2 gap-3">
               <div class="bg-gray-50 p-3 rounded-lg">
-                <p class="text-xs text-gray-500">Total de ítems</p>
-                <p class="text-lg font-semibold text-gray-900">{{ items|length }}</p>
+                <p class="text-xs text-gray-500">Total ítems</p>
+                <p class="text-xl font-semibold text-gray-900">{{ items|length }}</p>
               </div>
               <div class="bg-gray-50 p-3 rounded-lg">
-                <p class="text-xs text-gray-500">Último agregado</p>
-                <p class="text-sm font-medium text-gray-900 truncate">
-                  {% if items.0 %}{{ items.0.nombre|truncatechars:12 }}{% else %}N/A{% endif %}
+                <p class="text-xs text-gray-500">Categorías</p>
+                <p class="text-xl font-semibold text-gray-900" id="totalCategorias">
+                  {{ categorias|length|default:"5" }}
                 </p>
               </div>
             </div>
@@ -153,104 +179,79 @@
         </div>
       </div>
       
-      <!-- Contenido principal - Listado de ítems -->
+      <!-- Columna 2: Tabla de inventario -->
       <div class="lg:col-span-2">
-        <div class="bg-white rounded-xl card-shadow overflow-hidden">
-          <div class="px-6 py-5 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-              <div>
-                <h2 class="text-xl font-semibold text-gray-900">Ítems Registrados</h2>
-                <p class="text-gray-500 text-sm mt-1">Lista completa de productos en inventario</p>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+          
+          <!-- Header de la tabla con búsqueda -->
+          <div class="p-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-boxes text-emerald-600"></i>
+                <h2 class="font-semibold text-gray-900">Ítems Registrados</h2>
               </div>
-              <div class="flex items-center space-x-2">
-                <div class="relative">
-                  <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                  <input type="text" placeholder="Buscar ítems..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
-                </div>
-                <button class="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <i class="fas fa-filter mr-1.5"></i>Filtrar
-                </button>
+              
+              <!-- Búsqueda compacta -->
+              <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" id="buscarItem" placeholder="Buscar ítem..." 
+                       class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-full md:w-64">
               </div>
             </div>
           </div>
           
+          <!-- Tabla -->
           <div class="overflow-x-auto">
             {% if items %}
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <div class="flex items-center">
-                        <i class="fas fa-tag mr-2"></i> Nombre
-                      </div>
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <div class="flex items-center">
-                        <i class="fas fa-hashtag mr-2"></i> Cantidad
-                      </div>
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <div class="flex items-center">
-                        <i class="fas fa-folder mr-2"></i> Categoría
-                      </div>
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <div class="flex items-center">
-                        <i class="fas fa-calendar-alt mr-2"></i> Fecha
-                      </div>
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ítem</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody id="tablaItemsBody" class="bg-white divide-y divide-gray-200">
                   {% for item in items %}
                   <tr class="table-row-hover transition-colors">
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="px-4 py-3 whitespace-nowrap">
                       <div class="flex items-center">
-                        <div class="h-10 w-10 rounded-md bg-emerald-50 flex items-center justify-center mr-3">
-                          <i class="fas fa-box text-emerald-600"></i>
+                        <div class="h-8 w-8 rounded-md bg-emerald-50 flex items-center justify-center mr-2.5">
+                          <i class="fas fa-box text-emerald-600 text-xs"></i>
                         </div>
-                        <div>
-                          <div class="font-medium text-gray-900">{{ item.nombre }}</div>
-                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ item.nombre }}</span>
                       </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                        <span class="font-medium text-gray-900">{{ item.cantidad }}</span>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-gray-900">{{ item.cantidad }}</span>
                         {% if item.cantidad < 10 %}
-                        <span class="ml-2 status-badge bg-red-100 text-red-800">Bajo stock</span>
+                          <span class="status-badge bg-red-100 text-red-700 text-[10px]">Bajo</span>
                         {% elif item.cantidad < 30 %}
-                        <span class="ml-2 status-badge bg-yellow-100 text-yellow-800">Medio</span>
+                          <span class="status-badge bg-yellow-100 text-yellow-700 text-[10px]">Medio</span>
                         {% else %}
-                        <span class="ml-2 status-badge bg-green-100 text-green-800">Disponible</span>
+                          <span class="status-badge bg-green-100 text-green-700 text-[10px]">Stock</span>
                         {% endif %}
                       </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span class="px-3 py-1 rounded-full text-xs font-medium 
-                        {% if item.categoria == 'tecnología' %}bg-blue-100 text-blue-800
-                        {% elif item.categoria == 'consumo' %}bg-purple-100 text-purple-800
-                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium categoria-badge" data-categoria="{{ item.categoria }}">
+                        <i class="fas fa-circle mr-1.5 text-[6px]"></i>
                         {{ item.categoria|title }}
                       </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div>{{ item.fecha_creacion|date:"d/m/Y" }}</div>
-                      <div class="text-xs text-gray-400">{{ item.fecha_creacion|date:"H:i" }}</div>
+                    <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
+                      {{ item.fecha_creacion|date:"d/m/Y" }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div class="flex space-x-2">
-                        <button class="text-emerald-600 hover:text-emerald-900">
-                          <i class="fas fa-edit"></i>
+                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                      <div class="flex items-center justify-end gap-1.5">
+                        <button class="h-7 w-7 rounded-md text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center">
+                          <i class="fas fa-edit text-xs"></i>
                         </button>
-                        <button class="text-gray-600 hover:text-gray-900">
-                          <i class="fas fa-trash-alt"></i>
-                        </button>
-                        <button class="text-blue-600 hover:text-blue-900">
-                          <i class="fas fa-eye"></i>
+                        <button class="h-7 w-7 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center">
+                          <i class="fas fa-trash-alt text-xs"></i>
                         </button>
                       </div>
                     </td>
@@ -259,77 +260,83 @@
                 </tbody>
               </table>
             {% else %}
+              <!-- Estado vacío mejorado -->
               <div class="text-center py-12">
-                <div class="mx-auto h-24 w-24 text-gray-300 mb-4">
-                  <i class="fas fa-box-open text-6xl"></i>
+                <div class="mx-auto h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <i class="fas fa-box-open text-gray-400 text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No hay ítems registrados</h3>
-                <p class="text-gray-500 max-w-md mx-auto mb-6">
-                  Aún no has agregado ningún ítem a tu inventario. Comienza agregando tu primer producto usando el formulario a la izquierda.
+                <h3 class="text-base font-medium text-gray-900 mb-1">No hay ítems registrados</h3>
+                <p class="text-sm text-gray-500 max-w-sm mx-auto mb-5">
+                  Agrega tu primer producto usando el formulario de la izquierda.
                 </p>
+                <button onclick="document.querySelector('input[name=nombre]').focus()" 
+                        class="inline-flex items-center gap-2 text-sm bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-100 transition-colors">
+                  <i class="fas fa-plus-circle"></i>
+                  Agregar ahora
+                </button>
               </div>
             {% endif %}
           </div>
           
+          <!-- Footer de tabla -->
           {% if items %}
-          <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <div class="flex justify-between items-center">
-              <div class="text-sm text-gray-500">
-                Mostrando <span class="font-medium">{{ items|length }}</span> ítems
-              </div>
-              <div class="flex space-x-2">
-                <button class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors">
-                  <i class="fas fa-download mr-1.5"></i>Exportar
-                </button>
-                <button class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 transition-colors">
-                  <i class="fas fa-print mr-1.5"></i>Imprimir
-                </button>
-              </div>
+          <div class="px-4 py-3 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs text-gray-500">
+              <i class="fas fa-hdd mr-1"></i> Total <span id="totalItems">{{ items|length }}</span> ítems
+            </span>
+            <div class="flex items-center gap-2">
+              <button class="text-xs text-gray-600 hover:text-gray-900 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-white transition-colors flex items-center gap-1.5">
+                <i class="fas fa-download"></i> Exportar
+              </button>
+              <button class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="fas fa-print"></i> Imprimir
+              </button>
             </div>
           </div>
           {% endif %}
         </div>
         
-        <!-- Tarjetas de estadísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <div class="bg-white rounded-xl card-shadow p-5">
-            <div class="flex justify-between items-start">
+        <!-- Tarjetas de estadísticas compactas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 stats-card">
+            <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-500">Total de categorías</p>
-                <p class="text-2xl font-bold text-gray-900 mt-1">5</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Categorías</p>
+                <p class="text-xl font-semibold text-gray-900 mt-1" id="statsCategorias">
+                  {{ categorias|length|default:"5" }}
+                </p>
               </div>
-              <div class="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                <i class="fas fa-folder text-blue-600"></i>
+              <div class="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                <i class="fas fa-folder"></i>
               </div>
             </div>
           </div>
           
-          <div class="bg-white rounded-xl card-shadow p-5">
-            <div class="flex justify-between items-start">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 stats-card">
+            <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-500">Stock bajo</p>
-                <p class="text-2xl font-bold text-gray-900 mt-1">
-                  {% with low_stock=items|dictsort:"cantidad"|slice:":5"|length %}
-                    {{ low_stock }}
-                  {% endwith %}
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Stock bajo</p>
+                <p class="text-xl font-semibold text-gray-900 mt-1">
+                  {{ items|dictsort:"cantidad"|slice:":5"|length }}
                 </p>
               </div>
-              <div class="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
-                <i class="fas fa-exclamation-triangle text-red-600"></i>
+              <div class="h-10 w-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
+                <i class="fas fa-exclamation-triangle"></i>
               </div>
             </div>
           </div>
           
-          <div class="bg-white rounded-xl card-shadow p-5">
-            <div class="flex justify-between items-start">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 stats-card">
+            <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-500">Última actualización</p>
-                <p class="text-2xl font-bold text-gray-900 mt-1">
-                  {% if items.0 %}{{ items.0.fecha_creacion|date:"d/m" }}{% else %}--{% endif %}
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Último ítem</p>
+                <p class="text-xl font-semibold text-gray-900 mt-1 truncate max-w-[100px]">
+                  {% if items.0 %}{{ items.0.nombre|truncatechars:10 }}{% else %}--{% endif %}
                 </p>
               </div>
-              <div class="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <i class="fas fa-calendar-check text-emerald-600"></i>
+              <div class="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <i class="fas fa-clock"></i>
               </div>
             </div>
           </div>
@@ -338,19 +345,363 @@
     </div>
   </div>
 
-  <!-- Footer -->
+  <!-- =========== MODAL PARA GESTIONAR CATEGORÍAS =========== -->
+  <div id="modalCategorias" class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg modal-content">
+      
+      <!-- Header del modal -->
+      <div class="flex items-center justify-between p-5 border-b border-gray-100">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+            <i class="fas fa-folder"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900">Gestionar Categorías</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Agrega y administra tus categorías personalizadas</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalCategorias()" class="h-8 w-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- Cuerpo del modal -->
+      <div class="p-5">
+        
+        <!-- Formulario para agregar categoría -->
+        <div class="mb-5">
+          <label class="block text-xs font-medium text-gray-600 uppercase tracking-wider mb-1.5">
+            <i class="fas fa-plus-circle mr-1 text-emerald-500"></i>Nueva Categoría
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="nuevaCategoriaInput" 
+                   class="flex-1 px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                   placeholder="Ej. Herramientas, Muebles, etc." 
+                   maxlength="50">
+            <button onclick="agregarCategoria()" 
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+              <i class="fas fa-save"></i>
+              <span class="hidden sm:inline">Guardar</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Lista de categorías existentes -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-medium text-gray-600 uppercase tracking-wider">
+              <i class="fas fa-list mr-1"></i>Categorías Disponibles
+            </label>
+            <span class="text-xs text-gray-500" id="modalTotalCategorias">5 categorías</span>
+          </div>
+          
+          <div class="max-h-64 overflow-y-auto border border-gray-100 rounded-lg">
+            <table class="w-full text-sm">
+              <tbody id="listaCategoriasBody">
+                <!-- Categorías predefinidas -->
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="px-4 py-2.5">
+                    <div class="flex items-center">
+                      <i class="fas fa-folder text-gray-400 mr-2 text-xs"></i>
+                      <span class="text-gray-700">General</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-2.5 text-right w-24">
+                    <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
+                  </td>
+                </tr>
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="px-4 py-2.5">
+                    <div class="flex items-center">
+                      <i class="fas fa-folder text-purple-400 mr-2 text-xs"></i>
+                      <span class="text-gray-700">Consumo</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-2.5 text-right w-24">
+                    <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
+                  </td>
+                </tr>
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="px-4 py-2.5">
+                    <div class="flex items-center">
+                      <i class="fas fa-folder text-blue-400 mr-2 text-xs"></i>
+                      <span class="text-gray-700">Tecnología</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-2.5 text-right w-24">
+                    <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
+                  </td>
+                </tr>
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="px-4 py-2.5">
+                    <div class="flex items-center">
+                      <i class="fas fa-folder text-gray-400 mr-2 text-xs"></i>
+                      <span class="text-gray-700">Oficina</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-2.5 text-right w-24">
+                    <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
+                  </td>
+                </tr>
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="px-4 py-2.5">
+                    <div class="flex items-center">
+                      <i class="fas fa-folder text-cyan-400 mr-2 text-xs"></i>
+                      <span class="text-gray-700">Limpieza</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-2.5 text-right w-24">
+                    <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
+                  </td>
+                </tr>
+                <!-- Las categorías personalizadas se agregarán aquí vía JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Mensaje cuando no hay categorías personalizadas -->
+        <div id="sinCategoriasMsg" class="text-center py-4 text-gray-500 text-sm hidden">
+          <i class="fas fa-inbox text-gray-300 text-2xl mb-2"></i>
+          <p>No hay categorías personalizadas</p>
+          <p class="text-xs text-gray-400 mt-1">Agrega tu primera categoría usando el formulario</p>
+        </div>
+      </div>
+      
+      <!-- Footer del modal -->
+      <div class="flex items-center justify-end gap-2 p-5 border-t border-gray-100">
+        <button onclick="cerrarModalCategorias()" 
+                class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          Cerrar
+        </button>
+        <button onclick="cerrarModalCategorias()" 
+                class="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
+          Listo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer simplificado -->
   <footer class="mt-12 border-t border-gray-200 bg-white">
-    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center">
-        <div class="text-sm text-gray-500">
-          Sistema de Inventario © {{ empresa.nombre }} 2023
-        </div>
-        <div class="text-sm text-gray-500">
-          <i class="fas fa-database mr-1.5 text-emerald-500"></i>
-          <span class="font-medium">{{ items|length }}</span> ítems registrados
-        </div>
+    <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+        <span>© {{ empresa.nombre }} · Sistema de Inventario v1.0</span>
+        <span class="flex items-center gap-1.5">
+          <i class="fas fa-circle text-emerald-500 text-[6px]"></i>
+          {{ items|length }} ítems registrados
+        </span>
       </div>
     </div>
   </footer>
+
+  <!-- Script para gestionar categorías y búsqueda -->
+  <script>
+    // =========== GESTIÓN DE CATEGORÍAS ===========
+    
+    // Almacenamiento de categorías personalizadas
+    let categoriasPersonalizadas = [];
+    
+    // Inicializar desde localStorage si existen
+    document.addEventListener('DOMContentLoaded', function() {
+      // Cargar categorías guardadas
+      const categoriasGuardadas = localStorage.getItem('inventario_categorias_{{ empresa.id }}');
+      if (categoriasGuardadas) {
+        categoriasPersonalizadas = JSON.parse(categoriasGuardadas);
+        actualizarSelectCategorias();
+        actualizarListaCategorias();
+        actualizarTotalCategorias();
+      }
+      
+      // Configurar búsqueda
+      const searchInput = document.getElementById('buscarItem');
+      if (searchInput) {
+        searchInput.addEventListener('keyup', function(e) {
+          const term = e.target.value.toLowerCase();
+          const rows = document.querySelectorAll('#tablaItemsBody tr');
+          rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(term) ? '' : 'none';
+          });
+        });
+      }
+    });
+    
+    // Función para abrir modal
+    function abrirModalCategorias() {
+      document.getElementById('modalCategorias').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      actualizarListaCategorias();
+    }
+    
+    // Función para cerrar modal
+    function cerrarModalCategorias() {
+      document.getElementById('modalCategorias').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+    
+    // Función para agregar nueva categoría
+    function agregarCategoria() {
+      const input = document.getElementById('nuevaCategoriaInput');
+      const nombreCategoria = input.value.trim();
+      
+      if (!nombreCategoria) {
+        alert('Por favor ingresa un nombre para la categoría');
+        return;
+      }
+      
+      // Validar si ya existe
+      const existe = categoriasPersonalizadas.some(c => c.toLowerCase() === nombreCategoria.toLowerCase());
+      if (existe) {
+        alert('Esta categoría ya existe');
+        return;
+      }
+      
+      // Agregar a la lista
+      categoriasPersonalizadas.push(nombreCategoria);
+      
+      // Guardar en localStorage
+      localStorage.setItem('inventario_categorias_{{ empresa.id }}', JSON.stringify(categoriasPersonalizadas));
+      
+      // Limpiar input
+      input.value = '';
+      
+      // Actualizar UI
+      actualizarSelectCategorias();
+      actualizarListaCategorias();
+      actualizarTotalCategorias();
+      
+      // Mostrar mensaje de éxito
+      mostrarToast('Categoría agregada correctamente');
+    }
+    
+    // Función para eliminar categoría
+    function eliminarCategoria(nombre) {
+      if (confirm(`¿Estás seguro de eliminar la categoría "${nombre}"?`)) {
+        categoriasPersonalizadas = categoriasPersonalizadas.filter(c => c !== nombre);
+        localStorage.setItem('inventario_categorias_{{ empresa.id }}', JSON.stringify(categoriasPersonalizadas));
+        actualizarSelectCategorias();
+        actualizarListaCategorias();
+        actualizarTotalCategorias();
+        mostrarToast('Categoría eliminada');
+      }
+    }
+    
+    // Actualizar el select de categorías en el formulario
+    function actualizarSelectCategorias() {
+      const select = document.getElementById('categoriaSelect');
+      
+      // Guardar selección actual
+      const seleccionActual = select.value;
+      
+      // Limpiar opciones manteniendo las predeterminadas
+      while (select.options.length > 5) {
+        select.remove(5);
+      }
+      
+      // Agregar categorías personalizadas
+      categoriasPersonalizadas.forEach(categoria => {
+        const option = document.createElement('option');
+        option.value = categoria.toLowerCase().replace(/\s+/g, '-');
+        option.textContent = categoria;
+        select.appendChild(option);
+      });
+      
+      // Restaurar selección si es posible
+      if (seleccionActual) {
+        select.value = seleccionActual;
+      }
+    }
+    
+    // Actualizar la lista visual en el modal
+    function actualizarListaCategorias() {
+      const tbody = document.getElementById('listaCategoriasBody');
+      const sinMsg = document.getElementById('sinCategoriasMsg');
+      
+      // Eliminar categorías personalizadas existentes (mantener las primeras 5 filas)
+      while (tbody.rows.length > 5) {
+        tbody.deleteRow(5);
+      }
+      
+      // Agregar categorías personalizadas
+      if (categoriasPersonalizadas.length > 0) {
+        sinMsg?.classList.add('hidden');
+        
+        categoriasPersonalizadas.forEach((categoria, index) => {
+          const row = tbody.insertRow();
+          row.className = 'border-b border-gray-100 hover:bg-gray-50';
+          
+          // Celda nombre
+          const cellNombre = row.insertCell();
+          cellNombre.className = 'px-4 py-2.5';
+          cellNombre.innerHTML = `
+            <div class="flex items-center">
+              <i class="fas fa-folder text-emerald-400 mr-2 text-xs"></i>
+              <span class="text-gray-700">${categoria}</span>
+            </div>
+          `;
+          
+          // Celda acciones
+          const cellAcciones = row.insertCell();
+          cellAcciones.className = 'px-4 py-2.5 text-right w-24';
+          cellAcciones.innerHTML = `
+            <button onclick="eliminarCategoria('${categoria}')" 
+                    class="text-gray-400 hover:text-red-600 transition-colors">
+              <i class="fas fa-trash-alt text-xs"></i>
+            </button>
+          `;
+        });
+      } else {
+        sinMsg?.classList.remove('hidden');
+      }
+    }
+    
+    // Actualizar contador de categorías
+    function actualizarTotalCategorias() {
+      const total = 5 + categoriasPersonalizadas.length; // 5 predeterminadas + personalizadas
+      document.getElementById('totalCategorias').textContent = total;
+      document.getElementById('statsCategorias').textContent = total;
+      document.getElementById('modalTotalCategorias').textContent = `${total} categorías`;
+    }
+    
+    // Función para mostrar notificaciones toast
+    function mostrarToast(mensaje) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-6 right-6 bg-white shadow-lg rounded-lg border-l-4 border-emerald-500 px-4 py-3 z-50 animate-slideIn';
+      toast.innerHTML = `
+        <div class="flex items-center gap-3">
+          <i class="fas fa-check-circle text-emerald-500"></i>
+          <p class="text-sm text-gray-700">${mensaje}</p>
+        </div>
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+    
+    // Cerrar modal al hacer clic fuera
+    window.onclick = function(event) {
+      const modal = document.getElementById('modalCategorias');
+      if (event.target === modal) {
+        cerrarModalCategorias();
+      }
+    }
+  </script>
+
+  <style>
+    /* Animación para toast */
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .animate-slideIn {
+      animation: slideIn 0.2s ease forwards;
+    }
+  </style>
 </body>
 </html>

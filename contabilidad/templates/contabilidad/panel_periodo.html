@@ -1,0 +1,1626 @@
+<!-- contabilidad/periodos.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Períodos · {{ empresa.nombre }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background: #f8fafc;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        th {
+            background: #fff7ed;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #9a3412;
+            border-bottom: 2px solid #fed7aa;
+        }
+        
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #fed7aa;
+            vertical-align: middle;
+        }
+        
+        tr:hover {
+            background: #fffbeb;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-activo {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-inactivo {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-procesado {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .badge-cerrado {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary {
+            background: #f97316;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .search-box {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #f97316;
+        }
+        
+        .footer-info {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
+        .codigo-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #9a3412;
+        }
+        
+        .actions-cell {
+            text-align: center;
+            width: 100px;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #fa5252;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        
+        .delete-btn:hover {
+            color: #c92a2a;
+        }
+        
+        .edit-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .edit-btn:hover {
+            color: #1d4ed8;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            color: #9a3412;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+        .modal-close:hover {
+            color: #495057;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #f97316;
+            box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .btn-cancel {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
+        .btn-save {
+            padding: 8px 16px;
+            background: #f97316;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-save:hover {
+            background: #ea580c;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stat-title {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .stat-total {
+            color: #f97316;
+        }
+        
+        .stat-activos {
+            color: #10b981;
+        }
+        
+        .stat-anio {
+            color: #3b82f6;
+        }
+        
+        .stat-ultimo {
+            color: #8b5cf6;
+        }
+        
+        .info-box {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .info-title {
+            color: #9a3412;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-title i {
+            margin-right: 10px;
+        }
+        
+        .info-content {
+            color: #92400e;
+            font-size: 14px;
+        }
+        
+        .info-list {
+            list-style: disc;
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .date-input-group {
+            position: relative;
+        }
+        
+        .date-hint {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 12px;
+            pointer-events: none;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        .monospace {
+            font-family: 'Courier New', monospace;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .feriados-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .feriado-item {
+            padding: 4px 8px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .feriado-item:last-child {
+            border-bottom: none;
+        }
+        
+        .feriado-fecha {
+            font-weight: 500;
+        }
+        
+        .feriado-nombre {
+            color: #666;
+        }
+        
+        .date-input {
+            letter-spacing: 1px;
+        }
+        
+        .date-input.valid {
+            border-color: #16a34a;
+            background-color: #f0fdf4;
+        }
+        
+        .date-input.invalid {
+            border-color: #dc2626;
+            background-color: #fef2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Administrador de Períodos</h1>
+            <p>{{ empresa.nombre }}</p>
+        </div>
+        
+        <div class="content">
+            <!-- Filtros -->
+            <div class="search-box">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #495057;">Filtrar por Año</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="filtro-anio" class="form-control" style="flex: 1;">
+                            <option value="">Todos los años</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                            <option value="2027">2027</option>
+                        </select>
+                        <button type="button" class="btn btn-primary" onclick="buscarPeriodos()">
+                            🔍 Buscar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estadísticas -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Total Períodos</div>
+                    <div class="stat-value stat-total">{{ total_periodos }}</div>
+                    <div class="stat-title">Registrados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Períodos Activos</div>
+                    <div class="stat-value stat-activos">{{ periodos_activos }}</div>
+                    <div class="stat-title">En uso actualmente</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Año Actual ({{ año_actual }})</div>
+                    <div class="stat-value stat-anio">{{ periodos_anio_actual }}</div>
+                    <div class="stat-title">Períodos del año</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Último Período</div>
+                    <div class="stat-value stat-ultimo">
+                        {% if ultimo_periodo %}
+                            {{ ultimo_periodo.mes_anio }}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </div>
+                    <div class="stat-title">Mes más reciente</div>
+                </div>
+            </div>
+            
+            <!-- Información -->
+            <div class="info-box">
+                <div class="info-title">
+                    💡 Importante
+                </div>
+                <div class="info-content">
+                    Los períodos definen el marco temporal para las liquidaciones de sueldos. Asegúrese de:
+                    <ul class="info-list">
+                        <li>Configurar correctamente las fechas de inicio y fin</li>
+                        <li>Actualizar los valores de UF y UTM mensualmente</li>
+                        <li>Definir correctamente los días hábiles y no hábiles</li>
+                        <li>Verificar el factor de actualización según normativa vigente</li>
+                    </ul>
+                    <div style="margin-top: 10px; font-size: 12px; color: #92400e;">
+                        <strong>Nota:</strong> Los días hábiles y festivos se calculan automáticamente según feriados chilenos.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabla de Períodos -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Mes/Año</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Fin</th>
+                        <th>UF</th>
+                        <th>UTM</th>
+                        <th class="text-center">Días Hábil.</th>
+                        <th class="text-center">Días Dom. y Fest.</th>
+                        <th>Factor Actual.</th>
+                        <th>Estado</th>
+                        <th class="actions-cell">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="periodosTableBody">
+                    {% for periodo in periodos %}
+                    <tr data-periodo-id="{{ periodo.id }}">
+                        <td class="codigo-cell">#{{ periodo.id }}</td>
+                        <td>{{ periodo.mes_anio }}</td>
+                        <td>{{ periodo.fecha_inicio|date:"d/m/Y" }}</td>
+                        <td>{{ periodo.fecha_fin|date:"d/m/Y" }}</td>
+                        <td class="monospace">${{ periodo.uf|floatformat:2 }}</td>
+                        <td class="monospace">${{ periodo.utm|floatformat:2 }}</td>
+                        <td class="text-center">{{ periodo.dias_habiles }}</td>
+                        <td class="text-center">{{ periodo.dias_no_habiles }}</td>
+                        <td class="monospace">{{ periodo.factor_actualizacion|floatformat:4 }}</td>
+                        <td>
+                            {% if periodo.estado == 'ACTIVO' %}
+                            <span class="badge badge-activo">{{ periodo.get_estado_display }}</span>
+                            {% elif periodo.estado == 'INACTIVO' %}
+                            <span class="badge badge-inactivo">{{ periodo.get_estado_display }}</span>
+                            {% elif periodo.estado == 'PROCESADO' %}
+                            <span class="badge badge-procesado">{{ periodo.get_estado_display }}</span>
+                            {% elif periodo.estado == 'CERRADO' %}
+                            <span class="badge badge-cerrado">{{ periodo.get_estado_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            <button class="edit-btn" onclick="editarPeriodo({{ periodo.id }})" title="Editar">
+                                ✎
+                            </button>
+                            <button class="delete-btn" 
+                                    onclick="eliminarPeriodo({{ periodo.id }}, '{{ periodo.mes_anio }}')" 
+                                    title="Eliminar">
+                                ✕
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" style="text-align: center; padding: 20px; color: #6c757d;">
+                            No hay períodos registrados. Use el botón "Agregar Período" para crear uno.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Total registros -->
+            <div id="totalRegistros" style="text-align: right; margin: 10px 0; font-size: 12px; color: #6c757d;">
+                Total: {{ total_periodos }} registros
+            </div>
+            
+            <!-- Botones -->
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="mostrarModalAgregar()">
+                    ➕ Agregar Período
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='{% url 'panel_remuneraciones' alias=alias %}'">
+                    ← Salir
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer-info">
+            Sistema de Gestión de Períodos · {{ empresa.nombre }}
+        </div>
+    </div>
+    
+    <!-- Modal para agregar/editar Período -->
+    <div id="modalPeriodo" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitulo">Agregar Nuevo Período</h2>
+                <button class="modal-close" onclick="cerrarModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div>Calculando días hábiles y festivos...</div>
+                </div>
+                
+                <form id="formPeriodo" onsubmit="return guardarPeriodo(event)">
+                    <div class="grid-2">
+                        <!-- Mes -->
+                        <div class="form-group">
+                            <label class="form-label">Mes *</label>
+                            <select id="mes" name="mes" class="form-control" required 
+                                    onchange="actualizarFechasYDias()">
+                                <option value="">Seleccionar mes</option>
+                                <option value="1">Enero</option>
+                                <option value="2">Febrero</option>
+                                <option value="3">Marzo</option>
+                                <option value="4">Abril</option>
+                                <option value="5">Mayo</option>
+                                <option value="6">Junio</option>
+                                <option value="7">Julio</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Septiembre</option>
+                                <option value="10">Octubre</option>
+                                <option value="11">Noviembre</option>
+                                <option value="12">Diciembre</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Año -->
+                        <div class="form-group">
+                            <label class="form-label">Año *</label>
+                            <select id="anio" name="anio" class="form-control" required 
+                                    onchange="actualizarFechasYDias()">
+                                <option value="">Seleccionar año</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-2">
+                        <!-- Fecha Inicio -->
+                        <div class="form-group">
+                            <label class="form-label">Fecha Inicio *</label>
+                            <div class="date-input-group">
+                                <input type="text" 
+                                       id="fecha_inicio" 
+                                       name="fecha_inicio"
+                                       class="form-control monospace date-input"
+                                       placeholder="DD/MM/AAAA"
+                                       maxlength="10"
+                                       required
+                                       oninput="formatearYValidarFecha(this)">
+                                <span class="date-hint">DD/MM/AAAA</span>
+                            </div>
+                            <small class="text-gray-500">Formato: DD/MM/AAAA (se formatea automáticamente)</small>
+                        </div>
+                        
+                        <!-- Fecha Fin -->
+                        <div class="form-group">
+                            <label class="form-label">Fecha Fin *</label>
+                            <div class="date-input-group">
+                                <input type="text" 
+                                       id="fecha_fin" 
+                                       name="fecha_fin"
+                                       class="form-control monospace date-input"
+                                       placeholder="DD/MM/AAAA"
+                                       maxlength="10"
+                                       required
+                                       oninput="formatearYValidarFecha(this)">
+                                <span class="date-hint">DD/MM/AAAA</span>
+                            </div>
+                            <small class="text-gray-500">Formato: DD/MM/AAAA (se formatea automáticamente)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-4">
+                        <!-- UF -->
+                        <div class="form-group">
+                            <label class="form-label">UF *</label>
+                            <input type="number" 
+                                id="uf" 
+                                name="uf"
+                                class="form-control"
+                                step="0.01"
+                                min="0"
+                                placeholder="Ej: 36452.12"
+                                required
+                                style="width: 100%; margin-bottom: 5px;">
+                            
+                            <a href="https://www.sii.cl/valores_y_fechas/uf/uf2026.htm" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style="text-decoration: none; display: inline-block;">
+                                <button type="button" 
+                                        style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">
+                                    📄 Consultar valor UF en SII
+                                </button>
+                            </a>
+                        </div>
+                        
+                        <!-- UTM -->
+                        <div class="form-group">
+                            <label class="form-label">UTM *</label>
+                            <input type="number" 
+                                id="utm" 
+                                name="utm"
+                                class="form-control"
+                                step="0.01"
+                                min="0"
+                                placeholder="Ej: 65048.00"
+                                required
+                                style="width: 100%; margin-bottom: 5px;">
+                            
+                            <a href="https://www.sii.cl/valores_y_fechas/utm/utm2026.htm" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style="text-decoration: none; display: inline-block;">
+                                <button type="button" 
+                                        style="background: #8b5cf6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">
+                                    📄 Consultar valor UTM en SII
+                                </button>
+                            </a>
+                        </div>
+                        
+                        <!-- Días Hábitos -->
+                        <div class="form-group">
+                            <label class="form-label">Días Hábiles *</label>
+                            <input type="number" 
+                                id="dias_habiles" 
+                                name="dias_habiles"
+                                class="form-control"
+                                min="1"
+                                max="31"
+                                placeholder="Ej: 22"
+                                required>
+                            <small class="text-gray-500">Calculados automáticamente</small>
+                        </div>
+                        
+                        <!-- Días Domingo y Festivos -->
+                        <div class="form-group">
+                            <label class="form-label">Días Dom. y Fest. *</label>
+                            <input type="number" 
+                                id="dias_no_habiles" 
+                                name="dias_no_habiles"
+                                class="form-control"
+                                min="0"
+                                max="31"
+                                placeholder="Ej: 9"
+                                required>
+                            <small class="text-gray-500">Calculados automáticamente</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista de Feriados del Mes -->
+                    <div class="form-group" id="feriadosContainer" style="display: none;">
+                        <label class="form-label">Feriados del Mes</label>
+                        <div class="feriados-list" id="feriadosList">
+                            <!-- Los feriados se cargarán aquí -->
+                        </div>
+                    </div>
+                    
+                    <div class="grid-2">
+                        <!-- Factor Actualización -->
+                        <div class="form-group">
+                            <label class="form-label">Factor Actualización *</label>
+                            <input type="number" 
+                                   id="factor_actualizacion" 
+                                   name="factor_actualizacion"
+                                   class="form-control"
+                                   step="0.0001"
+                                   min="1"
+                                   placeholder="Ej: 1.0345"
+                                   required>
+                            <small class="text-gray-500">Factor IPC o actualización monetaria</small>
+                        </div>
+                        
+                        <!-- Estado -->
+                        <div class="form-group">
+                            <label class="form-label">Estado *</label>
+                            <select id="estado" name="estado" class="form-control" required>
+                                <option value="ACTIVO">Activo</option>
+                                <option value="INACTIVO">Inactivo</option>
+                                <option value="PROCESADO">Procesado</option>
+                                <option value="CERRADO">Cerrado</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                        <button type="submit" class="btn-save">
+                            💾 Guardar Período
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // CSRF Token
+        const csrfToken = "{{ csrf_token }}";
+        
+        // Variables globales
+        let periodosData = [];
+        let isEditing = false;
+        let currentPeriodoId = null;
+        
+        // Feriados chilenos fijos (formato MM-DD)
+        // Feriados chilenos fijos - REESCRITOS COMPLETAMENTE
+        // ============================================
+        // FERIADOS OFICIALES DE CHILE AÑO 2026
+        // Fuente: https://www.feriados.cl
+        // ============================================
+        const FERIADOS_FIJOS = [
+            // Feriados Fijos y Religiosos
+            {mes: 1,  dia: 1,  nombre: "Año Nuevo", tipo: "Irrenunciable"},
+            {mes: 5,  dia: 1,  nombre: "Dia Nacional del Trabajo", tipo: "Irrenunciable"},
+            {mes: 5,  dia: 21, nombre: "Dia de las Glorias Navales", tipo: "Civil"},
+            {mes: 6,  dia: 21, nombre: "Dia Nacional de los Pueblos Indigenas", tipo: "Civil"},
+            {mes: 6,  dia: 29, nombre: "San Pedro y San Pablo", tipo: "Religioso"},
+            {mes: 7,  dia: 16, nombre: "Dia de la Virgen del Carmen", tipo: "Religioso"},
+            {mes: 8,  dia: 15, nombre: "Asuncion de la Virgen", tipo: "Religioso"},
+            {mes: 9,  dia: 18, nombre: "Independencia Nacional", tipo: "Irrenunciable"},
+            {mes: 9,  dia: 19, nombre: "Dia de las Glorias del Ejercito", tipo: "Irrenunciable"},
+            {mes: 10, dia: 12, nombre: "Encuentro de Dos Mundos", tipo: "Civil"},
+            {mes: 10, dia: 31, nombre: "Dia de las Iglesias Evangelicas y Protestantes", tipo: "Religioso"},
+            {mes: 11, dia: 1,  nombre: "Dia de Todos los Santos", tipo: "Religioso"},
+            {mes: 12, dia: 8,  nombre: "Inmaculada Concepcion", tipo: "Religioso"},
+            {mes: 12, dia: 25, nombre: "Navidad", tipo: "Irrenunciable"}
+        ];
+
+        // ============================================
+        // FERIADOS VARIABLES (SEGÚN EL AÑO)
+        // ============================================
+        function calcularFeriadosVariables(anio) {
+            const feriadosVariables = [];
+            const anioNum = parseInt(anio, 10);
+            
+            // --- Viernes Santo y Sábado Santo (calcular según año) ---
+            const a = anioNum % 19;
+            const b = Math.floor(anioNum / 100);
+            const c = anioNum % 100;
+            const d = Math.floor(b / 4);
+            const e = b % 4;
+            const f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4);
+            const k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const mesPascua = Math.floor((h + l - 7 * m + 114) / 31);
+            const diaPascua = ((h + l - 7 * m + 114) % 31) + 1;
+            
+            const domingoResurreccion = new Date(anioNum, mesPascua - 1, diaPascua);
+            
+            // Viernes Santo (2 días antes)
+            const viernesSanto = new Date(domingoResurreccion);
+            viernesSanto.setDate(domingoResurreccion.getDate() - 2);
+            feriadosVariables.push({
+                mes: viernesSanto.getMonth() + 1,
+                dia: viernesSanto.getDate(),
+                nombre: "Viernes Santo",
+                tipo: "Religioso"
+            });
+            
+            // Sábado Santo (1 día antes)
+            const sabadoSanto = new Date(domingoResurreccion);
+            sabadoSanto.setDate(domingoResurreccion.getDate() - 1);
+            feriadosVariables.push({
+                mes: sabadoSanto.getMonth() + 1,
+                dia: sabadoSanto.getDate(),
+                nombre: "Sábado Santo",
+                tipo: "Religioso"
+            });
+            
+            return feriadosVariables;
+        }
+        
+        // Función para formatear fecha mientras se escribe (DD/MM/AAAA)
+        function formatearYValidarFecha(input) {
+            let value = input.value.replace(/\D/g, '');
+            
+            // Limitar a 8 dígitos (para DDMMAAAA)
+            if (value.length > 8) {
+                value = value.substring(0, 8);
+            }
+            
+            // Formatear automáticamente mientras se escribe
+            if (value.length >= 5) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4) + '/' + value.substring(4, 8);
+            } else if (value.length >= 3) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            
+            input.value = value;
+            
+            // Validar visualmente la fecha
+            validarFechaVisual(input);
+        }
+        
+        // Función para validar fecha visualmente
+        function validarFechaVisual(input) {
+            const value = input.value;
+            
+            // Verificar formato DD/MM/AAAA
+            const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+            if (!regex.test(value)) {
+                input.classList.remove('valid');
+                input.classList.add('invalid');
+                return false;
+            }
+            
+            const [, dia, mes, año] = value.match(regex);
+            const diaNum = parseInt(dia, 10);
+            const mesNum = parseInt(mes, 10);
+            const añoNum = parseInt(año, 10);
+            
+            // Validaciones básicas
+            if (mesNum < 1 || mesNum > 12) {
+                input.classList.remove('valid');
+                input.classList.add('invalid');
+                return false;
+            }
+            
+            // Validar días del mes
+            const diasEnMes = new Date(añoNum, mesNum, 0).getDate();
+            if (diaNum < 1 || diaNum > diasEnMes) {
+                input.classList.remove('valid');
+                input.classList.add('invalid');
+                return false;
+            }
+            
+            // Si pasa todas las validaciones
+            input.classList.remove('invalid');
+            input.classList.add('valid');
+            return true;
+        }
+        
+        // Función para validar fecha completamente
+        function validarFechaCompleta(fechaStr) {
+            const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+            if (!regex.test(fechaStr)) {
+                return { valido: false, mensaje: 'Formato inválido. Use DD/MM/AAAA' };
+            }
+            
+            const [, dia, mes, año] = fechaStr.match(regex);
+            const diaNum = parseInt(dia, 10);
+            const mesNum = parseInt(mes, 10);
+            const añoNum = parseInt(año, 10);
+            
+            if (mesNum < 1 || mesNum > 12) {
+                return { valido: false, mensaje: 'Mes inválido. Debe estar entre 01 y 12' };
+            }
+            
+            const diasEnMes = new Date(añoNum, mesNum, 0).getDate();
+            if (diaNum < 1 || diaNum > diasEnMes) {
+                return { valido: false, mensaje: `Día inválido para ${mesNum}/${añoNum}. Máximo: ${diasEnMes}` };
+            }
+            
+            return { 
+                valido: true, 
+                datos: { 
+                    dia: diaNum, 
+                    mes: mesNum, 
+                    año: añoNum,
+                    raw: dia + mes + año
+                } 
+            };
+        }
+        
+        // Función para convertir fecha formateada a raw (DDMMAAAA)
+        function fechaFormateadaToRaw(fechaStr) {
+            return fechaStr.replace(/\D/g, '');
+        }
+        
+        // Función para formatear fecha como DD/MM/AAAA desde un objeto Date
+        function formatearFechaDDMMAAAA(fecha) {
+            const dia = fecha.getDate().toString().padStart(2, '0');
+            const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+            const año = fecha.getFullYear();
+            
+            return `${dia}/${mes}/${año}`;
+        }
+        
+        // Función para convertir raw (DDMMAAAA) a fecha formateada (DD/MM/AAAA)
+        function rawToFechaFormateada(fechaRaw) {
+            if (fechaRaw.length !== 8) return '';
+            
+            const dia = fechaRaw.substring(0, 2);
+            const mes = fechaRaw.substring(2, 4);
+            const año = fechaRaw.substring(4, 8);
+            
+            return `${dia}/${mes}/${año}`;
+        }
+        
+        // Función para actualizar fechas y días automáticamente
+        function actualizarFechasYDias() {
+            const mes = document.getElementById('mes').value;
+            const año = document.getElementById('anio').value;
+            
+            if (mes && año) {
+                // Calcular fechas del mes
+                const fechas = calcularFechasMes(mes, año);
+                
+                if (fechas) {
+                    // Formatear fechas como DD/MM/AAAA
+                    const fechaInicioFormateada = formatearFechaDDMMAAAA(fechas.inicio);
+                    const fechaFinFormateada = formatearFechaDDMMAAAA(fechas.fin);
+                    
+                    // Actualizar campos de fecha (ya formateadas)
+                    const fechaInicioInput = document.getElementById('fecha_inicio');
+                    const fechaFinInput = document.getElementById('fecha_fin');
+                    
+                    fechaInicioInput.value = fechaInicioFormateada;
+                    fechaFinInput.value = fechaFinFormateada;
+                    
+                    // Validar visualmente
+                    validarFechaVisual(fechaInicioInput);
+                    validarFechaVisual(fechaFinInput);
+                    
+                    // Calcular días hábiles y festivos
+                    const dias = calcularDiasHabilesYFestivos(mes, año);
+                    
+                    // Actualizar campos de días
+                    document.getElementById('dias_habiles').value = dias.diasHabiles;
+                    document.getElementById('dias_no_habiles').value = dias.diasNoHabiles;
+                }
+            }
+        }
+        
+        // Función para calcular el primer y último día del mes
+        function calcularFechasMes(mes, año) {
+            mes = parseInt(mes);
+            año = parseInt(año);
+            
+            if (isNaN(mes) || isNaN(año) || mes < 1 || mes > 12) {
+                return null;
+            }
+            
+            const primerDia = new Date(año, mes - 1, 1);
+            const ultimoDia = new Date(año, mes, 0);
+            
+            return {
+                inicio: primerDia,
+                fin: ultimoDia
+            };
+        }
+        
+        // Función para calcular feriados variables según el año
+        function calcularFeriadosVariables(año) {
+            const feriadosVariables = [];
+            
+            // Viernes Santo
+            const viernesSanto = calcularViernesSanto(año);
+            feriadosVariables.push({
+                mes: viernesSanto.getMonth() + 1,
+                dia: viernesSanto.getDate(),
+                nombre: "Viernes Santo",
+                tipo: "Religioso"
+            });
+            
+            // Sábado Santo
+            const sabadoSanto = new Date(viernesSanto);
+            sabadoSanto.setDate(viernesSanto.getDate() + 1);
+            feriadosVariables.push({
+                mes: sabadoSanto.getMonth() + 1,
+                dia: sabadoSanto.getDate(),
+                nombre: "Sábado Santo",
+                tipo: "Religioso"
+            });
+            
+            // San Pedro y San Pablo
+            feriadosVariables.push({
+                mes: 6,
+                dia: 29,
+                nombre: "San Pedro y San Pablo",
+                tipo: "Religioso"
+            });
+            
+            // Asunción de la Virgen
+            feriadosVariables.push({
+                mes: 8,
+                dia: 15,
+                nombre: "Asunción de la Virgen",
+                tipo: "Religioso"
+            });
+            
+            // Día Nacional de los Pueblos Indígenas
+            feriadosVariables.push({
+                mes: 6,
+                dia: 21,
+                nombre: "Día Nacional de los Pueblos Indígenas",
+                tipo: "Civil"
+            });
+            
+            // Encuentro de Dos Mundos
+            feriadosVariables.push({
+                mes: 10,
+                dia: 12,
+                nombre: "Encuentro de Dos Mundos",
+                tipo: "Civil"
+            });
+            
+            // Día de las Iglesias Evangélicas y Protestantes
+            feriadosVariables.push({
+                mes: 10,
+                dia: 31,
+                nombre: "Día de las Iglesias Evangélicas y Protestantes",
+                tipo: "Religioso"
+            });
+            
+            // Día de Todos los Santos
+            feriadosVariables.push({
+                mes: 11,
+                dia: 1,
+                nombre: "Día de Todos los Santos",
+                tipo: "Religioso"
+            });
+            
+            return feriadosVariables;
+        }
+        
+        // Algoritmo para calcular Viernes Santo
+        function calcularViernesSanto(año) {
+            const a = año % 19;
+            const b = Math.floor(año / 100);
+            const c = año % 100;
+            const d = Math.floor(b / 4);
+            const e = b % 4;
+            const f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4);
+            const k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const mes = Math.floor((h + l - 7 * m + 114) / 31);
+            const dia = ((h + l - 7 * m + 114) % 31) + 1;
+            
+            const domingoResurreccion = new Date(año, mes - 1, dia);
+            const viernesSanto = new Date(domingoResurreccion);
+            viernesSanto.setDate(domingoResurreccion.getDate() - 2);
+            
+            return viernesSanto;
+        }
+        
+        // Función para obtener todos los feriados de un año
+        function obtenerFeriadosAnio(año) {
+            const feriadosFijos = FERIADOS_FIJOS;
+            const feriadosVariables = calcularFeriadosVariables(año);
+            return [...feriadosFijos, ...feriadosVariables];
+        }
+        
+        // Función para calcular días hábiles y festivos
+        function calcularDiasHabilesYFestivos(mes, año) {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            setTimeout(() => {
+                try {
+                    const feriados = obtenerFeriadosAnio(año);
+                    const feriadosMes = feriados.filter(f => f.mes === parseInt(mes));
+                    
+                    const primerDia = new Date(año, mes - 1, 1);
+                    const ultimoDia = new Date(año, mes, 0);
+                    
+                    let diasHabiles = 0;
+                    let diasNoHabiles = 0;
+                    const feriadosDetalles = [];
+                    
+                    const fechaActual = new Date(primerDia);
+                    while (fechaActual <= ultimoDia) {
+                        const diaSemana = fechaActual.getDay();
+                        const esFeriado = feriadosMes.some(f => f.dia === fechaActual.getDate());
+                        
+                        if (esFeriado) {
+                            const feriado = feriadosMes.find(f => f.dia === fechaActual.getDate());
+                            feriadosDetalles.push({
+                                fecha: new Date(fechaActual),
+                                nombre: feriado.nombre,
+                                tipo: feriado.tipo
+                            });
+                        }
+                        
+                        if (diaSemana === 0 || esFeriado) {
+                            diasNoHabiles++;
+                        } else if (diaSemana !== 6) {
+                            diasHabiles++;
+                        }
+                        
+                        if (diaSemana === 6) {
+                            diasNoHabiles++;
+                        }
+                        
+                        fechaActual.setDate(fechaActual.getDate() + 1);
+                    }
+                    
+                    actualizarListaFeriados(feriadosDetalles);
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    
+                    return {
+                        diasHabiles: diasHabiles,
+                        diasNoHabiles: diasNoHabiles
+                    };
+                    
+                } catch (error) {
+                    console.error('Error calculando días:', error);
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    
+                    return {
+                        diasHabiles: 22,
+                        diasNoHabiles: 9
+                    };
+                }
+            }, 500);
+        }
+        
+        // Función para actualizar la lista de feriados
+        function actualizarListaFeriados(feriados) {
+            const container = document.getElementById('feriadosContainer');
+            const lista = document.getElementById('feriadosList');
+            
+            if (feriados.length > 0) {
+                lista.innerHTML = '';
+                feriados.forEach(feriado => {
+                    const fechaStr = feriado.fecha.toLocaleDateString('es-CL', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long'
+                    });
+                    
+                    const item = document.createElement('div');
+                    item.className = 'feriado-item';
+                    item.innerHTML = `
+                        <div>
+                            <span class="feriado-fecha">${fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1)}</span>
+                            <div class="feriado-nombre">${feriado.nombre} (${feriado.tipo})</div>
+                        </div>
+                    `;
+                    lista.appendChild(item);
+                });
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+        
+        // Funciones del modal
+        function mostrarModalAgregar() {
+            document.getElementById('modalPeriodo').style.display = 'flex';
+            document.getElementById('modalTitulo').textContent = 'Agregar Nuevo Período';
+            
+            document.getElementById('formPeriodo').reset();
+            
+            const ahora = new Date();
+            const mesActual = ahora.getMonth() + 1;
+            const anioActual = ahora.getFullYear();
+            
+            document.getElementById('mes').value = mesActual;
+            document.getElementById('anio').value = anioActual;
+            document.getElementById('estado').value = 'ACTIVO';
+            document.getElementById('factor_actualizacion').value = '1.0000';
+            
+            document.getElementById('feriadosContainer').style.display = 'none';
+            
+            // Resetear clases de validación
+            document.getElementById('fecha_inicio').classList.remove('valid', 'invalid');
+            document.getElementById('fecha_fin').classList.remove('valid', 'invalid');
+            
+            actualizarFechasYDias();
+            
+            isEditing = false;
+            currentPeriodoId = null;
+        }
+        
+        function cerrarModal() {
+            document.getElementById('modalPeriodo').style.display = 'none';
+            document.getElementById('formPeriodo').reset();
+            document.getElementById('feriadosContainer').style.display = 'none';
+            isEditing = false;
+            currentPeriodoId = null;
+        }
+        
+        // Función para guardar período
+        function guardarPeriodo(event) {
+            event.preventDefault();
+            
+            // Validar fechas
+            const fechaInicioInput = document.getElementById('fecha_inicio');
+            const fechaFinInput = document.getElementById('fecha_fin');
+            
+            const validacionInicio = validarFechaCompleta(fechaInicioInput.value);
+            const validacionFin = validarFechaCompleta(fechaFinInput.value);
+            
+            if (!validacionInicio.valido) {
+                alert(`Fecha de inicio: ${validacionInicio.mensaje}`);
+                fechaInicioInput.focus();
+                return false;
+            }
+            
+            if (!validacionFin.valido) {
+                alert(`Fecha de fin: ${validacionFin.mensaje}`);
+                fechaFinInput.focus();
+                return false;
+            }
+            
+            // Validar que fecha fin sea mayor o igual que fecha inicio
+            const fechaInicio = new Date(
+                validacionInicio.datos.año,
+                validacionInicio.datos.mes - 1,
+                validacionInicio.datos.dia
+            );
+            
+            const fechaFin = new Date(
+                validacionFin.datos.año,
+                validacionFin.datos.mes - 1,
+                validacionFin.datos.dia
+            );
+            
+            if (fechaFin < fechaInicio) {
+                alert('La fecha de fin no puede ser anterior a la fecha de inicio');
+                fechaFinInput.focus();
+                return false;
+            }
+            
+            // Preparar datos
+            const datos = {
+                mes: document.getElementById('mes').value,
+                anio: document.getElementById('anio').value,
+                fecha_inicio: validacionInicio.datos.raw, // Ya viene en formato DDMMAAAA
+                fecha_fin: validacionFin.datos.raw, // Ya viene en formato DDMMAAAA
+                uf: document.getElementById('uf').value,
+                utm: document.getElementById('utm').value,
+                dias_habiles: document.getElementById('dias_habiles').value,
+                dias_no_habiles: document.getElementById('dias_no_habiles').value,
+                factor_actualizacion: document.getElementById('factor_actualizacion').value,
+                estado: document.getElementById('estado').value
+            };
+            
+            const url = isEditing ? 
+                `{% url 'editar_periodo' alias=alias periodo_id=0 %}`.replace('/0/', `/${currentPeriodoId}/`) :
+                '{% url "agregar_periodo" alias=alias %}';
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(datos)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    cerrarModal();
+                    buscarPeriodos();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+            
+            return false;
+        }
+        
+        // Función para editar período
+        function editarPeriodo(periodoId) {
+            const periodo = periodosData.find(p => p.id === periodoId);
+            if (periodo) {
+                isEditing = true;
+                currentPeriodoId = periodoId;
+                
+                document.getElementById('modalPeriodo').style.display = 'flex';
+                document.getElementById('modalTitulo').textContent = 'Editar Período';
+                
+                // Las fechas ya vienen formateadas de Django (DD/MM/AAAA)
+                document.getElementById('mes').value = periodo.mes;
+                document.getElementById('anio').value = periodo.anio;
+                document.getElementById('fecha_inicio').value = periodo.fecha_inicio;
+                document.getElementById('fecha_fin').value = periodo.fecha_fin;
+                document.getElementById('uf').value = periodo.uf;
+                document.getElementById('utm').value = periodo.utm;
+                document.getElementById('dias_habiles').value = periodo.dias_habiles;
+                document.getElementById('dias_no_habiles').value = periodo.dias_no_habiles;
+                document.getElementById('factor_actualizacion').value = periodo.factor_actualizacion;
+                document.getElementById('estado').value = periodo.estado;
+                
+                // Validar visualmente las fechas
+                validarFechaVisual(document.getElementById('fecha_inicio'));
+                validarFechaVisual(document.getElementById('fecha_fin'));
+                
+                // Calcular y mostrar feriados para este mes
+                actualizarFechasYDias();
+            }
+        }
+        
+        // Función para buscar períodos
+        function buscarPeriodos() {
+            const filtroAnio = document.getElementById('filtro-anio').value;
+            
+            fetch('{% url "buscar_periodos" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ anio: filtroAnio })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    periodosData = data.resultados;
+                    actualizarTabla(data.resultados);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        function actualizarTabla(resultados) {
+            const tbody = document.getElementById('periodosTableBody');
+            tbody.innerHTML = '';
+            
+            if (resultados.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" style="text-align: center; padding: 20px; color: #6c757d;">
+                            No se encontraron períodos
+                        </td>
+                    </tr>
+                `;
+            } else {
+                resultados.forEach(periodo => {
+                    const badgeClass = periodo.estado === 'ACTIVO' ? 'badge-activo' :
+                                     periodo.estado === 'INACTIVO' ? 'badge-inactivo' :
+                                     periodo.estado === 'PROCESADO' ? 'badge-procesado' : 'badge-cerrado';
+                    
+                    const row = document.createElement('tr');
+                    row.setAttribute('data-periodo-id', periodo.id);
+                    row.innerHTML = `
+                        <td class="codigo-cell">#${periodo.id}</td>
+                        <td>${periodo.mes_anio}</td>
+                        <td>${periodo.fecha_inicio}</td>
+                        <td>${periodo.fecha_fin}</td>
+                        <td class="monospace">$${periodo.uf.toFixed(2)}</td>
+                        <td class="monospace">$${periodo.utm.toFixed(2)}</td>
+                        <td class="text-center">${periodo.dias_habiles}</td>
+                        <td class="text-center">${periodo.dias_no_habiles}</td>
+                        <td class="monospace">${periodo.factor_actualizacion.toFixed(4)}</td>
+                        <td>
+                            <span class="badge ${badgeClass}">${periodo.estado_display}</span>
+                        </td>
+                        <td class="actions-cell">
+                            <button class="edit-btn" onclick="editarPeriodo(${periodo.id})" title="Editar">
+                                ✎
+                            </button>
+                            <button class="delete-btn" 
+                                    onclick="eliminarPeriodo(${periodo.id}, '${periodo.mes_anio}')" 
+                                    title="Eliminar">
+                                ✕
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+            // Actualizar contador
+            document.getElementById('totalRegistros').innerHTML = 
+                `Total: ${resultados.length} registros`;
+            
+            // Actualizar estadísticas
+            const totalPeriodos = resultados.length;
+            const periodosActivos = resultados.filter(p => p.estado === 'ACTIVO').length;
+            const añoActual = new Date().getFullYear();
+            const periodosAnioActual = resultados.filter(p => p.anio === añoActual).length;
+            
+            if (document.querySelector('.stat-total')) {
+                document.querySelector('.stat-total').textContent = totalPeriodos;
+            }
+            if (document.querySelector('.stat-activos')) {
+                document.querySelector('.stat-activos').textContent = periodosActivos;
+            }
+            if (document.querySelector('.stat-anio')) {
+                document.querySelector('.stat-anio').textContent = periodosAnioActual;
+            }
+            
+            if (resultados.length > 0 && document.querySelector('.stat-ultimo')) {
+                document.querySelector('.stat-ultimo').textContent = resultados[0].mes_anio;
+            }
+        }
+        
+        // Función para eliminar período
+        function eliminarPeriodo(periodoId, periodoNombre) {
+            if (!confirm(`¿Está seguro de eliminar el período ${periodoNombre}?`)) {
+                return;
+            }
+            
+            const url = `{% url 'eliminar_periodo' alias=alias periodo_id=0 %}`.replace('/0/', `/${periodoId}/`);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    periodosData = periodosData.filter(p => p.id !== periodoId);
+                    
+                    const row = document.querySelector(`tr[data-periodo-id="${periodoId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                    
+                    const totalRows = document.querySelectorAll('#periodosTableBody tr').length;
+                    document.getElementById('totalRegistros').innerHTML = 
+                        `Total: ${totalRows} registros`;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        // Permitir buscar con Enter en filtro
+        document.getElementById('filtro-anio').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarPeriodos();
+            }
+        });
+        
+        // Cerrar modal con Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('modalPeriodo').style.display === 'flex') {
+                cerrarModal();
+            }
+        });
+        
+        // Cerrar modal haciendo clic fuera
+        document.getElementById('modalPeriodo').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+        
+        // Inicializar con filtro por defecto
+        buscarPeriodos();
+    </script>
+</body>
+</html>

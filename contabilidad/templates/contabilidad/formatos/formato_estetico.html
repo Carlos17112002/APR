@@ -1,0 +1,859 @@
+{% load humanize %}
+{% load liquidacion_tags %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquidación de Sueldo - Formato Compacto</title>
+    <style>
+        /* (los estilos se mantienen igual) */
+        @page {
+            size: A4;
+            margin: 0.8cm 1cm;
+        }
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', 'Helvetica', Arial, sans-serif;
+            font-size: 9.5px;
+            line-height: 1.5;
+            color: #1a2634;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        .liquidacion-container {
+            width: 100%;
+            max-width: 21cm;
+            margin: 0 auto;
+            background: white;
+            padding: 0.2cm;
+        }
+        
+        .header-grid {
+            display: grid;
+            grid-template-columns: 0.9fr 2.2fr 0.9fr;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 3px solid #0a3143;
+            padding-bottom: 12px;
+        }
+        
+        .logo-empresa {
+            font-weight: 800;
+            font-size: 18px;
+            color: #0a3143;
+            letter-spacing: -0.5px;
+        }
+        
+        .empresa-info {
+            text-align: center;
+            border-left: 1px solid #dee2e6;
+            border-right: 1px solid #dee2e6;
+            padding: 0 15px;
+        }
+        
+        .empresa-nombre {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0a3143;
+            margin: 0 0 3px 0;
+            text-transform: uppercase;
+        }
+        
+        .empresa-detalle {
+            font-size: 8px;
+            color: #5e6f7d;
+            margin: 2px 0;
+        }
+        
+        .periodo-info {
+            text-align: right;
+        }
+        
+        .periodo-tag {
+            background: #0a3143;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 11px;
+            display: inline-block;
+        }
+        
+        .worker-profile {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            background: #f4f7fc;
+            border: 1px solid #dce5ec;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        
+        .worker-field {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .worker-label {
+            font-size: 7px;
+            font-weight: 700;
+            color: #4b6a7c;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 2px;
+        }
+        
+        .worker-value {
+            font-size: 11px;
+            font-weight: 600;
+            color: #0a3143;
+        }
+        
+        .two-column-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+        
+        .finance-card {
+            border: 1px solid #e2e9f0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,20,40,0.02);
+        }
+        
+        .card-header {
+            padding: 10px 14px;
+            font-weight: 700;
+            font-size: 11px;
+            letter-spacing: 0.8px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-header.haberes {
+            background: linear-gradient(145deg, #0a4b3c, #0e6655);
+        }
+        
+        .card-header.descuentos {
+            background: linear-gradient(145deg, #9b1f2c, #b3403a);
+        }
+        
+        .card-body {
+            padding: 0;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .items-table th {
+            background: #f1f6fa;
+            color: #2c3e50;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 2px solid #cbd5e0;
+        }
+        
+        .items-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #edf2f7;
+            font-size: 9.5px;
+        }
+        
+        .items-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .concepto-col {
+            color: #2d3c49;
+            font-weight: 500;
+        }
+        
+        .valor-col {
+            text-align: right;
+            font-family: 'Courier New', 'Roboto Mono', monospace;
+            font-weight: 600;
+            color: #1a2634;
+        }
+        
+        .sub-item {
+            padding-left: 22px !important;
+            color: #5a6b7a;
+            font-size: 9px;
+        }
+        
+        .sub-item .concepto-col {
+            color: #5a6b7a;
+            font-style: italic;
+        }
+        
+        .subtotal-row td {
+            background-color: #e8f4fd;
+            font-weight: bold;
+        }
+        
+        .highlight-row {
+            background-color: #f4f9ff;
+            border-top: 2px solid #9bb7d4;
+            border-bottom: 2px solid #9bb7d4;
+        }
+        
+        .highlight-row td {
+            font-weight: 700;
+            color: #0a3143;
+        }
+        
+        .total-section {
+            background: #e9f0f5;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid #0a3143;
+            margin-top: 5px;
+        }
+        
+        .total-label {
+            font-weight: 700;
+            color: #0a3143;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .total-amount {
+            font-size: 16px;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+            color: #0a3143;
+        }
+        
+        .total-amount.haberes-total {
+            color: #0e6655;
+        }
+        
+        .total-amount.descuentos-total {
+            color: #b3403a;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1.8fr;
+            gap: 20px;
+            margin: 20px 0;
+            background: #ffffff;
+            border: 1px solid #dde5ec;
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        
+        .summary-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .summary-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding: 6px 0;
+            border-bottom: 1px dashed #d0dbe5;
+        }
+        
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        
+        .summary-key {
+            color: #4b636e;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .summary-value {
+            text-align: right;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: #1a2634;
+        }
+        
+        .payment-box {
+            background: linear-gradient(165deg, #1b5a4a 0%, #0d4438 100%);
+            border-radius: 10px;
+            padding: 16px 20px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .payment-label {
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.9;
+            margin-bottom: 6px;
+        }
+        
+        .payment-amount {
+            font-size: 26px;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+            line-height: 1.1;
+            margin-bottom: 6px;
+        }
+        
+        .payment-words {
+            font-size: 8px;
+            opacity: 0.85;
+            text-transform: uppercase;
+            font-style: italic;
+            letter-spacing: 0.3px;
+        }
+        
+        .info-columns {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1.2fr;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        .bank-info {
+            background: #f0f6fb;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border-left: 4px solid #0a3143;
+        }
+        
+        .bank-title {
+            font-weight: 700;
+            color: #0a3143;
+            font-size: 8px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .bank-detail {
+            font-size: 9px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        
+        .days-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            background: #fef7e6;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        
+        .day-tag {
+            background: white;
+            border-radius: 30px;
+            padding: 4px 10px;
+            font-size: 8px;
+            font-weight: 600;
+            border: 1px solid #f1c40f;
+            color: #7d6608;
+        }
+        
+        .signature-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .signature-line {
+            width: 180px;
+            border-top: 1px solid #34495e;
+            margin: 12px 0 5px;
+        }
+        
+        .signature-text {
+            font-size: 7px;
+            color: #5d6d7e;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .legal-note {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 7px;
+            color: #526878;
+            text-align: center;
+            border: 1px solid #e6edf4;
+        }
+        
+        .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 7px;
+            font-weight: 500;
+        }
+        
+        .info-row td {
+            background-color: #f0f0f0;
+            font-style: italic;
+            color: #555;
+        }
+        
+        @media print {
+            body { background: white; }
+            .worker-profile { break-inside: avoid; }
+            .two-column-layout { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="liquidacion-container">
+        <!-- === FILA 1: ENCABEZADO === -->
+        <div class="header-grid">
+            <div class="logo-empresa">
+                {% if incluir_logo and empresa_logo %}
+                    <img src="{{ empresa_logo }}" alt="Logo" style="max-height: 40px;">
+                {% else %}
+                    {{ empresa_nombre|slice:":1" }}
+                {% endif %}
+            </div>
+            <div class="empresa-info">
+                <div class="empresa-nombre">{{ empresa_nombre }}</div>
+                <div class="empresa-detalle">RUT {{ empresa_rut }} • {{ empresa_direccion }} {{ empresa_ciudad }}</div>
+                <div class="empresa-detalle">Tel: {{ empresa_telefono|default:"-" }}</div>
+            </div>
+            <div class="periodo-info">
+                <span class="periodo-tag">{{ periodo_mes|upper }} {{ periodo_anio }}</span>
+            </div>
+        </div>
+        
+        <!-- === FILA 2: INFORMACIÓN DEL TRABAJADOR === -->
+        <div class="worker-profile">
+            <div class="worker-field">
+                <span class="worker-label">RUT</span>
+                <span class="worker-value">{{ trabajador_rut }}</span>
+            </div>
+            <div class="worker-field">
+                <span class="worker-label">NOMBRE COMPLETO</span>
+                <span class="worker-value">{{ trabajador_nombre }}</span>
+            </div>
+            <div class="worker-field">
+                <span class="worker-label">CARGO</span>
+                <span class="worker-value">{{ trabajador_cargo|default:"-" }}</span>
+            </div>
+            <div class="worker-field">
+                <span class="worker-label">F. INGRESO</span>
+                <span class="worker-value">{{ trabajador_fecha_ingreso|default:"-" }}</span>
+            </div>
+            <div class="worker-field">
+                <span class="worker-label">CENTRO COSTO</span>
+                <span class="worker-value">{{ centro_costo|default:"-" }}</span>
+            </div>
+            <div class="worker-field">
+                <span class="worker-label">DÍAS TRAB.</span>
+                <span class="worker-value">{{ dias_trabajados }}</span>
+            </div>
+        </div>
+        
+        <!-- === FILA 3: COLUMNAS DE HABERES Y DESCUENTOS === -->
+        <div class="two-column-layout">
+            <!-- COLUMNA IZQUIERDA: HABERES -->
+            <div class="finance-card">
+                <div class="card-header haberes">
+                    <span>💰 HABERES</span>
+                    <span class="badge">DEVENGADO</span>
+                </div>
+                <div class="card-body">
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th class="concepto-col">CONCEPTO</th>
+                                <th class="valor-col">MONTO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- SUELDO BASE -->
+                            <tr>
+                                <td class="concepto-col">Sueldo Base ({{ dias_trabajados }} días)</td>
+                                <td class="valor-col">{{ sueldo_mensual|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            
+                            <!-- HORAS EXTRA -->
+                            {% if total_horas_extra > 0 %}
+                            <tr>
+                                <td class="concepto-col">Horas Extra</td>
+                                <td class="valor-col">{{ total_horas_extra|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- COMISIONES -->
+                            {% if total_comision > 0 %}
+                            <tr>
+                                <td class="concepto-col">Comisiones</td>
+                                <td class="valor-col">{{ total_comision|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- CARGO DOMINGO -->
+                            {% if monto_cargo_domingo > 0 %}
+                            <tr>
+                                <td class="concepto-col">Cargo Domingo</td>
+                                <td class="valor-col">{{ monto_cargo_domingo|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- UTILIDADES -->
+                            {% if utilidades > 0 %}
+                            <tr>
+                                <td class="concepto-col">Utilidades</td>
+                                <td class="valor-col">{{ utilidades|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- SEMANA CORRIDA -->
+                            {% if semana_corrida > 0 %}
+                            <tr>
+                                <td class="concepto-col">Semana Corrida</td>
+                                <td class="valor-col">{{ semana_corrida|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- BONOS IMPONIBLES -->
+                            {% if bonos > 0 %}
+                            <tr>
+                                <td class="concepto-col">Bonos Imponibles</td>
+                                <td class="valor-col">{{ bonos|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- GRATIFICACIÓN -->
+                            {% if monto_gratificacion > 0 %}
+                            <tr>
+                                <td class="concepto-col">Gratificación</td>
+                                <td class="valor-col">{{ monto_gratificacion|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- TOTAL IMPONIBLE (destacado) -->
+                            <tr class="subtotal-row">
+                                <td class="concepto-col"><strong>TOTAL IMPONIBLE</strong></td>
+                                <td class="valor-col"><strong>{{ total_imponible|floatformat:0|formato_clp }}</strong></td>
+                            </tr>
+                            
+                            <!-- ASIGNACIÓN FAMILIAR -->
+                            {% if asignacion_familiar > 0 %}
+                            <tr>
+                                <td class="concepto-col">Asignación Familiar ({{ numero_cargas }} cargas)</td>
+                                <td class="valor-col">{{ asignacion_familiar|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- ASIGNACIÓN MATERNAL -->
+                            {% if asignacion_maternal > 0 %}
+                            <tr>
+                                <td class="concepto-col">Asignación Maternal</td>
+                                <td class="valor-col">{{ asignacion_maternal|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- COLACIÓN -->
+                            {% if colacion > 0 %}
+                            <tr>
+                                <td class="concepto-col">Colación</td>
+                                <td class="valor-col">{{ colacion|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- MOVILIZACIÓN -->
+                            {% if movilizacion > 0 %}
+                            <tr>
+                                <td class="concepto-col">Movilización</td>
+                                <td class="valor-col">{{ movilizacion|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- OTROS BONOS NO IMPONIBLES -->
+                            {% if otro_bono1_nombre and otro_bono1_valor > 0 %}
+                            <tr>
+                                <td class="concepto-col">{{ otro_bono1_nombre }}</td>
+                                <td class="valor-col">{{ otro_bono1_valor|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if otro_bono2_nombre and otro_bono2_valor > 0 %}
+                            <tr>
+                                <td class="concepto-col">{{ otro_bono2_nombre }}</td>
+                                <td class="valor-col">{{ otro_bono2_valor|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- TOTAL NO IMPONIBLE (destacado) -->
+                            <tr class="subtotal-row">
+                                <td class="concepto-col"><strong>TOTAL NO IMPONIBLE</strong></td>
+                                <td class="valor-col"><strong>{{ total_no_imponible|floatformat:0|formato_clp }}</strong></td>
+                            </tr>
+                            
+                            <!-- TOTAL HABERES (final) -->
+                            <tr class="highlight-row">
+                                <td class="concepto-col"><strong>TOTAL HABERES</strong></td>
+                                <td class="valor-col"><strong>{{ total_haberes|floatformat:0|formato_clp }}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- COLUMNA DERECHA: DESCUENTOS -->
+            <div class="finance-card">
+                <div class="card-header descuentos">
+                    <span>📉 DESCUENTOS</span>
+                    <span class="badge">DEDUCCIONES</span>
+                </div>
+                <div class="card-body">
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th class="concepto-col">CONCEPTO</th>
+                                <th class="valor-col">MONTO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- AFP -->
+                            {% if cotizacion_afp > 0 %}
+                            <tr>
+                                <td class="concepto-col">AFP {{ afp_nombre }} ({{ porcentaje_afp|floatformat:2 }}%)</td>
+                                <td class="valor-col">{{ cotizacion_afp|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- Cuenta 2 AFP -->
+                            {% if cuenta_2_afp > 0 %}
+                            <tr>
+                                <td class="sub-item concepto-col">Cuenta 2 AFP</td>
+                                <td class="valor-col">{{ cuenta_2_afp|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- AFC -->
+                            {% if cotizacion_afc > 0 %}
+                            <tr>
+                                <td class="concepto-col">Seguro de Cesantía (AFC)</td>
+                                <td class="valor-col">{{ cotizacion_afc|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- APV -->
+                            {% if apv > 0 %}
+                            <tr>
+                                <td class="concepto-col">APV</td>
+                                <td class="valor-col">{{ apv|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if apv2 > 0 %}
+                            <tr>
+                                <td class="concepto-col">APV 2</td>
+                                <td class="valor-col">{{ apv2|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if apv_colectivo > 0 %}
+                            <tr>
+                                <td class="concepto-col">APV Colectivo</td>
+                                <td class="valor-col">{{ apv_colectivo|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- Salud -->
+                            <tr>
+                                <td class="concepto-col">Salud {{ isapre_nombre }} (7% obligatorio)</td>
+                                <td class="valor-col">{{ total_imponible|multiply:0.07|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            
+                            <!-- Diferencia Isapre -->
+                            {% if diferencia_isapre > 0 %}
+                            <tr>
+                                <td class="concepto-col">Diferencia Isapre</td>
+                                <td class="valor-col">{{ diferencia_isapre|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- Impuesto a la Renta -->
+                            {% if cuota_impuesto > 0 %}
+                            <tr>
+                                <td class="concepto-col">Impuesto a la Renta</td>
+                                <td class="valor-col">{{ cuota_impuesto|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- Anticipo -->
+                            {% if anticipo_impuesto > 0 %}
+                            <tr>
+                                <td class="sub-item concepto-col">Anticipo</td>
+                                <td class="valor-col">{{ anticipo_impuesto|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- Préstamos -->
+                            {% if prestamo_ccaf > 0 %}
+                            <tr>
+                                <td class="concepto-col">Préstamo CCAF</td>
+                                <td class="valor-col">{{ prestamo_ccaf|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if prestamo_empresa > 0 %}
+                            <tr>
+                                <td class="concepto-col">Préstamo Empresa</td>
+                                <td class="valor-col">{{ prestamo_empresa|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- Otros descuentos -->
+                            {% if otro_descuento1_nombre and otro_descuento1_valor > 0 %}
+                            <tr>
+                                <td class="concepto-col">{{ otro_descuento1_nombre }}</td>
+                                <td class="valor-col">{{ otro_descuento1_valor|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if otro_descuento2_nombre and otro_descuento2_valor > 0 %}
+                            <tr>
+                                <td class="concepto-col">{{ otro_descuento2_nombre }}</td>
+                                <td class="valor-col">{{ otro_descuento2_valor|floatformat:0|formato_clp }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- DÍAS DE AUSENCIA (informativo) -->
+                            <tr class="info-row">
+                                <td colspan="2" style="text-align: center; background: #f0f0f0;"><strong>DÍAS DE AUSENCIA</strong></td>
+                            </tr>
+                            {% if vacaciones_dias > 0 %}
+                            <tr>
+                                <td class="concepto-col">Vacaciones</td>
+                                <td class="valor-col">{{ vacaciones_dias }} días{% if vacaciones_glosa %} ({{ vacaciones_glosa }}){% endif %}</td>
+                            </tr>
+                            {% endif %}
+                            {% if licencias_dias > 0 %}
+                            <tr>
+                                <td class="concepto-col">Licencias</td>
+                                <td class="valor-col">{{ licencias_dias }} días{% if licencias_glosa %} ({{ licencias_glosa }}){% endif %}</td>
+                            </tr>
+                            {% endif %}
+                            {% if faltas_dias > 0 %}
+                            <tr>
+                                <td class="concepto-col">Faltas</td>
+                                <td class="valor-col">{{ faltas_dias }} días{% if faltas_glosa %} ({{ faltas_glosa }}){% endif %}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- TOTAL DESCUENTOS -->
+                            <tr class="highlight-row">
+                                <td class="concepto-col"><strong>TOTAL DESCUENTOS</strong></td>
+                                <td class="valor-col"><strong>{{ total_descuentos|floatformat:0|formato_clp }}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- === FILA 4: RESUMEN DE LIQUIDACIÓN === -->
+        <div class="summary-grid">
+            <div class="summary-detail">
+                <div class="summary-row">
+                    <span class="summary-key">Total Haberes</span>
+                    <span class="summary-value">{{ total_haberes|floatformat:0|formato_clp }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-key">Total Descuentos</span>
+                    <span class="summary-value" style="color: #b3403a;">- {{ total_descuentos|floatformat:0|formato_clp }}</span>
+                </div>
+                <div class="summary-row" style="border-top: 2px solid #0a3143; padding-top: 8px; margin-top: 4px;">
+                    <span class="summary-key" style="font-size: 11px; font-weight: 800;">LÍQUIDO A PAGAR</span>
+                    <span class="summary-value" style="font-size: 16px; font-weight: 800; color: #0e6655;">{{ liquido_pagable|floatformat:0|formato_clp }}</span>
+                </div>
+            </div>
+            
+            <div class="payment-box">
+                <div class="payment-label">Sueldo Líquido</div>
+                <div class="payment-amount">{{ liquido_pagable|floatformat:0|formato_clp }}</div>
+                <div class="payment-words">
+                    Son: {{ liquido_pagable_palabras|upper|default:"(MONTO EN PALABRAS NO DISPONIBLE)" }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- === FILA 5: INFORMACIÓN COMPLEMENTARIA === -->
+        <div class="info-columns">
+            <!-- COLUMNA 1: DATOS BANCARIOS -->
+            <div class="bank-info">
+                <div class="bank-title">🏦 Cuenta de Pago</div>
+                <div class="bank-detail">
+                    {% if banco and numero_cuenta %}
+                        {{ banco }}<br>
+                        Cuenta N° {{ numero_cuenta }}
+                    {% else %}
+                        No registrado
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- COLUMNA 2: RESUMEN AUSENCIAS (compacto) -->
+            <div class="days-summary">
+                {% if vacaciones_dias > 0 or licencias_dias > 0 or faltas_dias > 0 %}
+                    <span style="font-weight: 700; color: #856404; width: 100%;">📅 DÍAS AUSENTES</span>
+                    {% if vacaciones_dias > 0 %}<span class="day-tag">Vac: {{ vacaciones_dias }} {% if vacaciones_glosa %}({{ vacaciones_glosa }}){% endif %}</span>{% endif %}
+                    {% if licencias_dias > 0 %}<span class="day-tag">Lic: {{ licencias_dias }} {% if licencias_glosa %}({{ licencias_glosa }}){% endif %}</span>{% endif %}
+                    {% if faltas_dias > 0 %}<span class="day-tag">Falt: {{ faltas_dias }} {% if faltas_glosa %}({{ faltas_glosa }}){% endif %}</span>{% endif %}
+                {% else %}
+                    <span style="font-weight: 700; color: #0e6655;">✅ Asistencia perfecta</span>
+                {% endif %}
+            </div>
+            
+            <!-- COLUMNA 3: FIRMA -->
+            {% if incluir_firma %}
+            <div class="signature-area">
+                <div class="signature-line"></div>
+                <div class="signature-text">Firma Trabajador</div>
+                <div style="font-size: 7px; color: #6b7b8b; margin-top: 4px;">Recibí conforme</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- === FILA 6: CERTIFICACIÓN LEGAL === -->
+        <div class="legal-note">
+            <strong>CERTIFICADO DE CONFORMIDAD</strong> • Declaro que he recibido la suma líquida antes indicada, 
+            no teniendo reclamos posteriores que formular por conceptos de remuneraciones o cotizaciones del período. 
+            Liquidación generada el {{ fecha_generacion|default:"-" }} • 2 copias (trabajador / empleador)
+        </div>
+    </div>
+</body>
+</html>

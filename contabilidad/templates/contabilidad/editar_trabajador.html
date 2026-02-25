@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Trabajador · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #84cc16;
+            --primary-dark: #65a30d;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+        }
+        
+        .gradient-navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+        
+        .btn-gradient:hover {
+            opacity: 0.9;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.375rem;
+            font-size: 0.875rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            background-color: white;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 0.75rem 0.75rem 0 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .card-header i {
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+        
+        .card-header h3 {
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="gradient-navbar text-white shadow">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'lista_trabajadores' alias=alias %}" 
+                       class="flex items-center space-x-2 hover:bg-white/20 p-2 rounded-lg transition">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Volver a Trabajadores</span>
+                    </a>
+                    <div class="h-6 w-px bg-white/30"></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-white/20 p-2 rounded-lg">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold">Editar Trabajador</h1>
+                            <p class="text-sm opacity-90">{{ empresa.nombre }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm">
+                        <i class="fas fa-id-card mr-1"></i>
+                        RUT: {{ trabajador.rut }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        
+        <form method="POST" action="{% url 'editar_trabajador' alias=alias trabajador_id=trabajador.id %}" id="formEditarTrabajador">
+            {% csrf_token %}
+            
+            <!-- Datos Personales -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-user"></i>
+                    <h3>Datos Personales</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- RUT -->
+                        <div class="form-group">
+                            <label for="rut" class="form-label">RUT <span class="text-red-500">*</span></label>
+                            <input type="text" 
+                                   id="rut" 
+                                   name="rut" 
+                                   class="form-input" 
+                                   placeholder="Ej: 16143030-9"
+                                   value="{{ trabajador.rut }}"
+                                   required>
+                        </div>
+                        
+                        <!-- Nombres -->
+                        <div class="form-group">
+                            <label for="nombres" class="form-label">Nombres <span class="text-red-500">*</span></label>
+                            <input type="text" 
+                                   id="nombres" 
+                                   name="nombres" 
+                                   class="form-input" 
+                                   placeholder="Nombres completos"
+                                   value="{{ trabajador.nombres }}"
+                                   required>
+                        </div>
+                        
+                        <!-- Apellido Paterno -->
+                        <div class="form-group">
+                            <label for="apellido_paterno" class="form-label">Apellido Paterno <span class="text-red-500">*</span></label>
+                            <input type="text" 
+                                   id="apellido_paterno" 
+                                   name="apellido_paterno" 
+                                   class="form-input" 
+                                   placeholder="Apellido paterno"
+                                   value="{{ trabajador.apellido_paterno }}"
+                                   required>
+                        </div>
+                        
+                        <!-- Apellido Materno -->
+                        <div class="form-group">
+                            <label for="apellido_materno" class="form-label">Apellido Materno</label>
+                            <input type="text" 
+                                   id="apellido_materno" 
+                                   name="apellido_materno" 
+                                   class="form-input" 
+                                   placeholder="Apellido materno"
+                                   value="{{ trabajador.apellido_materno }}">
+                        </div>
+                        
+                        <!-- Fecha Nacimiento -->
+                        <div class="form-group">
+                            <label for="fecha_nacimiento" class="form-label">Fecha Nacimiento</label>
+                            <input type="date" 
+                                   id="fecha_nacimiento" 
+                                   name="fecha_nacimiento" 
+                                   class="form-input"
+                                   value="{{ trabajador.fecha_nacimiento|date:'Y-m-d' }}">
+                        </div>
+                        
+                        <!-- Teléfono -->
+                        <div class="form-group">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="text" 
+                                   id="telefono" 
+                                   name="telefono" 
+                                   class="form-input" 
+                                   placeholder="Ej: +56912345678"
+                                   value="{{ trabajador.telefono }}">
+                        </div>
+                        
+                        <!-- Celular -->
+                        <div class="form-group">
+                            <label for="celular" class="form-label">Celular</label>
+                            <input type="text" 
+                                   id="celular" 
+                                   name="celular" 
+                                   class="form-input" 
+                                   placeholder="Ej: +56987654321"
+                                   value="{{ trabajador.celular }}">
+                        </div>
+                        
+                        <!-- Email -->
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" 
+                                   id="email" 
+                                   name="email" 
+                                   class="form-input" 
+                                   placeholder="correo@ejemplo.com"
+                                   value="{{ trabajador.email }}">
+                        </div>
+                        
+                        <!-- Región -->
+                        <div class="form-group">
+                            <label for="region" class="form-label">Región</label>
+                            <select id="region" name="region" class="form-select">
+                                <option value="">Seleccione Región</option>
+                                {% for region in regiones %}
+                                <option value="{{ region.nombre }}" 
+                                        {% if region.nombre == trabajador.region %}selected{% endif %}
+                                        data-region-id="{{ region.id }}">
+                                    {{ region.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Comuna -->
+                        <div class="form-group">
+                            <label for="comuna" class="form-label">Comuna</label>
+                            <select id="comuna" name="comuna" class="form-select">
+                                <option value="">Seleccione Comuna</option>
+                                {% for comuna in comunas_region %}
+                                <option value="{{ comuna.id }}" 
+                                        {% if comuna.nombre == trabajador.comuna %}selected{% endif %}>
+                                    {{ comuna.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" id="comuna_nombre" name="comuna_nombre" value="{{ trabajador.comuna }}">
+                        </div>
+                        
+                        <!-- Dirección -->
+                        <div class="form-group lg:col-span-2">
+                            <label for="direccion" class="form-label">Dirección</label>
+                            <input type="text" 
+                                   id="direccion" 
+                                   name="direccion" 
+                                   class="form-input" 
+                                   placeholder="Calle, número, depto"
+                                   value="{{ trabajador.direccion }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Datos Laborales -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-briefcase"></i>
+                    <h3>Datos Laborales</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Cargo -->
+                        <div class="form-group">
+                            <label for="cargo" class="form-label">Cargo</label>
+                            <input type="text" 
+                                   id="cargo" 
+                                   name="cargo" 
+                                   class="form-input" 
+                                   placeholder="Ej: Analista"
+                                   value="{{ trabajador.cargo }}">
+                        </div>
+                        
+                        <!-- Centro de Costo -->
+                        <div class="form-group">
+                            <label for="centro_costo" class="form-label">Centro de Costo</label>
+                            <select id="centro_costo" name="centro_costo_codigo" class="form-select">
+                                <option value="">Seleccione Centro</option>
+                                {% for centro in centros_costo %}
+                                <option value="{{ centro.codigo }}" 
+                                        data-nombre="{{ centro.nombre }}"
+                                        {% if centro.codigo == trabajador.centro_costo_codigo %}selected{% endif %}>
+                                    {{ centro.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" id="centro_costo_nombre" name="centro_costo_nombre" value="{{ trabajador.centro_costo_nombre }}">
+                        </div>
+                        
+                        <!-- Sueldo Mensual -->
+                        <div class="form-group">
+                            <label for="sueldo_mensual" class="form-label">Sueldo Mensual ($)</label>
+                            <input type="number" 
+                                   id="sueldo_mensual" 
+                                   name="sueldo_mensual" 
+                                   class="form-input" 
+                                   placeholder="0"
+                                   step="1000"
+                                   value="{{ trabajador.sueldo_mensual }}">
+                        </div>
+                        
+                        <!-- Fecha Contrato -->
+                        <div class="form-group">
+                            <label for="fecha_contrato" class="form-label">Fecha Contrato</label>
+                            <input type="date" 
+                                   id="fecha_contrato" 
+                                   name="fecha_contrato" 
+                                   class="form-input"
+                                   value="{{ trabajador.fecha_contrato|date:'Y-m-d' }}">
+                        </div>
+                        
+                        <!-- Fecha Término Contrato -->
+                        <div class="form-group">
+                            <label for="fecha_termino_contrato" class="form-label">Fecha Término</label>
+                            <input type="date" 
+                                   id="fecha_termino_contrato" 
+                                   name="fecha_termino_contrato" 
+                                   class="form-input"
+                                   value="{{ trabajador.fecha_termino_contrato|date:'Y-m-d' }}">
+                        </div>
+                        
+                        <!-- Tipo Jornada -->
+                        <div class="form-group">
+                            <label for="tipo_jornada" class="form-label">Tipo Jornada</label>
+                            <select id="tipo_jornada" name="tipo_jornada" class="form-select">
+                                <option value="completa" {% if trabajador.tipo_jornada == 'completa' %}selected{% endif %}>Jornada Completa</option>
+                                <option value="parcial" {% if trabajador.tipo_jornada == 'parcial' %}selected{% endif %}>Jornada Parcial</option>
+                                <option value="turnos" {% if trabajador.tipo_jornada == 'turnos' %}selected{% endif %}>Por Turnos</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Horas Trabajadas -->
+                        <div class="form-group">
+                            <label for="horas_trabajadas" class="form-label">Horas Semanales</label>
+                            <input type="number" 
+                                   id="horas_trabajadas" 
+                                   name="horas_trabajadas" 
+                                   class="form-input" 
+                                   placeholder="45"
+                                   step="0.5"
+                                   value="{{ trabajador.horas_trabajadas }}">
+                        </div>
+                        
+                        <!-- Colación Mensual -->
+                        <div class="form-group">
+                            <label for="colacion_mensual" class="form-label">Colación ($)</label>
+                            <input type="number" 
+                                   id="colacion_mensual" 
+                                   name="colacion_mensual" 
+                                   class="form-input" 
+                                   placeholder="0"
+                                   step="100"
+                                   value="{{ trabajador.colacion_mensual }}">
+                        </div>
+                        
+                        <!-- Movilización Mensual -->
+                        <div class="form-group">
+                            <label for="movilizacion_mensual" class="form-label">Movilización ($)</label>
+                            <input type="number" 
+                                   id="movilizacion_mensual" 
+                                   name="movilizacion_mensual" 
+                                   class="form-input" 
+                                   placeholder="0"
+                                   step="100"
+                                   value="{{ trabajador.movilizacion_mensual }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Previsión y Salud -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Previsión y Salud</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- AFP -->
+                        <div class="form-group">
+                            <label for="afp" class="form-label">AFP</label>
+                            <select id="afp" name="afp" class="form-select">
+                                <option value="">Seleccione AFP</option>
+                                {% for afp_opcion in opciones_afp %}
+                                <option value="{{ afp_opcion }}" {% if trabajador.afp == afp_opcion %}selected{% endif %}>
+                                    {{ afp_opcion }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Isapre -->
+                        <div class="form-group">
+                            <label for="isapre" class="form-label">Isapre</label>
+                            <select id="isapre" name="isapre" class="form-select">
+                                <option value="">Seleccione Isapre</option>
+                                {% for isapre_opcion in opciones_isapre %}
+                                <option value="{{ isapre_opcion }}" {% if trabajador.isapre == isapre_opcion %}selected{% endif %}>
+                                    {{ isapre_opcion }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Número de Cargas -->
+                        <div class="form-group">
+                            <label for="numero_cargas" class="form-label">N° Cargas</label>
+                            <input type="number" 
+                                   id="numero_cargas" 
+                                   name="numero_cargas" 
+                                   class="form-input" 
+                                   placeholder="0"
+                                   min="0"
+                                   max="20"
+                                   value="{{ trabajador.numero_cargas }}">
+                        </div>
+                        
+                        <!-- Ficha COVID -->
+                        <div class="form-group">
+                            <label class="form-label">Ficha COVID</label>
+                            <div class="flex items-center space-x-4 mt-2">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="tiene_ficha_covid" value="SI" class="form-radio text-green-600"
+                                           {% if trabajador.tiene_ficha_covid %}checked{% endif %}>
+                                    <span class="ml-2">SI</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="tiene_ficha_covid" value="NO" class="form-radio text-red-600"
+                                           {% if not trabajador.tiene_ficha_covid %}checked{% endif %}>
+                                    <span class="ml-2">NO</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Datos Bancarios -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-university"></i>
+                    <h3>Datos Bancarios</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Banco -->
+                        <div class="form-group">
+                            <label for="banco" class="form-label">Banco</label>
+                            <select id="banco" name="banco" class="form-select">
+                                <option value="">Seleccione Banco</option>
+                                {% for banco_opcion in opciones_bancos %}
+                                <option value="{{ banco_opcion }}" {% if trabajador.banco == banco_opcion %}selected{% endif %}>
+                                    {{ banco_opcion }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Número de Cuenta -->
+                        <div class="form-group">
+                            <label for="numero_cuenta" class="form-label">Número de Cuenta</label>
+                            <input type="text" 
+                                   id="numero_cuenta" 
+                                   name="numero_cuenta" 
+                                   class="form-input" 
+                                   placeholder="Número de cuenta"
+                                   value="{{ trabajador.numero_cuenta }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estado del Trabajador -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-toggle-on"></i>
+                    <h3>Estado del Trabajador</h3>
+                </div>
+                <div class="card-body">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="esta_activo" {% if trabajador.esta_activo %}checked{% endif %}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="font-medium">
+                                    {% if trabajador.esta_activo %}
+                                    <span class="text-green-600">Activo</span>
+                                    {% else %}
+                                    <span class="text-red-600">Inactivo</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <span class="badge-info">
+                                <i class="fas fa-clock mr-1"></i>
+                                Última modificación: {{ trabajador.fecha_modificacion|date:'d/m/Y H:i' }}
+                            </span>
+                        </div>
+                        
+                        {% if trabajador.usuario_modificacion %}
+                        <span class="text-sm text-gray-500">
+                            Modificado por: {{ trabajador.usuario_modificacion.get_full_name|default:trabajador.usuario_modificacion.username }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="flex items-center justify-end space-x-4 mt-6 mb-8">
+                <a href="{% url 'lista_trabajadores' alias=alias %}" 
+                   class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    Cancelar
+                </a>
+                <button type="submit" 
+                        class="btn-gradient px-6 py-2 rounded-lg font-medium hover:opacity-90 transition flex items-center space-x-2">
+                    <i class="fas fa-save"></i>
+                    <span>Guardar Cambios</span>
+                </button>
+            </div>
+            
+        </form>
+        
+    </main>
+
+    <script>
+        // Variables globales
+        const regionesData = {{ regiones_json|safe }};
+        
+        // Función para mostrar loading
+        function mostrarCarga() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        function ocultarCarga() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        // Cargar comunas según región seleccionada
+        function cargarComunas(regionId, comunaSeleccionada = null) {
+            const comunaSelect = document.getElementById('comuna');
+            comunaSelect.innerHTML = '<option value="">Seleccione Comuna</option>';
+            
+            if (!regionId) return;
+            
+            // Buscar la región en los datos
+            const region = regionesData.find(r => r.id == regionId || r.nombre === regionId);
+            
+            if (region && region.comunas) {
+                region.comunas.forEach(comuna => {
+                    const option = document.createElement('option');
+                    option.value = comuna.id;
+                    option.textContent = comuna.nombre;
+                    
+                    if (comunaSeleccionada && (comuna.nombre === comunaSeleccionada || comuna.id == comunaSeleccionada)) {
+                        option.selected = true;
+                        document.getElementById('comuna_nombre').value = comuna.nombre;
+                    }
+                    
+                    comunaSelect.appendChild(option);
+                });
+            }
+        }
+        
+        // Evento change de región
+        document.getElementById('region').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const regionId = selectedOption.getAttribute('data-region-id');
+            cargarComunas(regionId);
+            document.getElementById('comuna_nombre').value = '';
+        });
+        
+        // Evento change de comuna
+        document.getElementById('comuna').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            document.getElementById('comuna_nombre').value = selectedOption.textContent;
+        });
+        
+        // Evento change de centro de costo
+        document.getElementById('centro_costo').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const nombreCentro = selectedOption.getAttribute('data-nombre');
+            document.getElementById('centro_costo_nombre').value = nombreCentro || '';
+        });
+        
+        // Validación de RUT (básica)
+        function validarRut(rut) {
+            if (!rut) return false;
+            
+            // Limpiar RUT
+            rut = rut.replace(/\./g, '').replace(/-/g, '');
+            
+            if (rut.length < 8) return false;
+            
+            const dv = rut.slice(-1).toUpperCase();
+            const rutNumeros = parseInt(rut.slice(0, -1));
+            
+            // Cálculo del dígito verificador
+            let suma = 0;
+            let multiplicador = 2;
+            let rutAux = rutNumeros;
+            
+            while (rutAux > 0) {
+                suma += (rutAux % 10) * multiplicador;
+                rutAux = Math.floor(rutAux / 10);
+                multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+            }
+            
+            const dvCalculado = 11 - (suma % 11);
+            let dvEsperado = dvCalculado === 11 ? '0' : dvCalculado === 10 ? 'K' : dvCalculado.toString();
+            
+            return dv === dvEsperado;
+        }
+        
+        // Envío del formulario
+        document.getElementById('formEditarTrabajador').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validar RUT
+            const rut = document.getElementById('rut').value;
+            if (!validarRut(rut)) {
+                alert('El RUT ingresado no es válido');
+                return;
+            }
+            
+            // Validar campos requeridos
+            const nombres = document.getElementById('nombres').value;
+            const apellidoPaterno = document.getElementById('apellido_paterno').value;
+            
+            if (!nombres || !apellidoPaterno) {
+                alert('Los campos Nombres y Apellido Paterno son obligatorios');
+                return;
+            }
+            
+            // Confirmar antes de guardar
+            if (!confirm('¿Está seguro de guardar los cambios?')) {
+                return;
+            }
+            
+            mostrarCarga();
+            
+            // Enviar formulario
+            this.submit();
+        });
+        
+        // Cargar comunas iniciales si hay región seleccionada
+        document.addEventListener('DOMContentLoaded', function() {
+            const regionSelect = document.getElementById('region');
+            const comunaSeleccionada = '{{ trabajador.comuna }}';
+            
+            if (regionSelect.value) {
+                const selectedOption = regionSelect.options[regionSelect.selectedIndex];
+                const regionId = selectedOption.getAttribute('data-region-id');
+                if (regionId) {
+                    cargarComunas(regionId, comunaSeleccionada);
+                }
+            }
+            
+            // Configurar nombre de centro de costo inicial
+            const centroCostoSelect = document.getElementById('centro_costo');
+            if (centroCostoSelect.value) {
+                const selectedOption = centroCostoSelect.options[centroCostoSelect.selectedIndex];
+                const nombreCentro = selectedOption.getAttribute('data-nombre');
+                document.getElementById('centro_costo_nombre').value = nombreCentro || '';
+            }
+        });
+        
+        // Manejar cierre de sesión o navegación
+        window.addEventListener('beforeunload', function() {
+            // Opcional: mostrar advertencia si hay cambios sin guardar
+        });
+        
+    </script>
+
+</body>
+</html>

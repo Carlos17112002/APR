@@ -1,0 +1,425 @@
+{% load humanize %}
+{% load liquidacion_tags %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquidación de Sueldo - Formato Básico</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 22px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .empresa-info {
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .main-columns {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .column {
+            width: 48%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+        th {
+            background: #e9ecef;
+            border: 1px solid #aaa;
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            border: 1px solid #aaa;
+            padding: 6px 8px;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .total-row {
+            background: #d4edda;
+            font-weight: bold;
+        }
+        .subtotal-row {
+            background: #fff3cd;
+            font-weight: bold;
+        }
+        .final-box {
+            border: 2px solid #2c3e50;
+            padding: 15px;
+            text-align: center;
+            margin: 30px 0;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .final-label {
+            font-size: 14px;
+            color: #555;
+            text-transform: uppercase;
+        }
+        .final-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 5px;
+        }
+        .firma {
+            margin-top: 60px;
+            border-top: 1px dashed #333;
+            text-align: center;
+            padding-top: 20px;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 9px;
+            color: #999;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+        }
+        .small {
+            font-size: 10px;
+            color: #666;
+        }
+        .section-separator {
+            border-top: 2px dashed #aaa;
+            margin: 10px 0;
+        }
+        .subsection-header {
+            background: #e9ecef;
+            padding: 4px 8px;
+            margin: 10px 0 5px 0;
+            border-left: 4px solid #3498db;
+            font-weight: bold;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>LIQUIDACIÓN DE SUELDO</h1>
+    <div class="empresa-info">
+        <strong>{{ empresa_nombre }}</strong> - RUT: {{ empresa_rut }}<br>
+        {{ empresa_direccion }} - {{ empresa_ciudad }} | Tel: {{ empresa_telefono|default:"-" }}
+    </div>
+
+    <!-- Datos del trabajador y período -->
+    <div class="info-grid">
+        <div><span class="info-label">Trabajador:</span> {{ trabajador_nombre }}</div>
+        <div><span class="info-label">RUT:</span> {{ trabajador_rut }}</div>
+        <div><span class="info-label">Cargo:</span> {{ trabajador_cargo|default:"-" }}</div>
+        <div><span class="info-label">Período:</span> {{ periodo_mes|upper }}/{{ periodo_anio }}</div>
+        <div><span class="info-label">F. Ingreso:</span> {{ trabajador_fecha_ingreso|default:"-" }}</div>
+        <div><span class="info-label">Días Trab./Hábiles:</span> {{ dias_trabajados }} / {{ periodo_dias_habiles }}</div>
+        <div><span class="info-label">Centro de Costo:</span> {{ centro_costo|default:"No asignado" }}</div>
+        <div><span class="info-label">Glosa:</span> {{ glosa|default:"LIQUIDACION_SUELDO" }}</div>
+        <div><span class="info-label">Fecha generación:</span> {{ fecha_generacion }}</div>
+    </div>
+
+    <!-- Columnas principales -->
+    <div class="main-columns">
+        <!-- COLUMNA IZQUIERDA: HABERES -->
+        <div class="column">
+            <table>
+                <thead>
+                    <tr>
+                        <th colspan="2" style="text-align:center;">HABERES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- === HABERES IMPONIBLES === -->
+                    <tr style="background: #e8f4fd;">
+                        <td colspan="2"><strong>HABERES IMPONIBLES</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Sueldo Base</td>
+                        <td class="text-right">{{ sueldo_mensual|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% if total_horas_extra > 0 %}
+                    <tr>
+                        <td>&nbsp;&nbsp;Horas Extra ({{ horas_extra_50|default:0 }}h 50%, {{ horas_extra_100|default:0 }}h 100%, {{ horas_extra_150|default:0 }}h 150%)</td>
+                        <td class="text-right">{{ total_horas_extra|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if total_comision > 0 %}
+                    <tr>
+                        <td>Comisiones</td>
+                        <td class="text-right">{{ total_comision|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if monto_cargo_domingo > 0 %}
+                    <tr>
+                        <td>Cargo Domingo</td>
+                        <td class="text-right">{{ monto_cargo_domingo|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if utilidades > 0 %}
+                    <tr>
+                        <td>Utilidades</td>
+                        <td class="text-right">{{ utilidades|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if semana_corrida > 0 %}
+                    <tr>
+                        <td>Semana Corrida</td>
+                        <td class="text-right">{{ semana_corrida|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if bonos > 0 %}
+                    <tr>
+                        <td>Bonos Imponibles</td>
+                        <td class="text-right">{{ bonos|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if monto_gratificacion > 0 %}
+                    <tr>
+                        <td>Gratificación</td>
+                        <td class="text-right">{{ monto_gratificacion|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="subtotal-row">
+                        <td><strong>TOTAL IMPONIBLE</strong></td>
+                        <td class="text-right"><strong>{{ total_imponible|floatformat:0|formato_clp }}</strong></td>
+                    </tr>
+
+                    <!-- === HABERES NO IMPONIBLES === -->
+                    <tr style="background: #fff3cd;">
+                        <td colspan="2"><strong>HABERES NO IMPONIBLES</strong></td>
+                    </tr>
+                    {% if asignacion_familiar > 0 %}
+                    <tr>
+                        <td>Asignación Familiar ({{ numero_cargas }} cargas)</td>
+                        <td class="text-right">{{ asignacion_familiar|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if asignacion_maternal > 0 %}
+                    <tr>
+                        <td>Asignación Maternal</td>
+                        <td class="text-right">{{ asignacion_maternal|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if colacion > 0 %}
+                    <tr>
+                        <td>Colación</td>
+                        <td class="text-right">{{ colacion|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if movilizacion > 0 %}
+                    <tr>
+                        <td>Movilización</td>
+                        <td class="text-right">{{ movilizacion|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if otro_bono1_nombre and otro_bono1_valor > 0 %}
+                    <tr>
+                        <td>{{ otro_bono1_nombre }}</td>
+                        <td class="text-right">{{ otro_bono1_valor|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if otro_bono2_nombre and otro_bono2_valor > 0 %}
+                    <tr>
+                        <td>{{ otro_bono2_nombre }}</td>
+                        <td class="text-right">{{ otro_bono2_valor|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="subtotal-row">
+                        <td><strong>TOTAL NO IMPONIBLE</strong></td>
+                        <td class="text-right"><strong>{{ total_no_imponible|default:0|floatformat:0|formato_clp }}</strong></td>
+                    </tr>
+
+                    <!-- TOTAL HABERES -->
+                    <tr class="total-row">
+                        <td><strong>TOTAL HABERES</strong></td>
+                        <td class="text-right"><strong>{{ total_haberes|floatformat:0|formato_clp }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- COLUMNA DERECHA: DESCUENTOS -->
+        <div class="column">
+            <table>
+                <thead>
+                    <tr>
+                        <th colspan="2" style="text-align:center;">DESCUENTOS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- AFP -->
+                    <tr>
+                        <td>AFP {{ afp_nombre }} ({{ porcentaje_afp|floatformat:2 }}%)</td>
+                        <td class="text-right">{{ cotizacion_afp|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% if cuenta_2_afp > 0 %}
+                    <tr>
+                        <td>&nbsp;&nbsp;Cuenta 2 AFP</td>
+                        <td class="text-right">{{ cuenta_2_afp|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- Salud -->
+                    <tr>
+                        <td>Salud {{ isapre_nombre }} (7% obligatorio)</td>
+                        <td class="text-right">{{ total_imponible|multiply:0.07|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% if diferencia_isapre > 0 %}
+                    <tr>
+                        <td>&nbsp;&nbsp;Diferencia Isapre</td>
+                        <td class="text-right">{{ diferencia_isapre|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- AFC -->
+                    {% if cotizacion_afc > 0 %}
+                    <tr>
+                        <td>Seguro de Cesantía (AFC)</td>
+                        <td class="text-right">{{ cotizacion_afc|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- APV -->
+                    {% if apv > 0 %}
+                    <tr>
+                        <td>APV</td>
+                        <td class="text-right">{{ apv|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if apv2 > 0 %}
+                    <tr>
+                        <td>APV 2</td>
+                        <td class="text-right">{{ apv2|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if apv_colectivo > 0 %}
+                    <tr>
+                        <td>APV Colectivo</td>
+                        <td class="text-right">{{ apv_colectivo|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- Impuesto a la Renta -->
+                    {% if cuota_impuesto > 0 %}
+                    <tr>
+                        <td>Impuesto a la Renta</td>
+                        <td class="text-right">{{ cuota_impuesto|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if anticipo_impuesto > 0 %}
+                    <tr>
+                        <td>&nbsp;&nbsp;Anticipo</td>
+                        <td class="text-right">{{ anticipo_impuesto|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- Préstamos -->
+                    {% if prestamo_ccaf > 0 %}
+                    <tr>
+                        <td>Préstamo CCAF</td>
+                        <td class="text-right">{{ prestamo_ccaf|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if prestamo_empresa > 0 %}
+                    <tr>
+                        <td>Préstamo Empresa</td>
+                        <td class="text-right">{{ prestamo_empresa|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- Otros descuentos -->
+                    {% if otro_descuento1_nombre and otro_descuento1_valor > 0 %}
+                    <tr>
+                        <td>{{ otro_descuento1_nombre }}</td>
+                        <td class="text-right">{{ otro_descuento1_valor|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if otro_descuento2_nombre and otro_descuento2_valor > 0 %}
+                    <tr>
+                        <td>{{ otro_descuento2_nombre }}</td>
+                        <td class="text-right">{{ otro_descuento2_valor|floatformat:0|formato_clp }}</td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- Total Descuentos -->
+                    <tr class="total-row">
+                        <td><strong>TOTAL DESCUENTOS</strong></td>
+                        <td class="text-right"><strong>{{ total_descuentos|floatformat:0|formato_clp }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recuadro de líquido a pagar -->
+    <div class="final-box">
+        <div class="final-label">LÍQUIDO A PAGAR</div>
+        <div class="final-value">{{ liquido_pagable|floatformat:0|formato_clp }}</div>
+    </div>
+
+    <!-- Información adicional de bases y ausencias (con glosas) -->
+    <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 10px;">
+        <div style="width: 48%;">
+            <p><strong>Bases de cálculo</strong></p>
+            <p>Base imponible: {{ total_imponible|floatformat:0|formato_clp }}</p>
+            <p>Base no imponible: {{ total_no_imponible|default:0|floatformat:0|formato_clp }}</p>
+            <p>Base tributable: {{ base_impuesto|default:total_imponible|floatformat:0|formato_clp }}</p>
+        </div>
+        <div style="width: 48%;">
+            <p><strong>Ausencias</strong></p>
+            <p>Vacaciones: {{ vacaciones_dias|default:"0" }} días{% if vacaciones_glosa %} ({{ vacaciones_glosa }}){% endif %}</p>
+            <p>Licencias: {{ licencias_dias|default:"0" }} días{% if licencias_glosa %} ({{ licencias_glosa }}){% endif %}</p>
+            <p>Faltas: {{ faltas_dias|default:"0" }} días{% if faltas_glosa %} ({{ faltas_glosa }}){% endif %}</p>
+        </div>
+    </div>
+
+    <!-- Firma del trabajador (opcional) -->
+    {% if incluir_firma %}
+    <div class="firma">
+        <div style="width: 300px; border-top: 1px solid #000; margin: 20px auto 5px;"></div>
+        <div style="font-size: 11px; color: #666;">Firma del Trabajador</div>
+    </div>
+    {% endif %}
+
+    <!-- Pie de página -->
+    <div class="footer">
+        Documento generado electrónicamente el {{ fecha_generacion }} | {{ empresa_nombre }}<br>
+        Este documento es válido como comprobante de pago según art. 9 del Código del Trabajo.
+    </div>
+</body>
+</html>

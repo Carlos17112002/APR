@@ -616,7 +616,6 @@ def actualizar_alias_json():
     with open(ruta_json, 'w') as f:
         json.dump(slugs, f, indent=2)
 
-import sqlite3
 import json
 import os
 from django.conf import settings
@@ -624,81 +623,228 @@ from django.shortcuts import render, redirect
 from django.utils.text import slugify
 from empresas.models import Empresa
 from django.contrib import messages
-from django.db import connections
+
+# Importar funciones de multiempresa
+try:
+    from .multiempresa import (
+        registrar_alias,
+        verificar_migraciones_aplicadas,
+        crear_tabla_lecturas_manual
+    )
+except ImportError:
+    # Fallback si no encuentra en el mismo directorio
+    from admin_ssr.multiempresa import (
+        registrar_alias,
+        verificar_migraciones_aplicadas,
+        crear_tabla_lecturas_manual
+    )
 
 def crear_empresa(request):
     if request.method == 'POST':
+        # === CAMPOS EXISTENTES ===
         nombre = request.POST.get('nombre')
         slug = slugify(nombre)
+        
+        # === NUEVOS CAMPOS ===
+        rut = request.POST.get('rut', '')
+        direccion = request.POST.get('direccion', '')
+        telefono = request.POST.get('telefono', '')
+        celular = request.POST.get('celular', '')
+        logo = request.FILES.get('logo')
+        
+        # Centros de costo (NUEVO)
+        centros_costo_raw = request.POST.get('centros_costo', '')
+        centros_costo = [c.strip() for c in centros_costo_raw.split(',') if c.strip()]
+        
+        # Sectores (existente)
+        sectores_raw = request.POST.get('sectores', '')
+        sectores = [s.strip() for s in sectores_raw.split(',') if s.strip()]
+        
+        # Colores personalizados
+        color_app_primario = request.POST.get('color_app_primario', '#1E40AF')
+        color_app_secundario = request.POST.get('color_app_secundario', '#DC2626')
+        url_servidor = request.POST.get('url_servidor', 'http://localhost:8000')
+        color_dashboard = request.POST.get('color_dashboard', '#008000')
+        
+        # Logo
+        logo_app = request.FILES.get('logo_app')
 
         # Validar que no exista
         if Empresa.objects.filter(slug=slug).exists():
             messages.error(request, 'Ya existe una empresa con ese nombre')
             return render(request, 'admin_ssr/crear_empresa.html')
 
-        # Procesar sectores
-        sectores_raw = request.POST.get('sectores', '')
-        sectores = [s.strip() for s in sectores_raw.split(',') if s.strip()]
-
         try:
-            # 1. Crear empresa
+            # ============================================
+            # PASO 1: Crear empresa en base general
+            # ============================================
+            # IMPORTANTE: Comenta estos campos si aún no los agregas al modelo
             empresa = Empresa.objects.create(
                 nombre=nombre,
                 slug=slug,
-                sectores_json=json.dumps(sectores)
+                # Comentar hasta agregar campos al modelo
+                rut=rut,
+                direccion=direccion,
+                telefono=telefono,
+                celular=celular,
+                logo=logo,
+                sectores_json=json.dumps(sectores),
+                color_app_primario=color_app_primario,
+                color_app_secundario=color_app_secundario,
+                url_servidor=url_servidor,
+                color_dashboard=color_dashboard,
+                logo_app=logo_app if logo_app else None,
             )
 
-            # 2. Crear base de datos física
-            alias = f'db_{slug}'
-            db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
+            # ============================================
+            # PASO 2: Registrar alias usando multiempresa
+            # ============================================
+            alias = registrar_alias(slug, ejecutar_migraciones=True)
             
-            # Asegurar que el directorio existe
-            os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            print(f"[SSR] Empresa creada: {nombre}")
+            print(f"[SSR] Slug: {slug}")
+            print(f"[SSR] Alias BD: {alias}")
+            print(f"[SSR] Centros de costo: {centros_costo}")
+            print(f"[SSR] Sectores: {sectores}")
+
+            # ============================================
+            # PASO 3: Insertar configuración inicial en BD de la empresa
+            # ============================================
+            from django.db import connections
             
-            # Crear la base de datos
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
+            try:
+                # Conectar a la base de datos de la empresa
+                connection = connections[alias]
+                
+                with connection.cursor() as cursor:
+                    # Verificar que existe la tabla configuracion
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master 
+                        WHERE type='table' AND name='configuracion'
+                    """)
+                    
+                    if not cursor.fetchone():
+                        # Crear tabla configuracion si no existe
+                        cursor.execute("""
+                            CREATE TABLE configuracion (
+                                clave TEXT PRIMARY KEY,
+                                valor TEXT
+                            )
+                        """)
+                    
+                    # Insertar configuración inicial - CORREGIDO: pasar parámetros como tupla
+                    config_inicial = [
+                        ('nombre_empresa', nombre),
+                        ('logo', logo),
+                        ('rut_empresa', rut),
+                        ('direccion_empresa', direccion),
+                        ('telefono_empresa', telefono),
+                        ('celular_empresa', celular),
+                        ('centros_costo', json.dumps(centros_costo, ensure_ascii=False)),
+                        ('sectores', json.dumps(sectores, ensure_ascii=False)),
+                        ('color_primario', color_app_primario),
+                        ('color_secundario', color_app_secundario),
+                        ('url_servidor', url_servidor),
+                    ]
+                    
+                    for clave, valor in config_inicial:
+                        # CORREGIDO: Pasar como tupla (?, ?) con dos elementos
+                        cursor.execute(
+                            "INSERT OR REPLACE INTO configuracion (clave, valor) VALUES (?, ?)",
+                            (clave, valor)  # ¡Esto es una tupla de 2 elementos!
+                        )
+                    
+                    # Si hay centros de costo, también crear una tabla específica
+                    if centros_costo:
+                        cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS centros_costo (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                codigo TEXT UNIQUE,
+                                nombre TEXT,
+                                activo BOOLEAN DEFAULT 1,
+                                fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """)
+                        
+                        # Insertar centros de costo
+                        for centro in centros_costo:
+                            codigo = centro.replace(' ', '_').replace('-', '_').upper()
+                            # CORREGIDO: Pasar como tupla (?, ?)
+                            cursor.execute(
+                                "INSERT OR IGNORE INTO centros_costo (codigo, nombre) VALUES (?, ?)",
+                                (codigo, centro)  # Tupla de 2 elementos
+                            )
+                    
+                    # Guardar cambios
+                    connection.commit()
+                
+                connection.close()
+                print(f"[SSR] Configuración insertada correctamente en {alias}")
+                
+            except Exception as e:
+                print(f"[SSR] Error insertando configuración: {e}")
+                import traceback
+                traceback.print_exc()
+
+            # ============================================
+            # PASO 4: Verificar migraciones
+            # ============================================
+            try:
+                verificar_migraciones_aplicadas(alias)
+            except Exception as e:
+                print(f"[SSR] Error verificando migraciones: {e}")
+                
+                # Si la app 'lecturas' falla, crear tabla manualmente
+                try:
+                    from django.db import connections
+                    crear_tabla_lecturas_manual(alias)
+                except Exception as e2:
+                    print(f"[SSR] Error creando tabla manual: {e2}")
+
+            # ============================================
+            # PASO 5: Actualizar archivo de aliases JSON
+            # ============================================
+            aliases_file = getattr(settings, 'ALIASES_FILE', 
+                                  os.path.join(settings.BASE_DIR, 'config', 'database_aliases.json'))
             
-            # Crear tablas básicas
-            cursor.execute('''
-                CREATE TABLE usuarios (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE,
-                    email TEXT,
-                    password TEXT,
-                    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+            os.makedirs(os.path.dirname(aliases_file), exist_ok=True)
             
-            cursor.execute('''
-                CREATE TABLE configuracion (
-                    clave TEXT PRIMARY KEY,
-                    valor TEXT
-                )
-            ''')
+            aliases = {}
+            if os.path.exists(aliases_file):
+                with open(aliases_file, 'r', encoding='utf-8') as f:
+                    aliases = json.load(f)
             
-            # Insertar configuración inicial
-            cursor.execute(
-                "INSERT INTO configuracion (clave, valor) VALUES (?, ?)",
-                ('nombre_empresa', nombre)
-            )
+            aliases[slug] = {
+                'alias': alias,
+                'nombre': nombre,
+                'rut': rut,
+                'direccion': direccion,
+                'telefono': telefono,
+                'celular': celular,
+                'centros_costo': centros_costo,
+                'sectores': sectores,
+                'db_path': os.path.join(settings.BASES_DIR, f'{alias}.sqlite3'),
+                'fecha_creacion': empresa.fecha_creacion.isoformat() if empresa.fecha_creacion else None
+            }
             
-            conn.commit()
-            conn.close()
+            with open(aliases_file, 'w', encoding='utf-8') as f:
+                json.dump(aliases, f, indent=2, ensure_ascii=False)
             
-            # 3. Registrar alias
-            registrar_alias(slug)
-            
-            # 4. Actualizar JSON de aliases
-            actualizar_alias_json()
-            
-            messages.success(request, f'Empresa {nombre} creada exitosamente')
+            messages.success(request, f'Empresa {nombre} creada exitosamente con {len(centros_costo)} centro(s) de costo')
             return redirect('dashboard_admin_ssr')
             
         except Exception as e:
             # Revertir en caso de error
             if 'empresa' in locals():
-                empresa.delete()
+                try:
+                    empresa.delete()
+                except:
+                    pass
+            
+            import traceback
+            error_detallado = traceback.format_exc()
+            print(f"[SSR] ERROR CRÍTICO: {error_detallado}")
+            
             messages.error(request, f'Error al crear empresa: {str(e)}')
             return render(request, 'admin_ssr/crear_empresa.html')
 

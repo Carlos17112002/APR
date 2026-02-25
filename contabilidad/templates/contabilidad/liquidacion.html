@@ -1,0 +1,2479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Liquidación - {{ empresa.nombre }}</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+        }
+        
+        body {
+            background-color: #ecf0f1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.9rem;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, var(--primary) 0%, #34495e 100%);
+            color: white;
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid #ddd;
+        }
+        
+        .section-title {
+            color: var(--primary);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .sub-section-title {
+            color: #2c3e50;
+            border-left: 4px solid var(--secondary);
+            padding-left: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #34495e;
+            font-size: 0.85rem;
+            margin-bottom: 3px;
+        }
+        
+        .form-control-sm, .form-select-sm {
+            height: calc(1.5em + 0.5rem + 2px);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+        }
+        
+        .total-box {
+            background: #f8f9fa;
+            border: 2px solid var(--secondary);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .total-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .total-value {
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        
+        .btn-action {
+            padding: 8px 20px;
+            font-weight: 500;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary-custom {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success-custom {
+            background-color: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+        
+        .readonly-input {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+        
+        .currency-input {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .input-highlight {
+            background-color: #fff3cd;
+        }
+        
+        .formato-card {
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .formato-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .formato-card.active {
+            border-color: var(--secondary);
+            background-color: #f0f8ff;
+        }
+        
+        .bg-light-warning {
+            background-color: #fff3cd;
+        }
+        
+        .bg-light-info {
+            background-color: #e8f4fd;
+        }
+        
+        .info-text {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        
+        /* Separador visual para imponible/no imponible */
+        .section-divider {
+            border-top: 2px dashed #3498db;
+            margin: 15px 0;
+            padding-top: 10px;
+        }
+        
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header con controles principales -->
+    <div class="header-section no-print">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <a href="{% url 'lista_liquidacion' alias=alias %}?periodo_id={{ periodo.id }}" 
+                           class="btn btn-light btn-sm me-3">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                        <h5 class="mb-0">Generar Liquidación</h5>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="row g-2">
+                        <div class="col">
+                            <select class="form-select form-select-sm" id="selectTrabajador">
+                                <option value="{{ trabajador.id }}" selected>
+                                    {{ trabajador.nombre_completo }} ({{ trabajador.rut }})
+                                </option>
+                                {% for t in todos_trabajadores %}
+                                    {% if t.id != trabajador.id %}
+                                    <option value="{{ t.id }}">{{ t.nombre_completo }} ({{ t.rut }})</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <select class="form-select form-select-sm" id="selectGlosa">
+                                <option value="">Seleccionar glosa...</option>
+                                {% for valor, texto in glosas %}
+                                <option value="{{ valor }}" {% if liquidacion_existente and liquidacion_existente.glosa == valor %}selected{% endif %}>{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">Período</span>
+                                <input type="text" class="form-control" 
+                                       value="{{ periodo.mes }}/{{ periodo.anio }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-primary-custom btn-action" onclick="actualizarCalculos()">
+                                <i class="fas fa-sync-alt me-1"></i> Actualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Columna 1: Haberes -->
+            <div class="col-md-4">
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-money-bill-wave me-2"></i> Haberes
+                    </h5>
+                    
+                    <!-- Días trabajados del período -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Días del Período</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Días Hábiles</label>
+                                <input type="number" class="form-control form-control-sm readonly-input" 
+                                       id="diasHabiles" value="{{ periodo.dias_habiles|default:22 }}" readonly>
+                                <small class="info-text">Días hábiles del período (sin domingos ni festivos)</small>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Días Trabajados</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="diasTrabajados" value="{{ datos_liquidacion.dias_trabajados|default:periodo.dias_habiles|default:22 }}" min="0" max="{{ periodo.dias_habiles|default:31 }}" step="1">
+                                <small class="info-text">Máximo: {{ periodo.dias_habiles|default:22 }} días</small>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Horas Atraso</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="horasAtraso" value="{{ datos_liquidacion.horas_atraso|default:0 }}" min="0" step="0.5">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- SUELDO BASE (IMPONIBLE) -->
+                    <div class="mb-3 bg-light-info p-2 rounded">
+                        <h6 class="sub-section-title text-primary">✓ Sueldo Base (Imponible)</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Sueldo Mensual</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="sueldoMensual" value="{{ datos_liquidacion.sueldo_mensual|default:trabajador.sueldo_mensual|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Valor Día</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="valorDia" value="0" readonly step="0.01">
+                                </div>
+                                <small class="info-text">Sobre 30 días legales</small>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Valor Hora</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="valorHora" value="0" readonly step="0.01">
+                                </div>
+                                <small class="info-text">Sobre 180 horas</small>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Atraso</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="atraso" value="{{ datos_liquidacion.atraso|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                    <!-- HORAS EXTRA (IMPONIBLE) -->
+                    <div class="mb-3 bg-light-info p-2 rounded">
+                        <h6 class="sub-section-title text-primary">✓ Horas Extra (Imponible)</h6>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <label class="form-label">50%</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="horasExtra50" value="{{ datos_liquidacion.horas_extra_50|default:0 }}" min="0" step="0.5">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">100%</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="horasExtra100" value="{{ datos_liquidacion.horas_extra_100|default:0 }}" min="0" step="0.5">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">150%</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="horasExtra150" value="{{ datos_liquidacion.horas_extra_150|default:0 }}" min="0" step="0.5">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Total Horas Extra</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input fw-bold" 
+                                           id="totalHorasExtra" value="{{ datos_liquidacion.total_horas_extra|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- GRATIFICACIÓN (IMPONIBLE) -->
+                    <div class="mb-3 bg-light-info p-2 rounded">
+                        <h6 class="sub-section-title text-primary">✓ Gratificación (Imponible)</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select form-select-sm" id="tipoGratificacion">
+                                    <option value="CON_TOPE" {% if datos_liquidacion.tipo_gratificacion == 'CON_TOPE' %}selected{% endif %}>Con tope (4.75 IMM)</option>
+                                    <option value="SIN_TOPE" {% if datos_liquidacion.tipo_gratificacion == 'SIN_TOPE' %}selected{% endif %}>Sin tope</option>
+                                    <option value="EXENTO" {% if datos_liquidacion.tipo_gratificacion == 'EXENTO' %}selected{% endif %}>Exento</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Porcentaje</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control" id="porcentajeGratificacion" 
+                                           value="{{ datos_liquidacion.porcentaje_gratificacion|default:25.00 }}" 
+                                           min="0" max="100" step="0.01">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Base Cálculo</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="baseGratificacion" value="0" readonly step="0.01">
+                                </div>
+                                <small class="info-text" id="baseGratificacionDetalle">Sueldo base + horas extra + bonos imponibles</small>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold">Monto Gratificación</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="gratificacion" value="{{ datos_liquidacion.monto_gratificacion|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Tope gratificación: 4,75 IMM = $<span id="topeGratificacion">0</span><br>
+                                    • CON_TOPE: Se aplica el tope máximo legal<br>
+                                    • SIN_TOPE: Sin límite de tope<br>
+                                    • EXENTO: No se aplica gratificación
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- COMISIONES Y CARGOS (IMPONIBLE) -->
+                    <div class="mb-3 bg-light-info p-2 rounded">
+                        <h6 class="sub-section-title text-primary">✓ Comisiones y Cargos (Imponible)</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Comisiones</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="comisiones" value="{{ datos_liquidacion.comisiones|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Bonos</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="bonos" value="{{ datos_liquidacion.bonos|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Otros Imponibles</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="otrosImponibles" value="{{ datos_liquidacion.otros_imponibles|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Horas Cargo Domingo</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="horasCargoDomingo" value="{{ datos_liquidacion.horas_cargo_domingo|default:0 }}" min="0" step="0.5">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Monto Cargo Domingo</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="montoCargoDomingo" value="{{ datos_liquidacion.monto_cargo_domingo|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- UTILIDADES Y SEMANA CORRIDA (IMPONIBLE) -->
+                    <div class="mb-3 bg-light-info p-2 rounded">
+                        <h6 class="sub-section-title text-primary">✓ Utilidades y Semana Corrida (Imponible)</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Utilidades</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="utilidades" value="{{ datos_liquidacion.utilidades|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Semana Corrida</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="semanaCorrida" value="{{ datos_liquidacion.semana_corrida|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                                <label class="form-label fw-bold text-primary">✓ TOTAL IMPONIBLE</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input fw-bold" 
+                                           id="totalImponible" value="{{ datos_liquidacion.total_imponible|default:0 }}" readonly step="0.01" style="background-color: #e8f4fd;">
+                                </div>
+                                <small class="text-muted">Base para AFP, Salud, AFC, Impuesto</small>
+                            </div>
+                    </div>
+                    
+                    <!-- ASIGNACIÓN FAMILIAR (NO IMPONIBLE) -->
+                    <div class="mb-3 bg-light-warning p-2 rounded">
+                        <h6 class="sub-section-title text-warning">⚠ Asignación Familiar (No Imponible)</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">N° Cargas</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="numeroCargas" value="{{ datos_liquidacion.numero_cargas|default:trabajador.numero_cargas|default:0 }}" min="0" step="1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Promedio Ingresos</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="promedioIngresos" value="{{ datos_liquidacion.promedio_ingresos|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">N° Cargas Maternales</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="cargasMaternales" value="{{ datos_liquidacion.numero_cargas_maternales|default:0 }}" min="0" step="1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Retroactiva</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="retroactiva" value="{{ datos_liquidacion.retroactiva|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Asignación Familiar</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input bg-light-warning" 
+                                           id="asignacionFamiliar" value="0" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Asignación Maternal</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="asignacionMaternal" value="0" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Tramos Asignación Familiar:<br>
+                                    • Hasta $631.976: $22.007/carga<br>
+                                    • $631.976 - $923.067: $13.505/carga<br>
+                                    • $923.067 - $1.439.668: $4.267/carga<br>
+                                    • Desde $1.439.668: No aplica
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ASIGNACIONES NO IMPONIBLES -->
+                    <div class="mb-3 bg-light-warning p-2 rounded">
+                        <h6 class="sub-section-title text-warning">⚠ Asignaciones No Imponibles</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Colación</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="colacion" value="{{ datos_liquidacion.colacion|default:trabajador.colacion_mensual|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Movilización</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="movilizacion" value="{{ datos_liquidacion.movilizacion|default:trabajador.movilizacion_mensual|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- OTROS BONOS NO IMPONIBLES -->
+                    <div class="mb-3 bg-light-warning p-2 rounded">
+                        <h6 class="sub-section-title text-warning">⚠ Otros Bonos No Imponibles</h6>
+                        <div class="row g-2 mb-2">
+                            <div class="col-8">
+                                <input type="text" class="form-control form-control-sm" 
+                                       id="nombreBonoNoImponible1" placeholder="Nombre bono" value="{{ liquidacion_existente.nombre_otro_bono_1|default:'' }}">
+                            </div>
+                            <div class="col-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="valorBonoNoImponible1" value="{{ liquidacion_existente.valor_otro_bono_1|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <input type="text" class="form-control form-control-sm" 
+                                       id="nombreBonoNoImponible2" placeholder="Nombre bono" value="{{ liquidacion_existente.nombre_otro_bono_2|default:'' }}">
+                            </div>
+                            <div class="col-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="valorBonoNoImponible2" value="{{ liquidacion_existente.valor_otro_bono_2|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Totales -->
+                    <div class="section-divider"></div>
+                    
+                    <div class="mb-3">
+                        <div class="row g-2">
+                            
+                            <div class="col-12 mt-2">
+                                <label class="form-label fw-bold text-warning">⚠ TOTAL NO IMPONIBLE</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="totalNoImponible" value="0" readonly step="0.01" style="background-color: #fff3cd;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Haberes -->
+                    <div class="total-box">
+                        <div class="total-label">TOTAL HABERES</div>
+                        <div class="total-value" id="totalHaberes">{{ datos_liquidacion.total_haberes|default:0 }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Columna 2: Descuentos (se mantiene igual) -->
+            <div class="col-md-4">
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-minus-circle me-2"></i> Descuentos
+                    </h5>
+                    
+                    <!-- AFP -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">AFP</h6>
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <label class="form-label">AFP</label>
+                                <select class="form-select form-select-sm" id="selectAFP">
+                                    {% if afp_seleccionada %}
+                                        <option value="{{ afp_seleccionada.codigo }}" selected 
+                                                data-porcentaje="{{ afp_seleccionada.cotizacion_obligatoria }}">
+                                            {{ afp_seleccionada.nombre }} ({{ afp_seleccionada.cotizacion_obligatoria }}%)
+                                        </option>
+                                    {% else %}
+                                        <option value="" selected>Seleccionar AFP...</option>
+                                    {% endif %}
+                                    
+                                    {% for afp in afps_disponibles %}
+                                        {% if not afp_seleccionada or afp.codigo != afp_seleccionada.codigo %}
+                                        <option value="{{ afp.codigo }}" 
+                                                data-porcentaje="{{ afp.cotizacion_obligatoria }}">
+                                            {{ afp.nombre }} ({{ afp.cotizacion_obligatoria }}%)
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">%</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control input-porcentaje" 
+                                           id="porcentajeAFP" value="{{ datos_liquidacion.porcentaje_afp|default:afp_seleccionada.cotizacion_obligatoria|default:11 }}" 
+                                           step="0.01" min="0" max="100">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Base AFP</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="baseAFP" value="{{ datos_liquidacion.base_afp|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Cotización</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="cotizacionAFP" value="{{ datos_liquidacion.cotizacion_afp|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Cuenta 2 AFP</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="cuenta2AFP" value="{{ datos_liquidacion.cuenta_2_afp|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AFC Y SEGURO DE CESANTÍA -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">AFC - Seguro de Cesantía</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Tipo Contrato</label>
+                                <input type="text" class="form-control form-control-sm readonly-input" 
+                                       id="tipoContrato" value="{{ trabajador.get_tipo_contrato_display|default:'No especificado' }}" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Fecha Contrato</label>
+                                <input type="text" class="form-control form-control-sm readonly-input" 
+                                       id="fechaContrato" value="{{ trabajador.fecha_contrato|date:'d/m/Y'|default:'No especificada' }}" readonly>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">% Trabajador</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control input-porcentaje readonly-input" 
+                                           id="porcentajeAFCTrabajador" value="0" readonly step="0.01">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">% Empleador</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control input-porcentaje readonly-input" 
+                                           id="porcentajeAFCEmpleador" value="0" readonly step="0.01">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">% Trabajo Pesado</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control input-porcentaje" 
+                                           id="trabajoPesado" value="{{ datos_liquidacion.porcentaje_trabajo_pesado|default:trabajador.porcentaje_trabajo_pesado_trabajador|default:0 }}" step="0.01" min="0" max="100">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Base AFC</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="baseAFC" value="{{ datos_liquidacion.base_afc|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Cotización AFC</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="cotizacionAFC" value="{{ datos_liquidacion.cotizacion_afc|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Porcentajes según tipo de contrato:<br>
+                                    • Indefinido (desde 2021): Trabajador 2.4%, Empleador 0.8%<br>
+                                    • Indefinido (antes 2021): Trabajador 0.6%, Empleador 2.4%<br>
+                                    • Plazo Fijo / Obra: Trabajador 2.8%, Empleador 0.0%<br>
+                                    • Casa Particular: Trabajador 2.4%, Empleador 0.8%
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- APV -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">APV</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">APV</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="apv" value="{{ datos_liquidacion.apv|default:trabajador.apv|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">APV2</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="apv2" value="{{ datos_liquidacion.apv2|default:trabajador.apv2|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="afiliadoVoluntario" {% if datos_liquidacion.afiliado_voluntario|default:trabajador.es_afiliado_voluntario %}checked{% endif %}>
+                                    <label class="form-check-label" for="afiliadoVoluntario">
+                                        Afiliado Voluntario
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">APV Colectivo</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="apvColectivo" value="{{ datos_liquidacion.apv_colectivo|default:trabajador.apv_colectivo|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Salud -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Salud</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Isapre</label>
+                                <select class="form-select form-select-sm" id="selectIsapre">
+                                    <option value="FONASA" {% if trabajador.isapre == 'FONASA' or not isapre_seleccionada %}selected{% endif %}>FONASA (7%)</option>
+                                    {% if isapre_seleccionada and isapre_seleccionada.codigo != 'FONASA' %}
+                                        <option value="{{ isapre_seleccionada.codigo }}" selected 
+                                                data-porcentaje="{{ isapre_seleccionada.cotizacion_obligatoria }}">
+                                            {{ isapre_seleccionada.nombre }} ({{ isapre_seleccionada.cotizacion_obligatoria }}%)
+                                        </option>
+                                    {% endif %}
+                                    
+                                    {% for isapre in isapres_disponibles %}
+                                        {% if not isapre_seleccionada or isapre.codigo != isapre_seleccionada.codigo %}
+                                        <option value="{{ isapre.codigo }}" 
+                                                data-porcentaje="{{ isapre.cotizacion_obligatoria }}">
+                                            {{ isapre.nombre }} ({{ isapre.cotizacion_obligatoria }}%)
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">% Pactado</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control input-porcentaje" 
+                                           id="cotizacionSaludPactada" value="{{ datos_liquidacion.cotizacion_salud_pactada|default:7 }}" 
+                                           step="0.01" min="7" max="100">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">% Obligatorio</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control" 
+                                           id="cotizacionSaludObligatoria" value="7" readonly>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Cotización 7%</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="cotizacionSaludObligatoriaValor" value="0" readonly step="0.01" style="background-color: #e8f4fd;">
+                                </div>
+                                <small class="info-text">7% obligatorio sobre total imponible</small>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Diferencia</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="diferenciaIsapre" value="{{ datos_liquidacion.diferencia_isapre|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Total Previsión</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="totalPrevision" value="{{ datos_liquidacion.total_prevision|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Impuesto -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Impuesto a la Renta</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Base Imponible</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="baseImpuesto" value="{{ datos_liquidacion.base_impuesto|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Anticipo</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="anticipoImpuesto" value="{{ datos_liquidacion.anticipo_impuesto|default:0 }}" step="1000">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Cuota Impuesto</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="cuotaImpuesto" value="{{ datos_liquidacion.cuota_impuesto|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-12 mt-1">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    UTM del período: ${{ periodo.utm|floatformat:0|default:"No disponible" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Préstamos y Seguros -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Préstamos y Seguros</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Préstamo CCAF</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="prestamoCCAF" value="{{ datos_liquidacion.prestamo_ccaf|default:trabajador.prestamo_2da_caja|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Préstamo Solidario</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="prestamoSolidario" value="{{ datos_liquidacion.prestamo_solidario|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Programa Ahorro/Leasing</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="programaAhorro" value="{{ datos_liquidacion.programa_ahorro_leasing|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Seguro CCAF</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="seguroCCAF" value="{{ datos_liquidacion.seguro_ccaf|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Cuota CCAF</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="cuotaCCAF" value="{{ datos_liquidacion.cuota_ccaf|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Préstamo Empresa</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="prestamoEmpresa" value="{{ datos_liquidacion.prestamo_empresa|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Otros Descuentos -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Otros Descuentos</h6>
+                        <div class="row g-2 mb-2">
+                            <div class="col-8">
+                                <input type="text" class="form-control form-control-sm" 
+                                       id="nombreOtroDescuento1" placeholder="Nombre descuento" value="{{ liquidacion_existente.nombre_otro_descuento_1|default:'' }}">
+                            </div>
+                            <div class="col-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="valorOtroDescuento1" value="{{ liquidacion_existente.valor_otro_descuento_1|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <input type="text" class="form-control form-control-sm" 
+                                       id="nombreOtroDescuento2" placeholder="Nombre descuento" value="{{ liquidacion_existente.nombre_otro_descuento_2|default:'' }}">
+                            </div>
+                            <div class="col-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="valorOtroDescuento2" value="{{ liquidacion_existente.valor_otro_descuento_2|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Descuentos -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">TOTAL DESCUENTOS</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control currency-input readonly-input fw-bold" 
+                                   id="totalDescuentos" value="{{ datos_liquidacion.total_descuentos|default:0 }}" readonly step="0.01" style="background-color: #f8d7da;">
+                        </div>
+                    </div>
+                    
+                    <!-- Total a Pagar -->
+                    <div class="total-box">
+                        <div class="total-label">TOTAL A PAGAR</div>
+                        <div class="total-value" id="totalPagar">{{ datos_liquidacion.liquido_pagable|default:0 }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Columna 3: Información Adicional (se mantiene igual) -->
+            <div class="col-md-4">
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-info-circle me-2"></i> Información Adicional
+                    </h5>
+                    
+                    <!-- Centro de Costo -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Centro de Costo</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Centro Costo</label>
+                                <input type="text" class="form-control form-control-sm readonly-input" 
+                                       value="{{ liquidacion_existente.centro_costo|default:trabajador.centro_costo_nombre|default:'No asignado' }}" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Costo Empleador</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input readonly-input" 
+                                           id="costoEmpleador" value="{{ liquidacion_existente.costo_empleador|default:0 }}" readonly step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AFC Empleador y Renta -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">AFC y Renta</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">AFC Empleador</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="afcEmpleador" value="{{ liquidacion_existente.afc_empleador|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Renta Imponible Anterior</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="rentaImponibleAnterior" value="{{ liquidacion_existente.renta_imponible_anterior|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seguros y APV Colectivo -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Seguros y APV</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Seguro Accidentes</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="seguroAccidentes" value="{{ liquidacion_existente.seguro_accidentes|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">SIS</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="sis" value="{{ liquidacion_existente.sis|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">APV Colectivo Empleador</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="apvColectivoEmpleador" value="{{ liquidacion_existente.apv_colectivo_empleador|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Trabajo Pesado Empleador</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="trabajoPesadoEmpleador" value="{{ liquidacion_existente.trabajo_pesado_empleador|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vacaciones, Licencias y Faltas (solo registro, sin afectar días trabajados) -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Ausencias</h6>
+                        
+                        <!-- Vacaciones -->
+                        <div class="row g-2 mb-2">
+                            <div class="col-3">
+                                <label class="form-label">Días</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="vacacionesDias" value="{{ liquidacion_existente.vacaciones_dias|default:0 }}" min="0" step="1">
+                            </div>
+                            <div class="col-9">
+                                <label class="form-label">Glosa</label>
+                                <input type="text" class="form-control form-control-sm" 
+                                       id="vacacionesGlosa" placeholder="Glosa vacaciones" value="{{ liquidacion_existente.vacaciones_glosa|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <!-- Licencias Médicas -->
+                        <div class="row g-2 mb-2">
+                            <div class="col-3">
+                                <label class="form-label">Días</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="licenciasDias" value="{{ liquidacion_existente.licencias_dias|default:0 }}" min="0" step="1">
+                            </div>
+                            <div class="col-9">
+                                <label class="form-label">Glosa</label>
+                                <input type="text" class="form-control form-control-sm" 
+                                       id="licenciasGlosa" placeholder="Glosa licencias" value="{{ liquidacion_existente.licencias_glosa|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <!-- Faltas -->
+                        <div class="row g-2">
+                            <div class="col-3">
+                                <label class="form-label">Días</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="faltasDias" value="{{ liquidacion_existente.faltas_dias|default:0 }}" min="0" step="1">
+                            </div>
+                            <div class="col-9">
+                                <label class="form-label">Glosa</label>
+                                <input type="text" class="form-control form-control-sm" 
+                                       id="faltasGlosa" placeholder="Glosa faltas" value="{{ liquidacion_existente.faltas_glosa|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reforma Previsional -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Reforma Previsional</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Cuenta AFP Empleador</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="cuentaAFPEmpleador" value="{{ liquidacion_existente.cuenta_afp_empleador|default:0 }}" step="1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Renta Protegida</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" 
+                                           id="rentaProtegida" value="{{ liquidacion_existente.renta_protegida|default:0 }}" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Movimientos Previred -->
+                    <div class="mb-3">
+                        <h6 class="sub-section-title">Movimientos Previred</h6>
+                        <div class="movimientos-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
+                            {% for valor, texto in movimientos_previred %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="movimiento_previred" 
+                                       id="movimiento_{{ valor }}" 
+                                       value="{{ valor }}"
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_0 and valor == 0 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_1 and valor == 1 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_2 and valor == 2 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_3 and valor == 3 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_4 and valor == 4 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_5 and valor == 5 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_6 and valor == 6 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_7 and valor == 7 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_8 and valor == 8 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_11 and valor == 11 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_12 and valor == 12 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_13 and valor == 13 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_14 and valor == 14 %}checked{% endif %}
+                                       {% if liquidacion_existente and liquidacion_existente.movimiento_previred_15 and valor == 15 %}checked{% endif %}>
+                                <label class="form-check-label" for="movimiento_{{ valor }}">
+                                    {{ texto }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="row g-2 mt-2">
+                            <div class="col-6">
+                                <label class="form-label">Desde</label>
+                                <input type="date" class="form-control form-control-sm" 
+                                       id="movimientoDesde" value="{{ liquidacion_existente.movimiento_desde|date:'Y-m-d'|default:'' }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Hasta</label>
+                                <input type="date" class="form-control form-control-sm" 
+                                       id="movimientoHasta" value="{{ liquidacion_existente.movimiento_hasta|date:'Y-m-d'|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Expectativa de Vida -->
+                    <div class="mb-3">
+                        <label class="form-label">Expectativa de Vida (años)</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               id="expectativaVida" value="{{ liquidacion_existente.expectativa_vida|default:0 }}" min="0" step="1">
+                    </div>
+                    
+                    <!-- Observaciones -->
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea class="form-control form-control-sm" id="observaciones" rows="3">{{ liquidacion_existente.observaciones|default:'' }}</textarea>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="mt-4">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success-custom btn-action" onclick="guardarLiquidacion()">
+                                <i class="fas fa-save me-2"></i> Guardar Liquidación
+                            </button>
+                            <button class="btn btn-primary-custom btn-action" data-bs-toggle="modal" data-bs-target="#modalFormatoImpresion">
+                                <i class="fas fa-print me-2"></i> Imprimir / PDF
+                            </button>
+
+                            <!-- Modal para seleccionar formato de impresión -->
+                            <div class="modal fade no-print" id="modalFormatoImpresion" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">
+                                                <i class="fas fa-print me-2"></i> Seleccionar Formato de Impresión
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <!-- Formato 1: Básico -->
+                                                <div class="col-md-3 mb-3">
+                                                    <div class="card formato-card" data-formato="basico">
+                                                        <div class="card-body text-center">
+                                                            <i class="fas fa-file-alt fa-3x mb-3 text-primary"></i>
+                                                            <h6 class="card-title">Formato Básico</h6>
+                                                            <p class="card-text small">Diseño simple y limpio</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Formato 2: Profesional -->
+                                                <div class="col-md-3 mb-3">
+                                                    <div class="card formato-card active" data-formato="profesional">
+                                                        <div class="card-body text-center">
+                                                            <i class="fas fa-briefcase fa-3x mb-3 text-success"></i>
+                                                            <h6 class="card-title">Formato Profesional</h6>
+                                                            <p class="card-text small">Estilo corporativo</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Formato 3: Detallado -->
+                                                <div class="col-md-3 mb-3">
+                                                    <div class="card formato-card" data-formato="detallado">
+                                                        <div class="card-body text-center">
+                                                            <i class="fas fa-list-alt fa-3x mb-3 text-warning"></i>
+                                                            <h6 class="card-title">Formato Detallado</h6>
+                                                            <p class="card-text small">Con desglose completo</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Formato 4: Compacto -->
+                                                <div class="col-md-3 mb-3">
+                                                    <div class="card formato-card" data-formato="compacto">
+                                                        <div class="card-body text-center">
+                                                            <i class="fas fa-file-invoice fa-3x mb-3 text-info"></i>
+                                                            <h6 class="card-title">Formato Compacto</h6>
+                                                            <p class="card-text small">Diseño profesional en 1 página</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Opciones adicionales -->
+                                            <div class="form-check mt-3">
+                                                <input class="form-check-input" type="checkbox" id="incluirFirma" checked>
+                                                <label class="form-check-label" for="incluirFirma">
+                                                    Incluir espacio para firma
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="incluirLogo" checked>
+                                                <label class="form-check-label" for="incluirLogo">
+                                                    Incluir logo de la empresa
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="button" class="btn btn-primary" onclick="generarPDF()">Generar PDF</button>
+                                            <button type="button" class="btn btn-info" onclick="imprimirDirecto()">Imprimir</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="{% url 'lista_liquidacion' alias=alias %}?periodo_id={{ periodo.id }}" 
+                               class="btn btn-secondary-custom btn-action">
+                                <i class="fas fa-times me-2"></i> Salir
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Librerías para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+    // ============================================
+    // CONFIGURACIÓN GLOBAL
+    // ============================================
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    const ALIAS = '{{ empresa.alias|default:empresa.slug }}';
+    const PERIODO_ID = '{{ periodo.id }}';
+    const TRABAJADOR_ID = '{{ trabajador.id }}';
+    const DIAS_HABILES = parseInt('{{ periodo.dias_habiles|default:22 }}') || 22;
+    
+    // 🔹 CORRECCIÓN: limpiar puntos de miles en UTM
+    let utmStr = '{{ periodo.utm|default:"0" }}'.replace(/\./g, '').replace(',', '.');
+    const UTM_DEL_PERIODO = parseFloat(utmStr) || 0;
+
+    // Datos del trabajador desde el backend
+    const TRABAJADOR_SUELDO = parseFloat('{{ trabajador.sueldo_mensual|default:0 }}'.replace(',', '.')) || 0;
+    const TRABAJADOR_AFP = '{{ trabajador.afp|default:"" }}';
+    const TRABAJADOR_ISAPRE = '{{ trabajador.isapre|default:"" }}';
+    const TRABAJADOR_TIPO_CONTRATO = '{{ trabajador.tipo_contrato|default:"" }}';
+    const TRABAJADOR_FECHA_CONTRATO = '{{ trabajador.fecha_contrato|date:"Y-m-d"|default:"" }}';
+
+    // Tramos Asignación Familiar
+    const TRAMOS_ASIGNACION = {
+        tramo1: { tope: 631976, monto: 22007 },
+        tramo2: { tope: 923067, monto: 13505 },
+        tramo3: { tope: 1439668, monto: 4267 }
+    };
+
+    // Monto asignación maternal
+    const MONTO_MATERNAL_POR_CARGA = 50000;
+
+    // Formato seleccionado para PDF
+    let formatoSeleccionado = 'profesional';
+
+    // ============================================
+    // FUNCIÓN DE NORMALIZACIÓN (para inputs con formato chileno)
+    // ============================================
+    function normalizarNumero(valor) {
+        if (!valor && valor !== 0) return 0;
+        if (typeof valor === 'number') return valor;
+        let strValor = valor.toString().trim();
+        // Eliminar TODOS los puntos (separadores de miles)
+        strValor = strValor.replace(/\./g, '');
+        // Reemplazar coma decimal por punto
+        strValor = strValor.replace(',', '.');
+        const num = parseFloat(strValor);
+        return isNaN(num) ? 0 : num;
+    }
+
+    function roundToTwo(num) {
+        const valor = normalizarNumero(num);
+        return Math.round(valor * 100) / 100;
+    }
+
+    function formatMoneyExacto(amount) {
+        const num = normalizarNumero(amount);
+        if (isNaN(num) || num === 0) return '0';
+        return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function corregirComasEnInputs() {
+        console.log('🔧 Corrigiendo comas en inputs...');
+        document.querySelectorAll('.input-porcentaje, input[type="number"], .currency-input').forEach(input => {
+            if (input.value && input.value.includes(',')) {
+                input.value = input.value.replace(',', '.');
+            }
+        });
+        document.querySelectorAll('[data-exacto]').forEach(el => {
+            if (el.dataset.exacto && el.dataset.exacto.includes(',')) {
+                el.dataset.exacto = el.dataset.exacto.replace(',', '.');
+            }
+        });
+    }
+
+    // ============================================
+    // FUNCIÓN PARA CARGAR DATOS DEL TRABAJADOR
+    // ============================================
+    function cargarDatosTrabajador() {
+        console.log('🔄 Cargando datos del trabajador...');
+        const inputSueldo = document.getElementById('sueldoMensual');
+        if (inputSueldo) {
+            let sueldoValor = normalizarNumero(inputSueldo.value) ||
+                normalizarNumero('{{ datos_liquidacion.sueldo_mensual|default:0 }}') ||
+                TRABAJADOR_SUELDO || 0;
+            inputSueldo.value = sueldoValor;
+            inputSueldo.dataset.exacto = sueldoValor;
+            inputSueldo.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // Buscar y seleccionar AFP
+        if (TRABAJADOR_AFP) {
+            const selectAFP = document.getElementById('selectAFP');
+            if (selectAFP) {
+                let codigoAFP = TRABAJADOR_AFP;
+                let nombreAFP = TRABAJADOR_AFP;
+                if (TRABAJADOR_AFP.includes(' - ')) {
+                    const partes = TRABAJADOR_AFP.split(' - ');
+                    codigoAFP = partes[0].trim();
+                    nombreAFP = partes[1].trim();
+                }
+                for (let i = 0; i < selectAFP.options.length; i++) {
+                    const option = selectAFP.options[i];
+                    if (option.value.toUpperCase() === codigoAFP.toUpperCase() ||
+                        option.text.toUpperCase().includes(nombreAFP.toUpperCase()) ||
+                        option.text.toUpperCase().includes(TRABAJADOR_AFP.toUpperCase())) {
+                        selectAFP.selectedIndex = i;
+                        if (option.dataset.porcentaje) {
+                            let porcentaje = normalizarNumero(option.dataset.porcentaje);
+                            const inputPorcentaje = document.getElementById('porcentajeAFP');
+                            if (inputPorcentaje) {
+                                inputPorcentaje.value = porcentaje.toFixed(2);
+                                inputPorcentaje.dataset.exacto = porcentaje;
+                                inputPorcentaje.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Buscar y seleccionar Isapre
+        if (TRABAJADOR_ISAPRE) {
+            const selectIsapre = document.getElementById('selectIsapre');
+            if (selectIsapre) {
+                if (TRABAJADOR_ISAPRE === 'FONASA') {
+                    for (let i = 0; i < selectIsapre.options.length; i++) {
+                        if (selectIsapre.options[i].value === 'FONASA') {
+                            selectIsapre.selectedIndex = i;
+                            const inputSalud = document.getElementById('cotizacionSaludPactada');
+                            if (inputSalud) {
+                                inputSalud.value = '7.00';
+                                inputSalud.dataset.exacto = 7.00;
+                                inputSalud.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    let codigoIsapre = TRABAJADOR_ISAPRE;
+                    let nombreIsapre = TRABAJADOR_ISAPRE;
+                    if (TRABAJADOR_ISAPRE.includes(' - ')) {
+                        const partes = TRABAJADOR_ISAPRE.split(' - ');
+                        codigoIsapre = partes[0].trim();
+                        nombreIsapre = partes[1].trim();
+                    }
+                    for (let i = 0; i < selectIsapre.options.length; i++) {
+                        const option = selectIsapre.options[i];
+                        if (option.value.toUpperCase() === codigoIsapre.toUpperCase() ||
+                            option.text.toUpperCase().includes(nombreIsapre.toUpperCase()) ||
+                            option.text.toUpperCase().includes(TRABAJADOR_ISAPRE.toUpperCase())) {
+                            selectIsapre.selectedIndex = i;
+                            if (option.dataset.porcentaje) {
+                                let porcentaje = normalizarNumero(option.dataset.porcentaje);
+                                const inputSalud = document.getElementById('cotizacionSaludPactada');
+                                if (inputSalud) {
+                                    inputSalud.value = porcentaje.toFixed(2);
+                                    inputSalud.dataset.exacto = porcentaje;
+                                    inputSalud.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ============================================
+    // FUNCIÓN PARA DETERMINAR PORCENTAJES AFC
+    // ============================================
+    function determinarPorcentajesAFC() {
+        const tipoContrato = TRABAJADOR_TIPO_CONTRATO;
+        const fechaContratoStr = TRABAJADOR_FECHA_CONTRATO;
+        let porcentajeTrabajador = 0;
+        let porcentajeEmpleador = 0;
+        if (!tipoContrato) {
+            console.warn("⚠️ Tipo de contrato no especificado, usando valores por defecto");
+            return { trabajador: 2.4, empleador: 0.8 };
+        }
+        switch (tipoContrato) {
+            case 'INDEFINIDO':
+                if (fechaContratoStr) {
+                    const fechaContrato = new Date(fechaContratoStr);
+                    const fechaLimite = new Date('2021-01-01');
+                    if (fechaContrato < fechaLimite) {
+                        porcentajeTrabajador = 0.6;
+                        porcentajeEmpleador = 2.4;
+                    } else {
+                        porcentajeTrabajador = 2.4;
+                        porcentajeEmpleador = 0.8;
+                    }
+                } else {
+                    porcentajeTrabajador = 2.4;
+                    porcentajeEmpleador = 0.8;
+                }
+                break;
+            case 'FIJO':
+            case 'OBRA':
+                porcentajeTrabajador = 2.8;
+                porcentajeEmpleador = 0.0;
+                break;
+            case 'CASA_PARTICULAR':
+                porcentajeTrabajador = 2.4;
+                porcentajeEmpleador = 0.8;
+                break;
+            default:
+                console.warn("⚠️ Tipo de contrato no reconocido:", tipoContrato);
+                porcentajeTrabajador = 2.4;
+                porcentajeEmpleador = 0.8;
+        }
+        return {
+            trabajador: porcentajeTrabajador,
+            empleador: porcentajeEmpleador
+        };
+    }
+
+    // ============================================
+    // FUNCIONES DE CÁLCULO
+    // ============================================
+    function calcularValoresBase() {
+        const sueldoMensual = getValor('sueldoMensual', true);
+        const valorDia = sueldoMensual / 30;
+        const valorHora = sueldoMensual / 180;
+        const inputValorDia = document.getElementById('valorDia');
+        if (inputValorDia) {
+            inputValorDia.value = valorDia.toFixed(2);
+            inputValorDia.dataset.exacto = valorDia;
+        }
+        const inputValorHora = document.getElementById('valorHora');
+        if (inputValorHora) {
+            inputValorHora.value = valorHora.toFixed(2);
+            inputValorHora.dataset.exacto = valorHora;
+        }
+        return { sueldoMensual, valorDia, valorHora };
+    }
+
+    function calcularAtraso() {
+        const horasAtraso = normalizarNumero(document.getElementById('horasAtraso')?.value) || 0;
+        const valorHora = getValor('valorHora', true);
+        const atraso = horasAtraso * valorHora;
+        const input = document.getElementById('atraso');
+        if (input) {
+            input.value = atraso.toFixed(2);
+            input.dataset.exacto = atraso;
+        }
+        return atraso;
+    }
+
+    function calcularHorasExtra() {
+        const valorHora = getValor('valorHora', true);
+        const h50 = normalizarNumero(document.getElementById('horasExtra50')?.value) || 0;
+        const h100 = normalizarNumero(document.getElementById('horasExtra100')?.value) || 0;
+        const h150 = normalizarNumero(document.getElementById('horasExtra150')?.value) || 0;
+        const extra50 = h50 * valorHora * 1.5;
+        const extra100 = h100 * valorHora * 2;
+        const extra150 = h150 * valorHora * 2.5;
+        const total = extra50 + extra100 + extra150;
+        const input = document.getElementById('totalHorasExtra');
+        if (input) {
+            input.value = total.toFixed(2);
+            input.dataset.exacto = total;
+        }
+        return total;
+    }
+
+    // ============================================
+    // GRATIFICACIÓN
+    // ============================================
+    function calcularTopeGratificacion() {
+        const IMM_ACTUAL = 460000;
+        const tope = IMM_ACTUAL * 4.75;
+        const topeSpan = document.getElementById('topeGratificacion');
+        if (topeSpan) topeSpan.textContent = formatMoneyExacto(tope);
+        return tope;
+    }
+
+    function calcularBaseGratificacion() {
+        const sueldoMensual = getValor('sueldoMensual', true);
+        const horasExtra = getValor('totalHorasExtra', true);
+        const comisiones = getValor('comisiones', true) || 0;
+        const bonos = getValor('bonos', true) || 0;
+        const otrosImponibles = getValor('otrosImponibles', true) || 0;
+        const montoCargoDomingo = getValor('montoCargoDomingo', true) || 0;
+        const utilidades = getValor('utilidades', true) || 0;
+        const semanaCorrida = getValor('semanaCorrida', true) || 0;
+        const base = sueldoMensual + horasExtra + comisiones + bonos + otrosImponibles +
+            montoCargoDomingo + utilidades + semanaCorrida;
+        return base;
+    }
+
+    function calcularGratificacion() {
+        const tipo = document.getElementById('tipoGratificacion')?.value || 'CON_TOPE';
+        if (tipo === 'EXENTO') {
+            document.getElementById('gratificacion').value = 0;
+            document.getElementById('gratificacion').dataset.exacto = 0;
+            document.getElementById('gratificacion').dispatchEvent(new Event('change', { bubbles: true }));
+            return 0;
+        }
+        const baseGratificacion = calcularBaseGratificacion();
+        const porcentaje = getValor('porcentajeGratificacion', true) || 25;
+        const inputBaseGrat = document.getElementById('baseGratificacion');
+        if (inputBaseGrat) {
+            inputBaseGrat.value = baseGratificacion.toFixed(2);
+            inputBaseGrat.dataset.exacto = baseGratificacion;
+        }
+        let gratificacionCalculada = (baseGratificacion * porcentaje) / 100;
+        if (tipo === 'CON_TOPE') {
+            const tope = calcularTopeGratificacion();
+            gratificacionCalculada = Math.min(gratificacionCalculada, tope);
+            const detalle = document.getElementById('baseGratificacionDetalle');
+            if (detalle) {
+                detalle.innerHTML = `Base: $${formatMoneyExacto(baseGratificacion)} × ${porcentaje}% = $${formatMoneyExacto((baseGratificacion * porcentaje) / 100)} (tope: $${formatMoneyExacto(tope)})`;
+            }
+        } else {
+            const detalle = document.getElementById('baseGratificacionDetalle');
+            if (detalle) {
+                detalle.innerHTML = `Base: $${formatMoneyExacto(baseGratificacion)} × ${porcentaje}% = $${formatMoneyExacto(gratificacionCalculada)} (sin tope)`;
+            }
+        }
+        const inputGrat = document.getElementById('gratificacion');
+        if (inputGrat) {
+            inputGrat.value = gratificacionCalculada.toFixed(2);
+            inputGrat.dataset.exacto = gratificacionCalculada;
+            inputGrat.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return gratificacionCalculada;
+    }
+
+    function calcularAsignacionFamiliar() {
+        const numCargas = parseInt(document.getElementById('numeroCargas')?.value) || 0;
+        const promedio = normalizarNumero(document.getElementById('promedioIngresos')?.value) || 0;
+        if (numCargas === 0 || promedio === 0) return 0;
+        let montoPorCarga = 0;
+        if (promedio <= TRAMOS_ASIGNACION.tramo1.tope) {
+            montoPorCarga = TRAMOS_ASIGNACION.tramo1.monto;
+        } else if (promedio <= TRAMOS_ASIGNACION.tramo2.tope) {
+            montoPorCarga = TRAMOS_ASIGNACION.tramo2.monto;
+        } else if (promedio <= TRAMOS_ASIGNACION.tramo3.tope) {
+            montoPorCarga = TRAMOS_ASIGNACION.tramo3.monto;
+        } else {
+            return 0;
+        }
+        const asignacion = montoPorCarga * numCargas;
+        const input = document.getElementById('asignacionFamiliar');
+        if (input) {
+            input.value = asignacion.toFixed(2);
+            input.dataset.exacto = asignacion;
+        }
+        return asignacion;
+    }
+
+    function calcularAsignacionMaternal() {
+        const cargasMaternales = parseInt(document.getElementById('cargasMaternales')?.value) || 0;
+        const retroactiva = normalizarNumero(document.getElementById('retroactiva')?.value) || 0;
+        const asignacion = (cargasMaternales * MONTO_MATERNAL_POR_CARGA) + retroactiva;
+        const input = document.getElementById('asignacionMaternal');
+        if (input) {
+            input.value = asignacion.toFixed(2);
+            input.dataset.exacto = asignacion;
+        }
+        return asignacion;
+    }
+
+    function calcularAFP(totalImponible) {
+        const porcentajeAFP = getValor('porcentajeAFP', true) || 11;
+        const cotizacionAFP = (totalImponible * porcentajeAFP) / 100;
+        const input = document.getElementById('cotizacionAFP');
+        if (input) {
+            input.value = cotizacionAFP.toFixed(2);
+            input.dataset.exacto = cotizacionAFP;
+        }
+        return cotizacionAFP;
+    }
+
+    function calcularAFC(totalImponible) {
+        const porcentajesBase = determinarPorcentajesAFC();
+        const trabajoPesado = getValor('trabajoPesado', true) || 0;
+        const inputPorcTrab = document.getElementById('porcentajeAFCTrabajador');
+        const inputPorcEmp = document.getElementById('porcentajeAFCEmpleador');
+        if (inputPorcTrab) {
+            inputPorcTrab.value = porcentajesBase.trabajador.toFixed(2);
+            inputPorcTrab.dataset.exacto = porcentajesBase.trabajador;
+        }
+        if (inputPorcEmp) {
+            inputPorcEmp.value = porcentajesBase.empleador.toFixed(2);
+            inputPorcEmp.dataset.exacto = porcentajesBase.empleador;
+        }
+        const inputBase = document.getElementById('baseAFC');
+        if (inputBase) {
+            inputBase.value = totalImponible.toFixed(2);
+            inputBase.dataset.exacto = totalImponible;
+        }
+        const porcentajeTotal = porcentajesBase.trabajador + trabajoPesado;
+        const cotizacion = (totalImponible * porcentajeTotal) / 100;
+        const input = document.getElementById('cotizacionAFC');
+        if (input) {
+            input.value = cotizacion.toFixed(2);
+            input.dataset.exacto = cotizacion;
+        }
+        return { cotizacion, porcentajeTrabajador: porcentajesBase.trabajador, porcentajeEmpleador: porcentajesBase.empleador, trabajoPesado };
+    }
+
+    function calcularSalud(totalImponible) {
+        const porcentajePactado = getValor('cotizacionSaludPactada', true) || 7;
+        const porcentajeObligatorio = 7;
+        const cotizacionObligatoria = (totalImponible * porcentajeObligatorio) / 100;
+        const cotizacionPactada = (totalImponible * porcentajePactado) / 100;
+        const diferenciaIsapre = Math.max(0, cotizacionPactada - cotizacionObligatoria);
+        const inputCotizacionObligatoria = document.getElementById('cotizacionSaludObligatoriaValor');
+        if (inputCotizacionObligatoria) {
+            inputCotizacionObligatoria.value = cotizacionObligatoria.toFixed(2);
+            inputCotizacionObligatoria.dataset.exacto = cotizacionObligatoria;
+        }
+        const inputDiferencia = document.getElementById('diferenciaIsapre');
+        if (inputDiferencia) {
+            inputDiferencia.value = diferenciaIsapre.toFixed(2);
+            inputDiferencia.dataset.exacto = diferenciaIsapre;
+        }
+        return { cotizacionObligatoria, cotizacionPactada, diferenciaIsapre };
+    }
+
+    // ============================================
+    // FUNCIÓN DE CÁLCULO DE IMPUESTO
+    // ============================================
+    function calcularImpuesto(rentaMensual, utm) {
+        if (utm <= 0) {
+            console.warn("⚠️ UTM no disponible para calcular impuesto");
+            return 0;
+        }
+        const TRAMOS_UTM = [
+            { desde: 0, hasta: 13.5, factor: 0, rebaja: 0 },
+            { desde: 13.5, hasta: 30, factor: 0.04, rebaja: 0.54 },
+            { desde: 30, hasta: 50, factor: 0.08, rebaja: 1.74 },
+            { desde: 50, hasta: 70, factor: 0.135, rebaja: 4.49 },
+            { desde: 70, hasta: 90, factor: 0.23, rebaja: 11.14 },
+            { desde: 90, hasta: 120, factor: 0.304, rebaja: 17.80 },
+            { desde: 120, hasta: 310, factor: 0.35, rebaja: 23.32 },
+            { desde: 310, hasta: Infinity, factor: 0.4, rebaja: 38.82 }
+        ];
+        const rentaEnUTM = rentaMensual / utm;
+        let tramoSeleccionado = null;
+        for (let tramo of TRAMOS_UTM) {
+            if (tramo.desde === 0 && rentaEnUTM <= tramo.hasta) {
+                tramoSeleccionado = tramo;
+                break;
+            }
+            if (rentaEnUTM > tramo.desde && rentaEnUTM <= tramo.hasta) {
+                tramoSeleccionado = tramo;
+                break;
+            }
+        }
+        if (!tramoSeleccionado || tramoSeleccionado.factor === 0) return 0;
+        
+        // Fórmula correcta: (Renta en UTM * Factor - Rebaja) * UTM
+        const impuestoEnUTM = (rentaEnUTM * tramoSeleccionado.factor) - tramoSeleccionado.rebaja;
+        const impuestoEnPesos = impuestoEnUTM * utm;
+        
+        return Math.max(0, impuestoEnPesos);
+    }
+
+    // ============================================
+    // FUNCIÓN PRINCIPAL DE CÁLCULO
+    // ============================================
+    function actualizarCalculos() {
+        console.log('🔄 Actualizando cálculos...');
+
+        const { sueldoMensual } = calcularValoresBase();
+        const atraso = calcularAtraso();
+        const horasExtra = calcularHorasExtra();
+        const gratificacion = calcularGratificacion();
+
+        const comisiones = getValor('comisiones', true) || 0;
+        const bonos = getValor('bonos', true) || 0;
+        const otrosImponibles = getValor('otrosImponibles', true) || 0;
+        const montoCargoDomingo = getValor('montoCargoDomingo', true) || 0;
+        const utilidades = getValor('utilidades', true) || 0;
+        const semanaCorrida = getValor('semanaCorrida', true) || 0;
+
+        // Total imponible: incluye sueldoMensual completo (no proporcional)
+        const totalImponible = sueldoMensual + horasExtra + gratificacion + comisiones + bonos + otrosImponibles +
+            montoCargoDomingo + utilidades + semanaCorrida - atraso;
+
+        document.getElementById('totalImponible').value = totalImponible.toFixed(2);
+        document.getElementById('totalImponible').dataset.exacto = totalImponible;
+        document.getElementById('baseAFP').value = totalImponible.toFixed(2);
+        document.getElementById('baseAFP').dataset.exacto = totalImponible;
+        document.getElementById('baseImpuesto').value = totalImponible.toFixed(2);
+        document.getElementById('baseImpuesto').dataset.exacto = totalImponible;
+
+        const asignacionFamiliar = calcularAsignacionFamiliar();
+        const asignacionMaternal = calcularAsignacionMaternal();
+
+        const colacion = getValor('colacion', true) || 0;
+        const movilizacion = getValor('movilizacion', true) || 0;
+        const bonoNoImp1 = getValor('valorBonoNoImponible1', true) || 0;
+        const bonoNoImp2 = getValor('valorBonoNoImponible2', true) || 0;
+
+        const totalNoImponible = asignacionFamiliar + asignacionMaternal + colacion + movilizacion + bonoNoImp1 + bonoNoImp2;
+        document.getElementById('totalNoImponible').value = totalNoImponible.toFixed(2);
+        document.getElementById('totalNoImponible').dataset.exacto = totalNoImponible;
+
+        const cotizacionAFP = calcularAFP(totalImponible);
+        const afc = calcularAFC(totalImponible);
+        const salud = calcularSalud(totalImponible);
+
+        const apv = getValor('apv', true) || 0;
+        const apv2 = getValor('apv2', true) || 0;
+        const apvColectivo = getValor('apvColectivo', true) || 0;
+        const cuenta2AFP = getValor('cuenta2AFP', true) || 0;
+
+        const totalPrevision = cotizacionAFP + afc.cotizacion + salud.cotizacionObligatoria + salud.diferenciaIsapre +
+            apv + apv2 + apvColectivo + cuenta2AFP;
+        document.getElementById('totalPrevision').value = totalPrevision.toFixed(2);
+        document.getElementById('totalPrevision').dataset.exacto = totalPrevision;
+
+        // Impuesto
+        let impuestoBase = 0;
+        if (UTM_DEL_PERIODO > 0) {
+            impuestoBase = calcularImpuesto(totalImponible, UTM_DEL_PERIODO);
+        } else {
+            impuestoBase = calcularImpuesto(totalImponible, 69889);
+        }
+        // Redondear a 2 decimales
+        const impuestoAPagar = Math.round(impuestoBase * 100) / 100;
+        document.getElementById('cuotaImpuesto').value = impuestoAPagar.toFixed(2);
+        document.getElementById('cuotaImpuesto').dataset.exacto = impuestoAPagar;
+
+        const anticipoSueldo = getValor('anticipoImpuesto', true) || 0;
+
+        const prestamoCCAF = getValor('prestamoCCAF', true) || 0;
+        const prestamoSolidario = getValor('prestamoSolidario', true) || 0;
+        const programaAhorro = getValor('programaAhorro', true) || 0;
+        const seguroCCAF = getValor('seguroCCAF', true) || 0;
+        const cuotaCCAF = getValor('cuotaCCAF', true) || 0;
+        const prestamoEmpresa = getValor('prestamoEmpresa', true) || 0;
+        const otrosDesc1 = getValor('valorOtroDescuento1', true) || 0;
+        const otrosDesc2 = getValor('valorOtroDescuento2', true) || 0;
+
+        const totalDescuentos = totalPrevision + impuestoAPagar + prestamoCCAF + prestamoSolidario + programaAhorro +
+            seguroCCAF + cuotaCCAF + prestamoEmpresa + otrosDesc1 + otrosDesc2;
+        document.getElementById('totalDescuentos').value = totalDescuentos.toFixed(2);
+        document.getElementById('totalDescuentos').dataset.exacto = totalDescuentos;
+
+        const totalHaberes = totalImponible + totalNoImponible;
+        const totalHabSpan = document.getElementById('totalHaberes');
+        if (totalHabSpan) {
+            totalHabSpan.textContent = '$ ' + formatMoneyExacto(totalHaberes);
+            totalHabSpan.dataset.exacto = totalHaberes;
+        }
+
+        const totalPagar = Math.max(0, totalHaberes - totalDescuentos - anticipoSueldo);
+        const totalPagSpan = document.getElementById('totalPagar');
+        if (totalPagSpan) {
+            totalPagSpan.textContent = '$ ' + formatMoneyExacto(totalPagar);
+            totalPagSpan.dataset.exacto = totalPagar;
+        }
+
+        console.log('✅ Cálculos actualizados:', {
+            imponible: totalImponible.toFixed(2),
+            gratificacion: gratificacion.toFixed(2),
+            afp: cotizacionAFP.toFixed(2),
+            afc: afc.cotizacion.toFixed(2),
+            salud7: salud.cotizacionObligatoria.toFixed(2),
+            diferencia: salud.diferenciaIsapre.toFixed(2),
+            impuesto: impuestoAPagar.toFixed(2),
+            anticipo: anticipoSueldo.toFixed(2),
+            liquido: totalPagar.toFixed(2)
+        });
+    }
+
+    // ============================================
+    // FUNCIÓN DE GUARDADO
+    // ============================================
+    async function guardarLiquidacion() {
+        if (!confirm('¿Guardar liquidación?')) return;
+        const btnGuardar = event.target;
+        const originalText = btnGuardar.innerHTML;
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Guardando...';
+
+        try {
+            const movimientos = {
+                '0': document.getElementById('movimiento_0')?.checked || false,
+                '1': document.getElementById('movimiento_1')?.checked || false,
+                '2': document.getElementById('movimiento_2')?.checked || false,
+                '3': document.getElementById('movimiento_3')?.checked || false,
+                '4': document.getElementById('movimiento_4')?.checked || false,
+                '5': document.getElementById('movimiento_5')?.checked || false,
+                '6': document.getElementById('movimiento_6')?.checked || false,
+                '7': document.getElementById('movimiento_7')?.checked || false,
+                '8': document.getElementById('movimiento_8')?.checked || false,
+                '11': document.getElementById('movimiento_11')?.checked || false,
+                '12': document.getElementById('movimiento_12')?.checked || false,
+                '13': document.getElementById('movimiento_13')?.checked || false,
+                '14': document.getElementById('movimiento_14')?.checked || false,
+                '15': document.getElementById('movimiento_15')?.checked || false,
+            };
+
+            const liquidacionData = {
+                periodo_id: PERIODO_ID,
+                trabajador_id: TRABAJADOR_ID,
+                
+                glosa: document.getElementById('selectGlosa')?.value || 'LIQUIDACION_SUELDO',
+                estado: 'GENERADA',
+                haberes_colegio: false,
+                
+                dias_trabajados: parseInt(document.getElementById('diasTrabajados')?.value) || 0,
+                horas_trabajadas: 180,
+                horas_atraso: normalizarNumero(document.getElementById('horasAtraso')?.value) || 0,
+                dias_habiles_trabajados: DIAS_HABILES,
+                dias_habiles: DIAS_HABILES,
+                dias_domingo_festivos: 0,
+                
+                sueldo_mensual: roundToTwo(getValor('sueldoMensual', true)),
+                sueldo_diario: roundToTwo(getValor('valorDia', true)),
+                atraso: roundToTwo(getValor('atraso', true)),
+                
+                horas_extra_50: normalizarNumero(document.getElementById('horasExtra50')?.value) || 0,
+                horas_extra_100: normalizarNumero(document.getElementById('horasExtra100')?.value) || 0,
+                horas_extra_150: normalizarNumero(document.getElementById('horasExtra150')?.value) || 0,
+                monto_horas_extra: roundToTwo(getValor('totalHorasExtra', true)),
+                total_horas_extra: roundToTwo(getValor('totalHorasExtra', true)),
+                
+                total_comision: roundToTwo(getValor('comisiones', true)),
+                horas_cargo_domingo: parseInt(document.getElementById('horasCargoDomingo')?.value) || 0,
+                monto_cargo_domingo: roundToTwo(getValor('montoCargoDomingo', true)),
+                
+                utilidades: roundToTwo(getValor('utilidades', true)),
+                semana_corrida: roundToTwo(getValor('semanaCorrida', true)),
+                total_semana_corrida: roundToTwo(getValor('semanaCorrida', true)),
+                total_haberes_variables: 0,
+                
+                tipo_gratificacion: document.getElementById('tipoGratificacion')?.value || 'CON_TOPE',
+                porcentaje_gratificacion: roundToTwo(getValor('porcentajeGratificacion', true)) || 25.00,
+                base_gratificacion: roundToTwo(getValor('baseGratificacion', true)) || 0,
+                monto_gratificacion: roundToTwo(getValor('gratificacion', true)) || 0,
+                
+                bonos: roundToTwo(getValor('bonos', true)),
+                
+                numero_cargas: parseInt(document.getElementById('numeroCargas')?.value) || 0,
+                promedio_ingresos: roundToTwo(getValor('promedioIngresos', true)),
+                numero_cargas_maternales: parseInt(document.getElementById('cargasMaternales')?.value) || 0,
+                retroactiva: roundToTwo(getValor('retroactiva', true)),
+                
+                colacion: roundToTwo(getValor('colacion', true)),
+                movilizacion: roundToTwo(getValor('movilizacion', true)),
+                
+                nombre_otro_bono_1: document.getElementById('nombreBonoNoImponible1')?.value || '',
+                valor_otro_bono_1: roundToTwo(getValor('valorBonoNoImponible1', true)),
+                nombre_otro_bono_2: document.getElementById('nombreBonoNoImponible2')?.value || '',
+                valor_otro_bono_2: roundToTwo(getValor('valorBonoNoImponible2', true)),
+                
+                afp_nombre: getSelectTexto('selectAFP'),
+                porcentaje_afp: roundToTwo(getValor('porcentajeAFP', true)) || 11,
+                base_afp: roundToTwo(getValor('baseAFP', true)),
+                cotizacion_afp: roundToTwo(getValor('cotizacionAFP', true)),
+                cuenta_2_afp: roundToTwo(getValor('cuenta2AFP', true)),
+                
+                tipo_contrato: TRABAJADOR_TIPO_CONTRATO,
+                fecha_contrato: TRABAJADOR_FECHA_CONTRATO || null,
+                porcentaje_afc_trabajador: roundToTwo(getValor('porcentajeAFCTrabajador', true)) || 0,
+                porcentaje_afc_empleador: roundToTwo(getValor('porcentajeAFCEmpleador', true)) || 0,
+                porcentaje_trabajo_pesado: roundToTwo(getValor('trabajoPesado', true)) || 0,
+                base_afc: roundToTwo(getValor('baseAFC', true)),
+                cotizacion_afc: roundToTwo(getValor('cotizacionAFC', true)),
+                
+                apv: roundToTwo(getValor('apv', true)),
+                apv2: roundToTwo(getValor('apv2', true)),
+                afiliado_voluntario: document.getElementById('afiliadoVoluntario')?.checked || false,
+                apv_colectivo: roundToTwo(getValor('apvColectivo', true)),
+                
+                isapre_nombre: getSelectTexto('selectIsapre'),
+                cotizacion_salud_pactada: roundToTwo(getValor('cotizacionSaludPactada', true)) || 7,
+                cotizacion_salud_obligatoria: 7.00,
+                diferencia_isapre: roundToTwo(getValor('diferenciaIsapre', true)),
+                
+                base_impuesto: roundToTwo(getValor('baseImpuesto', true)),
+                anticipo_impuesto: roundToTwo(getValor('anticipoImpuesto', true)),
+                cuota_impuesto: roundToTwo(getValor('cuotaImpuesto', true)),
+                
+                prestamo_ccaf: roundToTwo(getValor('prestamoCCAF', true)),
+                prestamo_solidario: roundToTwo(getValor('prestamoSolidario', true)),
+                programa_ahorro_leasing: roundToTwo(getValor('programaAhorro', true)),
+                seguro_ccaf: roundToTwo(getValor('seguroCCAF', true)),
+                cuota_ccaf: roundToTwo(getValor('cuotaCCAF', true)),
+                prestamo_empresa: roundToTwo(getValor('prestamoEmpresa', true)),
+                
+                nombre_otro_descuento_1: document.getElementById('nombreOtroDescuento1')?.value || '',
+                valor_otro_descuento_1: roundToTwo(getValor('valorOtroDescuento1', true)),
+                nombre_otro_descuento_2: document.getElementById('nombreOtroDescuento2')?.value || '',
+                valor_otro_descuento_2: roundToTwo(getValor('valorOtroDescuento2', true)),
+                
+                centro_costo: '{{ trabajador.centro_costo_nombre|default:"No asignado"|escapejs }}',
+                costo_empleador: roundToTwo(getValor('costoEmpleador', true)),
+                afc_empleador: roundToTwo(getValor('afcEmpleador', true)),
+                renta_imponible_anterior: roundToTwo(getValor('rentaImponibleAnterior', true)),
+                seguro_accidentes: roundToTwo(getValor('seguroAccidentes', true)),
+                sis: roundToTwo(getValor('sis', true)),
+                apv_colectivo_empleador: roundToTwo(getValor('apvColectivoEmpleador', true)),
+                trabajo_pesado_empleador: roundToTwo(getValor('trabajoPesadoEmpleador', true)),
+                
+                vacaciones_dias: parseInt(document.getElementById('vacacionesDias')?.value) || 0,
+                vacaciones_glosa: document.getElementById('vacacionesGlosa')?.value || '',
+                licencias_dias: parseInt(document.getElementById('licenciasDias')?.value) || 0,
+                licencias_glosa: document.getElementById('licenciasGlosa')?.value || '',
+                faltas_dias: parseInt(document.getElementById('faltasDias')?.value) || 0,
+                faltas_glosa: document.getElementById('faltasGlosa')?.value || '',
+                
+                movimiento_previred_0: movimientos['0'],
+                movimiento_previred_1: movimientos['1'],
+                movimiento_previred_2: movimientos['2'],
+                movimiento_previred_3: movimientos['3'],
+                movimiento_previred_4: movimientos['4'],
+                movimiento_previred_5: movimientos['5'],
+                movimiento_previred_6: movimientos['6'],
+                movimiento_previred_7: movimientos['7'],
+                movimiento_previred_8: movimientos['8'],
+                movimiento_previred_11: movimientos['11'],
+                movimiento_previred_12: movimientos['12'],
+                movimiento_previred_13: movimientos['13'],
+                movimiento_previred_14: movimientos['14'],
+                movimiento_previred_15: movimientos['15'],
+                movimiento_desde: document.getElementById('movimientoDesde')?.value || null,
+                movimiento_hasta: document.getElementById('movimientoHasta')?.value || null,
+                
+                cuenta_afp_empleador: roundToTwo(getValor('cuentaAFPEmpleador', true)),
+                renta_protegida: roundToTwo(getValor('rentaProtegida', true)),
+                expectativa_vida: parseInt(document.getElementById('expectativaVida')?.value) || 0,
+                
+                total_imponible: roundToTwo(getValor('totalImponible', true)),
+                total_haberes: roundToTwo(getValor('totalHaberes', true)),
+                total_descuentos: roundToTwo(getValor('totalDescuentos', true)),
+                liquido_pagable: roundToTwo(getValor('totalPagar', true)),
+                total_prevision: roundToTwo(getValor('totalPrevision', true)),
+                
+                observaciones: document.getElementById('observaciones')?.value || '',
+            };
+
+            Object.keys(liquidacionData).forEach(key => {
+                if (liquidacionData[key] === undefined || liquidacionData[key] === null) delete liquidacionData[key];
+            });
+
+            console.log('📤 Enviando datos:', liquidacionData);
+
+            const response = await fetch(`/contabilidad/${ALIAS}/liquidaciones/guardar/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify(liquidacionData)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('✅ Liquidación guardada exitosamente');
+                setTimeout(() => window.location.href = `/contabilidad/${ALIAS}/liquidaciones/lista/?periodo_id=${PERIODO_ID}`, 1500);
+            } else {
+                alert('❌ Error: ' + (data.message || 'Error desconocido'));
+                if (data.errors) console.error('Detalles del error:', data.errors);
+            }
+        } catch (error) {
+            console.error('Error completo:', error);
+            alert('❌ Error al guardar: ' + error.message);
+        } finally {
+            btnGuardar.innerHTML = originalText;
+            btnGuardar.disabled = false;
+        }
+    }
+
+    // ============================================
+    // FUNCIONES DE IMPRESIÓN (PDF)
+    // ============================================
+    function seleccionarFormato(elemento, formato) {
+        document.querySelectorAll('.formato-card').forEach(c => c.classList.remove('active'));
+        elemento.classList.add('active');
+        formatoSeleccionado = formato;
+    }
+
+    function getValor(id, usarDataset = false) {
+        const elemento = document.getElementById(id);
+        if (!elemento) return 0;
+        if (usarDataset && elemento.dataset.exacto) {
+            return parseFloat(elemento.dataset.exacto) || 0;
+        }
+        return normalizarNumero(elemento.value);
+    }
+
+    function getTexto(id) {
+        return document.getElementById(id)?.value || '';
+    }
+
+    function getSelectTexto(id) {
+        const select = document.getElementById(id);
+        if (!select) return '';
+        return select.options[select.selectedIndex]?.text.split(' (')[0] || '';
+    }
+
+    function obtenerDatosParaPDF() {
+        // Calcular manualmente el total no imponible
+        const colacion = getValor('colacion', true);
+        const movilizacion = getValor('movilizacion', true);
+        const asignacionFamiliar = getValor('asignacionFamiliar', true);
+        const asignacionMaternal = getValor('asignacionMaternal', true);
+        const bonoNoImp1 = getValor('valorBonoNoImponible1', true);
+        const bonoNoImp2 = getValor('valorBonoNoImponible2', true);
+        const totalNoImponibleCalculado = colacion + movilizacion + asignacionFamiliar + asignacionMaternal + bonoNoImp1 + bonoNoImp2;
+
+        return {
+            // Datos de la empresa
+            empresa_nombre: '{{ empresa.nombre|escapejs }}',
+            empresa_rut: '{{ empresa.rut|escapejs }}',
+            empresa_direccion: '{{ empresa.direccion|escapejs }}',
+            empresa_ciudad: '{{ empresa.ciudad|escapejs }}',
+            empresa_logo: '{{ empresa.logo_url|default:""|escapejs }}',
+            // Datos del trabajador
+            trabajador_nombre: '{{ trabajador.nombre_completo|escapejs }}',
+            trabajador_rut: '{{ trabajador.rut|escapejs }}',
+            trabajador_cargo: '{{ trabajador.cargo|escapejs }}',
+            trabajador_fecha_ingreso: '{{ trabajador.fecha_contrato|date:"Y-m-d" }}',
+            centro_costo: '{{ trabajador.centro_costo_nombre|default:"No asignado"|escapejs }}',
+            // Período
+            periodo_mes: '{{ periodo.mes|escapejs }}',
+            periodo_anio: '{{ periodo.anio|escapejs }}',
+            periodo_dias_habiles: {{ periodo.dias_habiles|default:22 }},
+            dias_trabajados: parseInt(document.getElementById('diasTrabajados')?.value) || 0,
+            // Haberes
+            sueldo_mensual: getValor('sueldoMensual', true),
+            sueldo_diario: getValor('valorDia', true),
+            sueldo_hora: getValor('valorHora', true),
+            atraso: getValor('atraso', true),
+            horas_extra_50: getValor('horasExtra50', true),
+            horas_extra_100: getValor('horasExtra100', true),
+            horas_extra_150: getValor('horasExtra150', true),
+            total_horas_extra: getValor('totalHorasExtra', true),
+            total_comision: getValor('comisiones', true),
+            monto_cargo_domingo: getValor('montoCargoDomingo', true),
+            utilidades: getValor('utilidades', true),
+            semana_corrida: getValor('semanaCorrida', true),
+            monto_gratificacion: getValor('gratificacion', true),
+            bonos: getValor('bonos', true),
+            numero_cargas: parseInt(document.getElementById('numeroCargas')?.value) || 0,
+            asignacion_familiar: getValor('asignacionFamiliar', true),
+            asignacion_maternal: getValor('asignacionMaternal', true),
+            colacion: getValor('colacion', true),
+            movilizacion: getValor('movilizacion', true),
+            otro_bono1_nombre: getTexto('nombreBonoNoImponible1'),
+            otro_bono1_valor: getValor('valorBonoNoImponible1', true),
+            otro_bono2_nombre: getTexto('nombreBonoNoImponible2'),
+            otro_bono2_valor: getValor('valorBonoNoImponible2', true),
+            // Descuentos
+            afp_nombre: getSelectTexto('selectAFP'),
+            porcentaje_afp: getValor('porcentajeAFP', true),
+            cotizacion_afp: getValor('cotizacionAFP', true),
+            cuenta_2_afp: getValor('cuenta2AFP', true),
+            cotizacion_afc: getValor('cotizacionAFC', true),
+            trabajo_pesado: getValor('trabajoPesado', true),
+            apv: getValor('apv', true),
+            apv2: getValor('apv2', true),
+            apv_colectivo: getValor('apvColectivo', true),
+            isapre_nombre: getSelectTexto('selectIsapre'),
+            cotizacion_salud_pactada: getValor('cotizacionSaludPactada', true),
+            diferencia_isapre: getValor('diferenciaIsapre', true),
+            base_impuesto: getValor('baseImpuesto', true),
+            anticipo_impuesto: getValor('anticipoImpuesto', true),
+            cuota_impuesto: getValor('cuotaImpuesto', true),
+            prestamo_ccaf: getValor('prestamoCCAF', true),
+            prestamo_empresa: getValor('prestamoEmpresa', true),
+            otro_descuento1_nombre: getTexto('nombreOtroDescuento1'),
+            otro_descuento1_valor: getValor('valorOtroDescuento1', true),
+            otro_descuento2_nombre: getTexto('nombreOtroDescuento2'),
+            otro_descuento2_valor: getValor('valorOtroDescuento2', true),
+            // Ausencias
+            vacaciones_dias: parseInt(document.getElementById('vacacionesDias')?.value) || 0,
+            vacaciones_glosa: getTexto('vacacionesGlosa'),
+            licencias_dias: parseInt(document.getElementById('licenciasDias')?.value) || 0,
+            licencias_glosa: getTexto('licenciasGlosa'),
+            faltas_dias: parseInt(document.getElementById('faltasDias')?.value) || 0,
+            faltas_glosa: getTexto('faltasGlosa'),
+            // Totales (usamos el total no imponible calculado)
+            total_imponible: getValor('totalImponible', true),
+            total_no_imponible: totalNoImponibleCalculado,  // ← NUEVO: valor calculado manualmente
+            total_haberes: getValor('totalHaberes', true),
+            total_descuentos: getValor('totalDescuentos', true),
+            liquido_pagable: getValor('totalPagar', true),
+            total_prevision: getValor('totalPrevision', true),
+            // Opciones
+            incluir_firma: document.getElementById('incluirFirma')?.checked || false,
+            incluir_logo: document.getElementById('incluirLogo')?.checked || false,
+            fecha_generacion: new Date().toLocaleDateString('es-CL'),
+            glosa: document.getElementById('selectGlosa')?.value || 'LIQUIDACION_SUELDO',
+        };
+    }
+
+    async function generarPDF() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatoImpresion'));
+        if (modal) modal.hide();
+        const btn = event?.target;
+        const originalText = btn?.innerHTML || 'Generar PDF';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generando PDF...';
+        }
+        try {
+            const datos = obtenerDatosParaPDF();
+            console.log('Enviando cuota_impuesto:', datos.cuota_impuesto);
+
+            let url = '';
+            switch (formatoSeleccionado) {
+                case 'basico': url = `/contabilidad/${ALIAS}/formatos/basico/`; break;
+                case 'detallado': url = `/contabilidad/${ALIAS}/formatos/detallado/`; break;
+                case 'compacto': url = `/contabilidad/${ALIAS}/formatos/compacto/`; break;
+                default: url = `/contabilidad/${ALIAS}/formatos/profesional/`; break;
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify(datos)
+            });
+            if (!response.ok) throw new Error(`Error al cargar template: ${response.status}`);
+            const htmlContent = await response.text();
+
+            const elemento = document.createElement('div');
+            elemento.innerHTML = htmlContent;
+            elemento.style.position = 'absolute';
+            elemento.style.left = '-9999px';
+            elemento.style.top = '0';
+            elemento.style.width = '210mm';
+            elemento.style.background = 'white';
+            elemento.style.padding = '15px';
+            document.body.appendChild(elemento);
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const canvas = await html2canvas(elemento, {
+                scale: 2,
+                logging: false,
+                allowTaint: true,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                windowWidth: 2480,
+                windowHeight: 3508
+            });
+            document.body.removeChild(elemento);
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const imgWidth = 210;
+            const pageHeight = 297;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, '', 'FAST');
+            heightLeft -= pageHeight;
+            while (heightLeft > 0) {
+                position -= pageHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, '', 'FAST');
+                heightLeft -= pageHeight;
+            }
+            const nombreArchivo = `Liquidacion_${datos.trabajador_nombre.replace(/\s+/g, '_')}_${datos.periodo_mes}_${datos.periodo_anio}_${formatoSeleccionado}.pdf`;
+            pdf.save(nombreArchivo);
+        } catch (error) {
+            console.error('Error al generar PDF:', error);
+            alert('❌ Error al generar el PDF: ' + error.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+    }
+
+    async function imprimirDirecto() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatoImpresion'));
+        if (modal) modal.hide();
+        try {
+            const datos = obtenerDatosParaPDF();
+            let url = '';
+            switch (formatoSeleccionado) {
+                case 'basico': url = `/contabilidad/${ALIAS}/formatos/basico/`; break;
+                case 'detallado': url = `/contabilidad/${ALIAS}/formatos/detallado/`; break;
+                case 'compacto': url = `/contabilidad/${ALIAS}/formatos/compacto/`; break;
+                default: url = `/contabilidad/${ALIAS}/formatos/profesional/`; break;
+            }
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify(datos)
+            });
+            const htmlContent = await response.text();
+            const ventana = window.open('', '_blank');
+            ventana.document.write(htmlContent);
+            ventana.document.close();
+            setTimeout(() => ventana.print(), 500);
+        } catch (error) {
+            console.error('Error al imprimir:', error);
+            alert('❌ Error al preparar la impresión: ' + error.message);
+        }
+    }
+
+    // ============================================
+    // INICIALIZACIÓN
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('🚀 Inicializando formulario de liquidación...');
+        corregirComasEnInputs();
+
+        const cards = document.querySelectorAll('.formato-card');
+        cards.forEach(card => {
+            card.addEventListener('click', function () {
+                cards.forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                formatoSeleccionado = this.dataset.formato;
+            });
+        });
+
+        const cardProfesional = document.querySelector('.formato-card[data-formato="profesional"]');
+        if (cardProfesional) cardProfesional.classList.add('active');
+
+        document.querySelectorAll('input[type="number"], select').forEach(input => input.defaultValue = input.value);
+
+        cargarDatosTrabajador();
+        calcularTopeGratificacion();
+
+        // Event listeners para cálculos automáticos
+        document.querySelectorAll('input[type="number"], select').forEach(input => {
+            input.addEventListener('change', function() {
+                if (this.id && !this.readOnly && this.type !== 'select-one') {
+                    this.dataset.exacto = normalizarNumero(this.value);
+                }
+                actualizarCalculos();
+            });
+            input.addEventListener('input', function() {
+                if (this.id && !this.readOnly && this.type !== 'select-one') {
+                    this.dataset.exacto = normalizarNumero(this.value);
+                }
+                actualizarCalculos();
+            });
+            input.addEventListener('blur', function () {
+                if (this.value && this.value.includes(',')) this.value = this.value.replace(',', '.');
+                if (this.id && !this.readOnly && this.type !== 'select-one') {
+                    this.dataset.exacto = normalizarNumero(this.value);
+                }
+            });
+        });
+
+        // NOTA: Los eventos de vacaciones, licencias y faltas YA NO recalculan días trabajados.
+        // Ahora son solo campos de registro.
+
+        const selectTrabajador = document.getElementById('selectTrabajador');
+        if (selectTrabajador) {
+            selectTrabajador.addEventListener('change', function () {
+                if (this.value && this.value != TRABAJADOR_ID) {
+                    window.location.href = `/contabilidad/${ALIAS}/liquidaciones/generar/${PERIODO_ID}/${this.value}/`;
+                }
+            });
+        }
+
+        const selectAFP = document.getElementById('selectAFP');
+        if (selectAFP) {
+            selectAFP.addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.dataset.porcentaje) {
+                    let porcentaje = normalizarNumero(selectedOption.dataset.porcentaje);
+                    const inputPorcentaje = document.getElementById('porcentajeAFP');
+                    if (inputPorcentaje) {
+                        inputPorcentaje.value = porcentaje.toFixed(2);
+                        inputPorcentaje.dataset.exacto = porcentaje;
+                        inputPorcentaje.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+                actualizarCalculos();
+            });
+        }
+
+        const selectIsapre = document.getElementById('selectIsapre');
+        if (selectIsapre) {
+            selectIsapre.addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.value === 'FONASA') {
+                    document.getElementById('cotizacionSaludPactada').value = '7.00';
+                    document.getElementById('cotizacionSaludPactada').dataset.exacto = 7.00;
+                } else if (selectedOption && selectedOption.dataset.porcentaje) {
+                    let porcentaje = normalizarNumero(selectedOption.dataset.porcentaje);
+                    document.getElementById('cotizacionSaludPactada').value = porcentaje.toFixed(2);
+                    document.getElementById('cotizacionSaludPactada').dataset.exacto = porcentaje;
+                }
+                actualizarCalculos();
+            });
+        }
+
+        const porcentajeAFP = document.getElementById('porcentajeAFP');
+        if (porcentajeAFP) {
+            porcentajeAFP.addEventListener('change', function () {
+                let valor = normalizarNumero(this.value);
+                // Limitar entre 0 y 100
+                if (isNaN(valor) || valor < 0) valor = 0;
+                if (valor > 100) valor = 100;
+                this.value = valor.toFixed(2);
+                this.dataset.exacto = valor;
+                actualizarCalculos();
+            });
+            // Eliminamos el listener 'input' redundante
+        }
+
+        const porcentajeSalud = document.getElementById('cotizacionSaludPactada');
+        if (porcentajeSalud) {
+            porcentajeSalud.addEventListener('change', function () {
+                let valor = normalizarNumero(this.value);
+                if (valor < 7) valor = 7;
+                if (valor > 100) valor = 100;
+                this.value = valor.toFixed(2);
+                this.dataset.exacto = valor;
+                actualizarCalculos();
+            });
+        }
+
+        const trabajoPesado = document.getElementById('trabajoPesado');
+        if (trabajoPesado) {
+            trabajoPesado.addEventListener('change', function() {
+                let valor = normalizarNumero(this.value);
+                if (valor < 0) valor = 0;
+                if (valor > 100) valor = 100;
+                this.value = valor.toFixed(2);
+                this.dataset.exacto = valor;
+                actualizarCalculos();
+            });
+            trabajoPesado.addEventListener('input', function() {
+                let valor = normalizarNumero(this.value);
+                this.dataset.exacto = valor;
+            });
+        }
+
+        const tipoGratificacion = document.getElementById('tipoGratificacion');
+        const porcentajeGratificacion = document.getElementById('porcentajeGratificacion');
+        if (tipoGratificacion) tipoGratificacion.addEventListener('change', actualizarCalculos);
+        if (porcentajeGratificacion) {
+            porcentajeGratificacion.addEventListener('change', function() {
+                let valor = normalizarNumero(this.value);
+                if (valor < 0) valor = 0;
+                if (valor > 100) valor = 100;
+                this.value = valor.toFixed(2);
+                this.dataset.exacto = valor;
+                actualizarCalculos();
+            });
+            porcentajeGratificacion.addEventListener('input', function() {
+                let valor = normalizarNumero(this.value);
+                this.dataset.exacto = valor;
+            });
+        }
+
+        ['numeroCargas', 'promedioIngresos', 'cargasMaternales', 'retroactiva'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', actualizarCalculos);
+                el.addEventListener('input', actualizarCalculos);
+            }
+        });
+
+        setTimeout(() => {
+            actualizarCalculos();
+            console.log('✅ Inicialización completa');
+        }, 300);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabajadores para Liquidación - {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-dark: #7c3aed;
+        }
+        
+        .gradient-navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+        }
+        
+        .table-row-hover:hover {
+            background-color: #faf5ff;
+            cursor: pointer;
+        }
+        
+        .badge-estado {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .badge-pendiente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-generada {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-cerrada {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-pendiente {
+            background-color: #f59e0b;
+        }
+        
+        .status-generada {
+            background-color: #10b981;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Navbar -->
+    <nav class="gradient-navbar text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'panel_liquidaciones' alias=alias %}" 
+                       class="flex items-center space-x-2 hover:bg-white/20 p-2 rounded-lg transition">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Volver a Períodos</span>
+                    </a>
+                    <div class="h-6 w-px bg-white/30 hidden md:block"></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-white/20 p-2 rounded-lg">
+                            <i class="fas fa-users text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-lg">Seleccionar Trabajador para Liquidación</h1>
+                            <p class="text-sm opacity-90">{{ empresa.nombre }} - {{ periodo.nombre_mes }} {{ periodo.anio }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-sm">
+                    <span class="bg-white/20 px-3 py-1 rounded-lg">
+                        {{ trabajadores|length }} trabajadores disponibles
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Instrucciones -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
+            <div class="flex items-start">
+                <div class="bg-blue-100 p-3 rounded-lg mr-4">
+                    <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-blue-800 text-lg mb-2">Proceso de Liquidación</h3>
+                    <p class="text-blue-700">
+                        Haga clic en el botón "Generar Liquidación" de cualquier trabajador para acceder al formulario 
+                        completo de liquidación individual. Cada trabajador tiene su propia configuración de sueldo, 
+                        descuentos y beneficios.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros con Formulario GET - AHORA FUNCIONAL -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8">
+            <form method="GET" action="" class="space-y-4">
+                <!-- Campo oculto para mantener el período -->
+                <input type="hidden" name="periodo_id" value="{{ periodo.id }}">
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Buscar por Nombre o RUT</label>
+                        <input type="text" name="busqueda" 
+                               value="{{ request.GET.busqueda }}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                               placeholder="Nombre, apellido o RUT...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Centro de Costo</label>
+                        <select name="centro" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="">Todos los centros</option>
+                            {% for centro in centros_costo %}
+                            <option value="{{ centro }}" {% if request.GET.centro == centro %}selected{% endif %}>
+                                {{ centro }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estado Liquidación</label>
+                        <select name="estado" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="">Todos los estados</option>
+                            <option value="PENDIENTE" {% if request.GET.estado == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                            <option value="GENERADA" {% if request.GET.estado == 'GENERADA' %}selected{% endif %}>Generada</option>
+                            <option value="CERRADA" {% if request.GET.estado == 'CERRADA' %}selected{% endif %}>Cerrada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-search mr-2"></i> Aplicar Filtros
+                    </button>
+                    <a href="?periodo_id={{ periodo.id }}" class="text-sm text-purple-600 hover:text-purple-800 font-medium">
+                        <i class="fas fa-times mr-1"></i> Limpiar filtros
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Estadísticas (calculadas en la vista) -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <div class="text-2xl font-bold text-gray-800">{{ total_trabajadores }}</div>
+                <div class="text-sm text-gray-600">Total Trabajadores</div>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <div class="text-2xl font-bold text-yellow-600">{{ pendientes }}</div>
+                <div class="text-sm text-gray-600">Pendientes</div>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <div class="text-2xl font-bold text-green-600">{{ generadas }}</div>
+                <div class="text-sm text-gray-600">Generadas</div>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <div class="text-2xl font-bold text-gray-600">{{ cerradas }}</div>
+                <div class="text-sm text-gray-600">Cerradas</div>
+            </div>
+        </div>
+
+        <!-- Tabla de Trabajadores -->
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-4 px-6 text-left font-semibold text-gray-700">RUT</th>
+                            <th class="py-4 px-6 text-left font-semibold text-gray-700">Trabajador</th>
+                            <th class="py-4 px-6 text-left font-semibold text-gray-700">Cargo</th>
+                            <th class="py-4 px-6 text-left font-semibold text-gray-700">Centro de Costo</th>
+                            <th class="py-4 px-6 text-left font-semibold text-gray-700">Sueldo Base</th>
+                            <th class="py-4 px-6 text-left font-semibold text-gray-700">Estado Liquidación</th>
+                            <th class="py-4 px-6 text-left font-semibold text-gray-700">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trabajador in trabajadores %}
+                        <tr class="border-t table-row-hover">
+                            <td class="py-4 px-6">
+                                <div class="font-mono font-medium text-gray-900">
+                                    {{ trabajador.rut }}
+                                </div>
+                            </td>
+                            
+                            <td class="py-4 px-6">
+                                <div class="font-medium text-gray-900">
+                                    {{ trabajador.apellido_paterno }} {{ trabajador.apellido_materno }}, {{ trabajador.nombres }}
+                                </div>
+                                {% if trabajador.email %}
+                                <div class="text-sm text-gray-500">{{ trabajador.email }}</div>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="py-4 px-6">
+                                <div class="text-gray-700">
+                                    {{ trabajador.cargo|default:"Sin cargo especificado" }}
+                                </div>
+                            </td>
+                            
+                            <td class="py-4 px-6">
+                                <div class="text-gray-700">
+                                    {{ trabajador.centro_costo_nombre|default:"Sin centro de costo" }}
+                                    {% if trabajador.centro_costo_codigo %}
+                                    <div class="text-xs text-gray-500">{{ trabajador.centro_costo_codigo }}</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <td class="py-4 px-6">
+                                <div class="font-medium text-gray-900">
+                                    ${{ trabajador.sueldo_mensual|default:0|floatformat:0 }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    Diario: ${{ trabajador.sueldo_diario|default:0|floatformat:0 }}
+                                </div>
+                            </td>
+                            
+                            <td class="py-4 px-6">
+                                {% if trabajador.tiene_liquidacion %}
+                                    {% if trabajador.liquidacion_estado == 'GENERADA' %}
+                                    <span class="badge-estado badge-generada">
+                                        <span class="status-dot status-generada"></span>
+                                        GENERADA
+                                    </span>
+                                    {% elif trabajador.liquidacion_estado == 'CERRADA' %}
+                                    <span class="badge-estado badge-cerrada">
+                                        CERRADA
+                                    </span>
+                                    {% else %}
+                                    <span class="badge-estado badge-generada">
+                                        <span class="status-dot status-generada"></span>
+                                        GENERADA
+                                    </span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="badge-estado badge-pendiente">
+                                    <span class="status-dot status-pendiente"></span>
+                                    PENDIENTE
+                                </span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="py-4 px-6">
+                                <div class="flex gap-2">
+                                    <!-- Botón principal para generar liquidación -->
+                                    <a href="{% url 'generar_liquidacion' alias=alias periodo_id=periodo.id trabajador_id=trabajador.id %}"
+                                       class="btn-primary inline-flex items-center">
+                                        <i class="fas fa-calculator mr-2"></i>
+                                        Generar Liquidación
+                                    </a>
+                                    
+                                    <!-- Si ya tiene liquidación, botón para ver PDF -->
+                                    {% if trabajador.tiene_liquidacion and trabajador.liquidacion_id %}
+                                    <a href="{% url 'ver_liquidacion_pdf' alias=alias periodo_id=periodo.id trabajador_id=trabajador.id %}"
+                                       target="_blank"
+                                       class="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-2 rounded-lg transition inline-flex items-center"
+                                       title="Ver Liquidación en PDF">
+                                        <i class="fas fa-file-pdf"></i>
+                                        <span class="ml-1">Ver PDF</span>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="py-12 text-center">
+                                <div class="max-w-md mx-auto">
+                                    <i class="fas fa-users text-gray-300 text-5xl mb-4"></i>
+                                    <h3 class="text-xl font-bold text-gray-700 mb-2">No hay trabajadores disponibles</h3>
+                                    <p class="text-gray-500 mb-4">
+                                        {% if request.GET.busqueda or request.GET.centro or request.GET.estado %}
+                                        No se encontraron trabajadores con los criterios de búsqueda seleccionados.
+                                        {% else %}
+                                        No se encontraron trabajadores activos para este período.
+                                        {% endif %}
+                                    </p>
+                                    {% if request.GET.busqueda or request.GET.centro or request.GET.estado %}
+                                    <a href="?periodo_id={{ periodo.id }}" class="btn-primary inline-block">
+                                        <i class="fas fa-times mr-2"></i> Limpiar filtros
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación (opcional) -->
+            {% if is_paginated %}
+            <div class="bg-gray-50 px-6 py-4 border-t">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
+                    </div>
+                    <div class="flex gap-2">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <span class="px-3 py-1 bg-purple-600 text-white rounded">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                               class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">
+                                {{ num }}
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Información del período -->
+        <div class="mt-8 bg-purple-50 border border-purple-200 rounded-xl p-6">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                    <i class="fas fa-calendar-alt text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-purple-800 text-lg mb-1">Información del Período</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-purple-600 font-medium">Período:</span>
+                            <span class="text-gray-700 ml-2">{{ periodo.nombre_mes }} {{ periodo.anio }}</span>
+                        </div>
+                        <div>
+                            <span class="text-purple-600 font-medium">Días hábiles:</span>
+                            <span class="text-gray-700 ml-2">{{ periodo.dias_habiles }}</span>
+                        </div>
+                        <div>
+                            <span class="text-purple-600 font-medium">Valor UF:</span>
+                            <span class="text-gray-700 ml-2">${{ periodo.uf|floatformat:2 }}</span>
+                        </div>
+                        <div>
+                            <span class="text-purple-600 font-medium">Valor UTM:</span>
+                            <span class="text-gray-700 ml-2">${{ periodo.utm|floatformat:0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-8">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="text-center text-gray-500 text-sm">
+                <p>Sistema de Liquidaciones - {{ empresa.nombre }}</p>
+                <p class="mt-1">Período: {{ periodo.nombre_mes }} {{ periodo.anio }} | 
+                   Fecha: {% now "d/m/Y H:i" %}</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -10,6 +10,11 @@ from django.utils import timezone  # Añade esta importación
 class Empresa(models.Model):
     nombre = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
+    rut = models.CharField(max_length=20, blank=True, verbose_name="RUT Empresa")
+    logo = models.ImageField(upload_to='logos_empresas/', blank=True, null=True)
+    direccion = models.CharField(max_length=200, blank=True, verbose_name="Dirección")
+    telefono = models.CharField(max_length=20, blank=True, verbose_name="Teléfono")
+    celular = models.CharField(max_length=20, blank=True, verbose_name="Celular")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     color_dashboard = models.CharField(max_length=20, default='#008000')
     sectores_json = models.TextField(blank=True, default='[]')

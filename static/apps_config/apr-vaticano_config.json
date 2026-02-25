@@ -1,0 +1,25 @@
+{
+  "app_name": "SSR APR VATICANO",
+  "empresa_nombre": "APR VATICANO",
+  "empresa_slug": "apr-vaticano",
+  "version": "1.0.1",
+  "primary_color": "#1E40AF",
+  "secondary_color": "#DC2626",
+  "base_url": "http://localhost:8000/api/apr-vaticano/",
+  "api_key": "e261112bbbc287365956273b9b6233a4e2892c36c9ea3b05a32f3175aa7be4cd",
+  "sectores": [
+    "LAS BANDURRIAS",
+    "VATICANO",
+    "LAS CABRAS",
+    "LAS MERCEDES"
+  ],
+  "habilitar_mapa": true,
+  "habilitar_offline": true,
+  "sincronizacion_auto": true,
+  "validar_gps": true,
+  "mensaje_bienvenida": "Bienvenido a la app de lecturas",
+  "mostrar_logo": true,
+  "intervalo_sincronizacion": 5,
+  "max_lecturas_pendientes": 100,
+  "clientes": []
+}

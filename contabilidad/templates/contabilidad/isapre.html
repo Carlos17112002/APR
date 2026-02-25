@@ -1,0 +1,998 @@
+<!-- contabilidad/isapre.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isapres · {{ empresa.nombre }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background: #f0f2f5;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #10b981, #047857);
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        th {
+            background: #f0fdf4;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #065f46;
+            border-bottom: 2px solid #bbf7d0;
+        }
+        
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #d1fae5;
+            vertical-align: middle;
+        }
+        
+        tr:hover {
+            background: #f0fdf4;
+        }
+        
+        .input-cotizacion {
+            width: 80px;
+            padding: 6px 8px;
+            border: 1px solid #bbf7d0;
+            border-radius: 4px;
+            text-align: right;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .input-cotizacion:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        
+        .input-cotizacion:disabled {
+            background: #f8f9fa;
+            cursor: not-allowed;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-isapre {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-fonasa {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .badge-sin {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+        
+        .badge-inactivo {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #2b8a3e;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .search-box {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+        
+        .footer-info {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
+        .codigo-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #065f46;
+        }
+        
+        .actions-cell {
+            text-align: center;
+            width: 80px;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #fa5252;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        
+        .delete-btn:hover {
+            color: #c92a2a;
+        }
+        
+        .edit-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .edit-btn:hover {
+            color: #1d4ed8;
+        }
+        
+        /* Estilos para el modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            color: #065f46;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+        .modal-close:hover {
+            color: #495057;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .btn-cancel {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
+        .btn-save {
+            padding: 8px 16px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-save:hover {
+            background: #0da271;
+        }
+        
+        .estado-activa {
+            color: #10b981;
+            font-weight: 500;
+        }
+        
+        .estado-inactiva {
+            color: #f59e0b;
+            font-weight: 500;
+        }
+        
+        .estado-especial {
+            color: #8b5cf6;
+            font-weight: 500;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stat-title {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #065f46;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Parámetros Isapres</h1>
+            <p>{{ empresa.nombre }}</p>
+        </div>
+        
+        <div class="content">
+            <!-- Buscador -->
+            <div class="search-box">
+                <input type="text" 
+                       id="inputBuscar" 
+                       class="search-input" 
+                       placeholder="Buscar por código o nombre...">
+                <button type="button" class="btn btn-primary" onclick="buscarIsapre()">
+                    Buscar
+                </button>
+            </div>
+            
+            <!-- Estadísticas -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Total Isapres</div>
+                    <div class="stat-value" id="totalIsapres">
+                        {{ total_isapres }}
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Cotización Estándar</div>
+                    <div class="stat-value">7%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Fonasa</div>
+                    <div class="stat-value" id="totalFonasa">{{ total_fonasa }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Última Actualización</div>
+                    <div class="stat-value" id="ultimaActualizacion">{% now "d/m/Y" %}</div>
+                </div>
+            </div>
+            
+            <!-- Tabla de Isapres -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre Isapre</th>
+                        <th>Cotización Obligatoria (%)</th>
+                        <th>Código Previsión</th>
+                        <th>Código DT</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th class="actions-cell">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="isapreTableBody">
+                    {% for isapre in isapres %}
+                    <tr data-isapre-id="{{ isapre.id }}">
+                        <td class="codigo-cell">{{ isapre.codigo }}</td>
+                        <td>{{ isapre.nombre }}</td>
+                        <td>
+                            <input type="number" 
+                                   step="0.01" 
+                                   min="0" 
+                                   max="100"
+                                   value="{{ isapre.cotizacion_obligatoria }}" 
+                                   class="input-cotizacion"
+                                   data-isapre-id="{{ isapre.id }}"
+                                   onchange="actualizarCotizacion(this)"
+                                   {% if isapre.codigo == 'SIN' or isapre.codigo == 'fona' %}disabled{% endif %}>
+                        </td>
+                        <td class="codigo-cell">{{ isapre.codigo_previred }}</td>
+                        <td class="codigo-cell">{{ isapre.codigo_dt }}</td>
+                        <td>
+                            {% if isapre.tipo == 'ISAPRE' %}
+                            <span class="badge badge-isapre">{{ isapre.tipo_display }}</span>
+                            {% elif isapre.tipo == 'FONASA' %}
+                            <span class="badge badge-fonasa">{{ isapre.tipo_display }}</span>
+                            {% else %}
+                            <span class="badge badge-sin">{{ isapre.tipo_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if isapre.estado == 'ACTIVA' %}
+                            <span class="estado-activa">{{ isapre.estado_display }}</span>
+                            {% elif isapre.estado == 'INACTIVA' %}
+                            <span class="estado-inactiva">{{ isapre.estado_display }}</span>
+                            {% else %}
+                            <span class="estado-especial">{{ isapre.estado_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            <button class="edit-btn" onclick="editarIsapre({{ isapre.id }})" title="Editar">
+                                ✎
+                            </button>
+                            <button class="delete-btn" 
+                                    onclick="eliminarIsapre({{ isapre.id }}, '{{ isapre.codigo }}')" 
+                                    title="Eliminar"
+                                    {% if isapre.codigo == 'SIN' or isapre.codigo == 'fona' %}disabled style="opacity:0.3; cursor:not-allowed;"{% endif %}>
+                                ✕
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Total registros -->
+            <div id="totalRegistros" style="text-align: right; margin: 10px 0; font-size: 12px; color: #6c757d;">
+                Total: {{ isapres|length }} registros
+            </div>
+            
+            <!-- Botones -->
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="buscarIsapre()">
+                    Buscar
+                </button>
+                <button class="btn btn-success" onclick="mostrarModalAgregar()">
+                    Nueva Isapre
+                </button>
+                <button class="btn btn-info" onclick="actualizarDesdeSII()">
+                    Actualizar desde SII
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='{% url 'panel_remuneraciones' alias=alias %}'">
+                    Salir
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer-info">
+            Sistema de Gestión de Isapres · {{ empresa.nombre }}
+        </div>
+    </div>
+    
+    <!-- Modal para agregar Isapre -->
+    <div id="modalAgregar" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Agregar Nueva Isapre</h2>
+                <button class="modal-close" onclick="cerrarModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Código Isapre *</label>
+                    <input type="text" id="nuevoCodigo" class="form-control" 
+                           placeholder="Ej: BANM, CMN" maxlength="10" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Nombre *</label>
+                    <input type="text" id="nuevoNombre" class="form-control" 
+                           placeholder="Nombre de la Isapre" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Cotización Obligatoria (%)</label>
+                    <input type="number" step="0.01" id="nuevaCotizacion" class="form-control" 
+                           value="7.00" min="0" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Código Previsión</label>
+                    <input type="text" id="nuevoPrevired" class="form-control" 
+                           placeholder="Ej: 01, 02">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Código DT</label>
+                    <input type="text" id="nuevoCodigoDT" class="form-control" 
+                           placeholder="Código Dirección del Trabajo">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo</label>
+                    <select id="nuevoTipo" class="form-control">
+                        <option value="ISAPRE">Isapre</option>
+                        <option value="FONASA">Fonasa</option>
+                        <option value="SIN">Sin Isapre</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Estado</label>
+                    <select id="nuevoEstado" class="form-control">
+                        <option value="ACTIVA">Activa</option>
+                        <option value="INACTIVA">Inactiva</option>
+                        <option value="ESPECIAL">Especial</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-save" onclick="agregarIsapre()">Guardar</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // CSRF Token
+        const csrfToken = "{{ csrf_token }}";
+        
+        // Variables globales
+        let isapresData = [];
+        
+        // Función para corregir valores de inputs (comas por puntos)
+        function corregirValoresInputs() {
+            document.querySelectorAll('.input-cotizacion').forEach(input => {
+                let valor = input.value;
+                // Reemplazar todas las comas por puntos
+                valor = valor.replace(/,/g, '.');
+                
+                // Asegurar que tenga máximo 2 decimales
+                if (valor.includes('.')) {
+                    const partes = valor.split('.');
+                    if (partes[1].length > 2) {
+                        valor = parseFloat(valor).toFixed(2);
+                    }
+                }
+                
+                // Actualizar el valor en el input
+                input.value = valor;
+            });
+        }
+        
+        // Funciones del modal
+        function mostrarModalAgregar() {
+            document.getElementById('modalAgregar').style.display = 'flex';
+            document.getElementById('nuevoCodigo').focus();
+        }
+        
+        function cerrarModal() {
+            document.getElementById('modalAgregar').style.display = 'none';
+            // Limpiar campos
+            document.getElementById('nuevoCodigo').value = '';
+            document.getElementById('nuevoNombre').value = '';
+            document.getElementById('nuevaCotizacion').value = '7.00';
+            document.getElementById('nuevoPrevired').value = '';
+            document.getElementById('nuevoCodigoDT').value = '';
+            document.getElementById('nuevoTipo').value = 'ISAPRE';
+            document.getElementById('nuevoEstado').value = 'ACTIVA';
+        }
+        
+        // Función para buscar Isapre
+        function buscarIsapre() {
+            const busqueda = document.getElementById('inputBuscar').value.trim();
+            
+            fetch('{% url "buscar_isapre" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ busqueda: busqueda })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    isapresData = data.resultados;
+                    actualizarTabla(data.resultados);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        function actualizarTabla(resultados) {
+            const tbody = document.getElementById('isapreTableBody');
+            tbody.innerHTML = '';
+            
+            if (resultados.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px; color: #6c757d;">
+                            No se encontraron resultados
+                        </td>
+                    </tr>
+                `;
+            } else {
+                resultados.forEach(isapre => {
+                    const badgeClass = isapre.tipo === 'ISAPRE' ? 'badge-isapre' : 
+                                     isapre.tipo === 'FONASA' ? 'badge-fonasa' : 'badge-sin';
+                    
+                    const estadoClass = isapre.estado === 'ACTIVA' ? 'estado-activa' : 
+                                      isapre.estado === 'INACTIVA' ? 'estado-inactiva' : 'estado-especial';
+                    
+                    // Asegurar formato correcto con 2 decimales
+                    let cotizacionValue = parseFloat(isapre.cotizacion).toFixed(2);
+                    
+                    const row = document.createElement('tr');
+                    row.setAttribute('data-isapre-id', isapre.id);
+                    row.innerHTML = `
+                        <td class="codigo-cell">${isapre.codigo}</td>
+                        <td>${isapre.nombre}</td>
+                        <td>
+                            <input type="number" 
+                                   step="0.01" 
+                                   min="0" 
+                                   max="100"
+                                   value="${cotizacionValue}" 
+                                   class="input-cotizacion"
+                                   data-isapre-id="${isapre.id}"
+                                   onchange="actualizarCotizacion(this)"
+                                   ${isapre.codigo === 'SIN' || isapre.codigo === 'fona' ? 'disabled' : ''}>
+                        </td>
+                        <td class="codigo-cell">${isapre.codigo_previred}</td>
+                        <td class="codigo-cell">${isapre.codigo_dt}</td>
+                        <td>
+                            <span class="badge ${badgeClass}">${isapre.tipo_display}</span>
+                        </td>
+                        <td>
+                            <span class="${estadoClass}">${isapre.estado_display}</span>
+                        </td>
+                        <td class="actions-cell">
+                            <button class="edit-btn" onclick="editarIsapre(${isapre.id})" title="Editar">
+                                ✎
+                            </button>
+                            <button class="delete-btn" 
+                                    onclick="eliminarIsapre(${isapre.id}, '${isapre.codigo}')" 
+                                    title="Eliminar"
+                                    ${isapre.codigo === 'SIN' || isapre.codigo === 'fona' ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>
+                                ✕
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+            // Actualizar contador
+            document.getElementById('totalRegistros').innerHTML = 
+                `Total: ${resultados.length} registros`;
+            
+            // Actualizar estadísticas
+            const totalIsapres = resultados.filter(i => i.tipo === 'ISAPRE').length;
+            const totalFonasa = resultados.filter(i => i.tipo === 'FONASA').length;
+            
+            document.getElementById('totalIsapres').textContent = totalIsapres;
+            document.getElementById('totalFonasa').textContent = totalFonasa;
+            
+            // Corregir valores por si acaso
+            setTimeout(corregirValoresInputs, 50);
+        }
+        
+        // Función para actualizar cotización
+        function actualizarCotizacion(input) {
+            const isapreId = input.getAttribute('data-isapre-id');
+            let nuevaCotizacion = input.value;
+            
+            // Reemplazar coma por punto si el usuario escribió con coma
+            nuevaCotizacion = nuevaCotizacion.replace(',', '.');
+            nuevaCotizacion = parseFloat(nuevaCotizacion);
+            
+            if (isNaN(nuevaCotizacion) || nuevaCotizacion < 0 || nuevaCotizacion > 100) {
+                alert('La cotización debe ser un número entre 0 y 100');
+                return;
+            }
+            
+            fetch('{% url "actualizar_cotizacion_isapre" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    isapre_id: isapreId,
+                    cotizacion: nuevaCotizacion
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert('Error: ' + data.error);
+                    // Revertir el valor si hay error
+                    const isapre = isapresData.find(i => i.id == isapreId);
+                    if (isapre) {
+                        input.value = parseFloat(isapre.cotizacion).toFixed(2);
+                    }
+                } else {
+                    // Actualizar en los datos locales
+                    const index = isapresData.findIndex(i => i.id == isapreId);
+                    if (index !== -1) {
+                        isapresData[index].cotizacion = nuevaCotizacion;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+                // Revertir el valor si hay error de conexión
+                const isapre = isapresData.find(i => i.id == isapreId);
+                if (isapre) {
+                    input.value = parseFloat(isapre.cotizacion).toFixed(2);
+                }
+            });
+        }
+        
+        // Función para agregar Isapre
+        function agregarIsapre() {
+            const codigo = document.getElementById('nuevoCodigo').value.trim().toUpperCase();
+            const nombre = document.getElementById('nuevoNombre').value.trim();
+            let cotizacion = document.getElementById('nuevaCotizacion').value;
+            
+            // Reemplazar coma por punto
+            cotizacion = cotizacion.replace(',', '.');
+            
+            const previred = document.getElementById('nuevoPrevired').value.trim();
+            const codigoDT = document.getElementById('nuevoCodigoDT').value.trim();
+            const tipo = document.getElementById('nuevoTipo').value;
+            const estado = document.getElementById('nuevoEstado').value;
+            
+            if (!codigo || !nombre) {
+                alert('Código y Nombre son obligatorios');
+                return;
+            }
+            
+            fetch('{% url "agregar_isapre" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    codigo: codigo,
+                    nombre: nombre,
+                    cotizacion: cotizacion,
+                    codigo_previred: previred,
+                    codigo_dt: codigoDT,
+                    tipo: tipo,
+                    estado: estado
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Isapre agregada correctamente');
+                    cerrarModal();
+                    // Agregar a la tabla sin recargar
+                    const nuevaIsapre = {
+                        id: data.isapre_id,
+                        codigo: codigo,
+                        nombre: nombre,
+                        cotizacion: parseFloat(cotizacion),
+                        codigo_previred: previred,
+                        codigo_dt: codigoDT,
+                        tipo: tipo,
+                        tipo_display: tipo === 'ISAPRE' ? 'Isapre' : tipo === 'FONASA' ? 'Fonasa' : 'Sin Isapre',
+                        estado: estado,
+                        estado_display: estado === 'ACTIVA' ? 'Activa' : estado === 'INACTIVA' ? 'Inactiva' : 'Especial',
+                        editable: !(codigo === 'SIN' || codigo === 'fona')
+                    };
+                    
+                    isapresData.push(nuevaIsapre);
+                    actualizarTabla(isapresData);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        // Función para eliminar Isapre
+        function eliminarIsapre(isapreId, codigo) {
+            if (codigo === 'SIN' || codigo === 'fona') {
+                alert('No se puede eliminar Fonasa o SIN ISAPRE');
+                return;
+            }
+            
+            if (!confirm(`¿Está seguro de eliminar la Isapre ${codigo}?`)) {
+                return;
+            }
+            
+            fetch('{% url "eliminar_isapre" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    isapre_id: isapreId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    // Eliminar de los datos locales
+                    isapresData = isapresData.filter(isapre => isapre.id !== isapreId);
+                    
+                    // Eliminar la fila de la tabla
+                    const row = document.querySelector(`tr[data-isapre-id="${isapreId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                    
+                    // Actualizar contador y estadísticas
+                    const totalIsapres = isapresData.filter(i => i.tipo === 'ISAPRE').length;
+                    const totalFonasa = isapresData.filter(i => i.tipo === 'FONASA').length;
+                    
+                    document.getElementById('totalRegistros').innerHTML = 
+                        `Total: ${isapresData.length} registros`;
+                    document.getElementById('totalIsapres').textContent = totalIsapres;
+                    document.getElementById('totalFonasa').textContent = totalFonasa;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        // Función para actualizar desde SII
+        function actualizarDesdeSII() {
+            if (!confirm('¿Actualizar Isapres desde el SII? Esto sobrescribirá los valores actuales.')) {
+                return;
+            }
+            
+            fetch('{% url "actualizar_desde_sii_isapre" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('ultimaActualizacion').textContent = data.fecha_actualizacion;
+                    // Recargar los datos
+                    buscarIsapre();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        // Función para editar Isapre (simplificada - en una implementación completa abriría un modal)
+        function editarIsapre(isapreId) {
+            alert('Función de edición - En desarrollo');
+            // Aquí podrías abrir un modal con los datos de la Isapre para editarlos
+        }
+        
+        // Inicializar datos y corregir valores
+        document.addEventListener('DOMContentLoaded', function() {
+            // Guardar los datos iniciales
+            isapresData = [
+                {% for isapre in isapres %}
+                {
+                    id: {{ isapre.id }},
+                    codigo: '{{ isapre.codigo }}',
+                    nombre: '{{ isapre.nombre }}',
+                    cotizacion: {{ isapre.cotizacion_obligatoria }},
+                    codigo_previred: '{{ isapre.codigo_previred }}',
+                    codigo_dt: '{{ isapre.codigo_dt }}',
+                    tipo: '{{ isapre.tipo }}',
+                    tipo_display: '{{ isapre.tipo_display }}',
+                    estado: '{{ isapre.estado }}',
+                    estado_display: '{{ isapre.estado_display }}',
+                    editable: {% if isapre.codigo != 'SIN' and isapre.codigo != 'fona' %}true{% else %}false{% endif %}
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ];
+            
+            // Corregir valores de inputs al cargar
+            corregirValoresInputs();
+            setTimeout(corregirValoresInputs, 100);
+            
+            // Calcular total Isapres para mostrar inicialmente
+            const totalIsapres = isapresData.filter(i => i.tipo === 'ISAPRE').length;
+            document.getElementById('totalIsapres').textContent = totalIsapres;
+        });
+        
+        // Permitir buscar con Enter
+        document.getElementById('inputBuscar').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarIsapre();
+            }
+        });
+        
+        // Cerrar modal con Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('modalAgregar').style.display === 'flex') {
+                cerrarModal();
+            }
+        });
+        
+        // Cerrar modal haciendo clic fuera
+        document.getElementById('modalAgregar').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+    </script>
+</body>
+</html>

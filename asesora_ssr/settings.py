@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     'ssr_tools',
     'apps_moviles',
     'corsheaders',
+    'weasyprint',
+    
 ]
 
 MIDDLEWARE = [
@@ -143,9 +145,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-cl'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Santiago'
 
 USE_I18N = True
 

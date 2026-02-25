@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabajadores · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #84cc16;
+            --primary-dark: #65a30d;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+        }
+        
+        .gradient-navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+        
+        .btn-gradient:hover {
+            opacity: 0.9;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th {
+            background: #f0fdf4;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #3f6212;
+            border-bottom: 2px solid #bbf7d0;
+            white-space: nowrap;
+        }
+        
+        .data-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #d1fae5;
+            vertical-align: middle;
+        }
+        
+        .data-table tr:hover {
+            background: #f0fdf4;
+        }
+        
+        .badge-si {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .badge-no {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .badge-activo {
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .badge-vencido {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .badge-inactivo {
+            background: #e5e7eb;
+            color: #4b5563;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 220px;
+            box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+            z-index: 100;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .dropdown-content a {
+            color: #374151;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f9fafb;
+        }
+        
+        .dropdown-content a i {
+            width: 16px;
+            text-align: center;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.375rem;
+            font-size: 0.875rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            background-color: white;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        }
+        
+        .search-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #d1d5db;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .action-btn {
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .action-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #e5e7eb;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .filter-tag button {
+            margin-left: 0.5rem;
+            color: #6b7280;
+            transition: color 0.2s;
+        }
+        
+        .filter-tag button:hover {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="gradient-navbar text-white shadow">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'panel_remuneraciones' alias=alias %}" 
+                       class="flex items-center space-x-2 hover:bg-white/20 p-2 rounded-lg transition">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Volver</span>
+                    </a>
+                    <div class="h-6 w-px bg-white/30"></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-white/20 p-2 rounded-lg">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold">Gestión de Trabajadores</h1>
+                            <p class="text-sm opacity-90">{{ empresa.nombre }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-sm bg-white/20 px-3 py-1 rounded-full">
+                    <i class="fas fa-users mr-1"></i>
+                    <span>Total: </span>
+                    <span class="font-bold" id="total-trabajadores-header">{{ estadisticas.total }}</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Sección de búsqueda -->
+        <div class="search-card">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-gray-800">
+                    <i class="fas fa-search text-green-600 mr-2"></i>
+                    Parámetros de Búsqueda
+                </h3>
+                <span class="text-xs text-gray-500">
+                    <i class="far fa-clock mr-1"></i>
+                    Actualizado: {% now "d/m/Y H:i" %}
+                </span>
+            </div>
+            
+            <form method="GET" action="{% url 'lista_trabajadores' alias=alias %}" id="formBusqueda">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- RUT -->
+                    <div class="form-group">
+                        <label for="buscar-rut" class="form-label">
+                            <i class="fas fa-id-card text-gray-400 mr-1"></i>
+                            RUT
+                        </label>
+                        <input type="text" 
+                               id="buscar-rut" 
+                               name="rut" 
+                               class="form-input" 
+                               placeholder="Ej: 16143030-9"
+                               value="{{ filtros.rut }}">
+                    </div>
+                    
+                    <!-- Apellido -->
+                    <div class="form-group">
+                        <label for="buscar-apellido" class="form-label">
+                            <i class="fas fa-user text-gray-400 mr-1"></i>
+                            Apellido
+                        </label>
+                        <input type="text" 
+                               id="buscar-apellido" 
+                               name="apellido" 
+                               class="form-input" 
+                               placeholder="Apellido del trabajador"
+                               value="{{ filtros.apellido }}">
+                    </div>
+                    
+                    <!-- Ficha Covid -->
+                    <div class="form-group">
+                        <label for="buscar-covid" class="form-label">
+                            <i class="fas fa-file-medical text-gray-400 mr-1"></i>
+                            Ficha Covid
+                        </label>
+                        <select id="buscar-covid" name="covid" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="SI" {% if filtros.covid == 'SI' %}selected{% endif %}>SI</option>
+                            <option value="NO" {% if filtros.covid == 'NO' %}selected{% endif %}>NO</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Centro de Costo -->
+                    <div class="form-group">
+                        <label for="buscar-centro-costo" class="form-label">
+                            <i class="fas fa-building text-gray-400 mr-1"></i>
+                            Centro de Costo
+                        </label>
+                        <select id="buscar-centro-costo" name="centro" class="form-select">
+                            <option value="">Todos</option>
+                            {% for centro in centros_costo %}
+                            <option value="{{ centro }}" {% if filtros.centro == centro %}selected{% endif %}>
+                                {{ centro }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <button type="submit" class="btn-gradient px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
+                            <i class="fas fa-search mr-2"></i>
+                            Buscar
+                        </button>
+                        
+                        <button type="button" onclick="limpiarFiltros()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium transition">
+                            <i class="fas fa-eraser mr-2"></i>
+                            Limpiar
+                        </button>
+                        
+                        <!-- Dropdown de Acciones -->
+                        <div class="dropdown">
+                            <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition">
+                                <i class="fas fa-cog"></i>
+                                <span>Acciones</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="dropdown-content">
+                                <a href="{% url 'agregar_trabajador' alias=alias %}" onclick="mostrarCarga()">
+                                    <i class="fas fa-user-plus text-green-600"></i>
+                                    <span>Agregar Trabajador</span>
+                                </a>
+                                <a href="#" onclick="exportarExcel()">
+                                    <i class="fas fa-file-excel text-green-600"></i>
+                                    <span>Exportar a Excel</span>
+                                </a>
+                                <a href="#" onclick="exportarPDF()">
+                                    <i class="fas fa-file-pdf text-red-600"></i>
+                                    <span>Exportar a PDF</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-sm text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        {{ estadisticas.total }} trabajadores encontrados
+                    </div>
+                </div>
+            </form>
+
+            <!-- Filtros activos -->
+            {% if filtros.rut or filtros.apellido or filtros.covid or filtros.centro %}
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-sm font-medium text-gray-600">Filtros activos:</span>
+                    {% if filtros.rut %}
+                    <span class="filter-tag">
+                        RUT: {{ filtros.rut }}
+                        <button onclick="eliminarFiltro('rut')"><i class="fas fa-times"></i></button>
+                    </span>
+                    {% endif %}
+                    {% if filtros.apellido %}
+                    <span class="filter-tag">
+                        Apellido: {{ filtros.apellido }}
+                        <button onclick="eliminarFiltro('apellido')"><i class="fas fa-times"></i></button>
+                    </span>
+                    {% endif %}
+                    {% if filtros.covid %}
+                    <span class="filter-tag">
+                        COVID: {{ filtros.covid }}
+                        <button onclick="eliminarFiltro('covid')"><i class="fas fa-times"></i></button>
+                    </span>
+                    {% endif %}
+                    {% if filtros.centro %}
+                    <span class="filter-tag">
+                        Centro: {{ filtros.centro }}
+                        <button onclick="eliminarFiltro('centro')"><i class="fas fa-times"></i></button>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stats-card">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-gray-600">Total Trabajadores</h3>
+                    <div class="bg-green-100 p-2 rounded-lg">
+                        <i class="fas fa-users text-green-600"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-green-600" id="total-trabajadores">{{ estadisticas.total }}</div>
+                <p class="text-gray-500 text-sm mt-1">Registrados en el sistema</p>
+            </div>
+            
+            <div class="stats-card">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-gray-600">Contratos Activos</h3>
+                    <div class="bg-blue-100 p-2 rounded-lg">
+                        <i class="fas fa-check-circle text-blue-600"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-blue-600" id="contratos-activos">{{ estadisticas.activos }}</div>
+                <p class="text-gray-500 text-sm mt-1">Vigentes actualmente</p>
+            </div>
+            
+            <div class="stats-card">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-gray-600">Por Vencer</h3>
+                    <div class="bg-orange-100 p-2 rounded-lg">
+                        <i class="fas fa-hourglass-half text-orange-600"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-orange-600" id="por-vencer">{{ estadisticas.por_vencer }}</div>
+                <p class="text-gray-500 text-sm mt-1">Próximos 30 días</p>
+            </div>
+            
+            <div class="stats-card">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-gray-600">Ficha Covid</h3>
+                    <div class="bg-red-100 p-2 rounded-lg">
+                        <i class="fas fa-file-medical text-red-600"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-red-600" id="con-covid">{{ estadisticas.con_covid }}</div>
+                <p class="text-gray-500 text-sm mt-1">Trabajadores con ficha</p>
+            </div>
+        </div>
+
+        <!-- Listado de trabajadores -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>RUT</th>
+                            <th>Trabajador</th>
+                            <th>Centro de Costo</th>
+                            <th>Fecha Contrato</th>
+                            <th>Fecha Término</th>
+                            <th>Ficha Covid</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trabajadores-table-body">
+                        {% if trabajadores_json %}
+                            {% for trabajador in trabajadores_json %}
+                            <tr>
+                                <td class="font-mono font-bold">{{ trabajador.rut }}</td>
+                                <td>
+                                    <div class="font-medium">{{ trabajador.apellido_paterno }} {{ trabajador.apellido_materno }}</div>
+                                    <div class="text-xs text-gray-500">{{ trabajador.nombres }}</div>
+                                    {% if trabajador.cargo %}
+                                    <div class="text-xs text-green-600">{{ trabajador.cargo }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ trabajador.centro_costo|default:"-" }}</td>
+                                <td>{{ trabajador.fecha_contrato|default:"-" }}</td>
+                                <td>
+                                    {% if trabajador.fecha_termino %}
+                                        {{ trabajador.fecha_termino }}
+                                    {% else %}
+                                        <span class="text-gray-400">Indefinido</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if trabajador.ficha_covid == 'SI' %}
+                                    <span class="badge-si">
+                                        <i class="fas fa-check-circle text-xs"></i>
+                                        SI
+                                    </span>
+                                    {% else %}
+                                    <span class="badge-no">
+                                        <i class="fas fa-times-circle text-xs"></i>
+                                        NO
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if trabajador.estado_contrato == 'Activo' %}
+                                    <span class="badge-activo">
+                                        <i class="fas fa-check-circle text-xs"></i>
+                                        Activo
+                                    </span>
+                                    {% elif trabajador.estado_contrato == 'Por Vencer' %}
+                                    <span class="badge-vencido">
+                                        <i class="fas fa-exclamation-triangle text-xs"></i>
+                                        Por Vencer
+                                    </span>
+                                    {% elif trabajador.estado_contrato == 'Vencido' %}
+                                    <span class="badge-vencido">
+                                        <i class="fas fa-times-circle text-xs"></i>
+                                        Vencido
+                                    </span>
+                                    {% else %}
+                                    <span class="badge-inactivo">
+                                        <i class="fas fa-ban text-xs"></i>
+                                        Inactivo
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="flex items-center justify-center gap-1">
+                                        <button class="action-btn text-green-600 hover:text-green-800" 
+                                                onclick="verDetalle('{{ trabajador.rut }}')"
+                                                title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn text-blue-600 hover:text-blue-800" 
+                                                onclick="editarTrabajador('{{ trabajador.id }}')"
+                                                title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn text-red-600 hover:text-red-800" 
+                                                onclick="eliminarTrabajador('{{ trabajador.rut }}')"
+                                                title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8">
+                                    <div class="empty-state">
+                                        <i class="fas fa-users"></i>
+                                        <h3 class="font-medium text-lg mb-2">No se encontraron trabajadores</h3>
+                                        <p class="text-gray-600 mb-4">
+                                            {% if filtros.rut or filtros.apellido or filtros.covid or filtros.centro %}
+                                                No hay resultados para los filtros aplicados.
+                                            {% else %}
+                                                No hay trabajadores registrados en el sistema.
+                                            {% endif %}
+                                        </p>
+                                        <a href="{% url 'agregar_trabajador' alias=alias %}" 
+                                           class="btn-gradient px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
+                                            <i class="fas fa-plus"></i>
+                                            Agregar Trabajador
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Función para mostrar loading
+        function mostrarCarga() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        function ocultarCarga() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        // Función para limpiar filtros
+        function limpiarFiltros() {
+            document.getElementById('buscar-rut').value = '';
+            document.getElementById('buscar-apellido').value = '';
+            document.getElementById('buscar-covid').value = '';
+            document.getElementById('buscar-centro-costo').value = '';
+            document.getElementById('formBusqueda').submit();
+        }
+        
+        // Función para eliminar un filtro específico
+        function eliminarFiltro(filtro) {
+            document.getElementById(`buscar-${filtro}`).value = '';
+            document.getElementById('formBusqueda').submit();
+        }
+        
+        // Funciones para acciones de trabajadores
+        function verDetalle(rut) {
+            mostrarCarga();
+            // Redirigir a la página de detalle
+            window.location.href = `/contabilidad/{{ alias }}/trabajadores/detalle/${rut}/`;
+        }
+        
+        function editarTrabajador(id) {
+            mostrarCarga();
+            window.location.href = `/contabilidad/{{ alias }}/trabajadores/editar/${id}/`;
+        }
+        
+        function eliminarTrabajador(rut) {
+            if (confirm('¿Está seguro de eliminar este trabajador?\n\nEsta acción no se puede deshacer.')) {
+                mostrarCarga();
+                // Aquí iría la lógica de eliminación
+                setTimeout(() => {
+                    alert(`Trabajador ${rut} eliminado`);
+                    ocultarCarga();
+                    location.reload();
+                }, 500);
+            }
+        }
+        
+        // Funciones de exportación
+        function exportarExcel() {
+            mostrarCarga();
+            // Construir URL con filtros actuales
+            const url = new URL(window.location.href);
+            url.pathname = `/contabilidad/{{ alias }}/trabajadores/exportar/excel/`;
+            window.location.href = url.toString();
+            setTimeout(ocultarCarga, 2000);
+        }
+        
+        function exportarPDF() {
+            mostrarCarga();
+            // Construir URL con filtros actuales
+            const url = new URL(window.location.href);
+            url.pathname = `/contabilidad/{{ alias }}/trabajadores/exportar/pdf/`;
+            window.location.href = url.toString();
+            setTimeout(ocultarCarga, 2000);
+        }
+        
+        // Configurar autobúsqueda con Enter
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mostrar loading al enviar el formulario
+            document.getElementById('formBusqueda').addEventListener('submit', function() {
+                mostrarCarga();
+            });
+            
+            // Permitir búsqueda con Enter
+            const inputsBusqueda = document.querySelectorAll('.form-input, .form-select');
+            inputsBusqueda.forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        mostrarCarga();
+                        document.getElementById('formBusqueda').submit();
+                    }
+                });
+            });
+            
+            // Ocultar loading cuando la página termine de cargar
+            window.addEventListener('load', function() {
+                setTimeout(ocultarCarga, 300);
+            });
+            
+            // Mostrar cantidad de resultados en consola
+            {% if trabajadores_json %}
+            console.log('Total trabajadores cargados: {{ trabajadores_json|length }}');
+            {% endif %}
+        });
+    </script>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Crear Empresa SSR</title>
+    <title>Crear Empresa SSR - RUT, Centros de Costo y Logo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@
         .step-line.active {
             background-color: #10b981;
         }
-        .sector-tag {
+        .sector-tag, .centro-tag {
             display: inline-flex;
             align-items: center;
             background-color: #f0fdf4;
@@ -74,13 +74,39 @@
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
         }
-        .sector-tag button {
+        .centro-tag {
+            background-color: #eff6ff;
+            border-color: #b0d4ff;
+            color: #1e3a8a;
+        }
+        .sector-tag button, .centro-tag button {
             margin-left: 0.375rem;
-            color: #047857;
             opacity: 0.7;
         }
-        .sector-tag button:hover {
+        .sector-tag button:hover, .centro-tag button:hover {
             opacity: 1;
+        }
+        .logo-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            border: 2px dashed #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9fafb;
+            transition: all 0.3s ease;
+        }
+        .logo-preview.has-logo {
+            border: 2px solid #10b981;
+            background: white;
+        }
+        .rut-mask {
+            letter-spacing: 0.5px;
+        }
+        .required-field label:after {
+            content: " *";
+            color: red;
         }
     </style>
 </head>
@@ -92,7 +118,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
                     <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mr-3">
-                        <i class="fas fa-plus text-white"></i>
+                        <i class="fas fa-building text-white"></i>
                     </div>
                     <div>
                         <h1 class="text-xl font-bold text-gray-900">Crear Nueva Empresa</h1>
@@ -149,7 +175,7 @@
                         </div>
                         <div>
                             <h2 class="text-2xl font-bold text-gray-800">Información de la Empresa</h2>
-                            <p class="text-gray-600 mt-1">Complete los datos requeridos para crear una nueva empresa en el sistema SSR</p>
+                            <p class="text-gray-600 mt-1">Complete los datos requeridos para crear una nueva empresa</p>
                         </div>
                     </div>
 
@@ -168,78 +194,245 @@
                     </div>
                     {% endif %}
 
-                    <form method="post" class="space-y-6" id="create-company-form">
+                    <form method="post" class="space-y-6" id="create-company-form" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <div>
+                        <!-- Logo de la empresa -->
+                        <div class="border-b border-gray-200 pb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">
+                                <i class="fas fa-image text-gray-400 mr-2"></i> Logo de la Empresa
+                            </label>
+                            <div class="flex items-start space-x-6">
+                                <div id="logo-preview" class="logo-preview">
+                                    <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="relative">
+                                        <input 
+                                            type="file" 
+                                            name="logo" 
+                                            id="logo-input"
+                                            accept="image/*"
+                                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-all"
+                                        >
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i> Formatos: JPG, PNG, SVG. Se usará en app móvil y liquidaciones.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grid de 2 columnas para RUT y Nombre -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-id-card text-gray-400 mr-2"></i> RUT Empresa
+                                    <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        name="rut" 
+                                        id="rut-input"
+                                        required 
+                                        class="rut-mask block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent input-focus" 
+                                        placeholder="76.522.887-5"
+                                        autocomplete="off"
+                                    >
+                                    <div class="absolute right-3 top-3">
+                                        <i class="fas fa-id-card text-gray-400"></i>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">Formato: 12.345.678-9</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-signature text-gray-400 mr-2"></i> Nombre de la Empresa
+                                    <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        name="nombre" 
+                                        required 
+                                        class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent input-focus" 
+                                        placeholder="Ej: CENTRO DE ESTETICA INTEGRAL DEPILASER SPA"
+                                        autocomplete="off"
+                                    >
+                                    <div class="absolute right-3 top-3">
+                                        <i class="fas fa-building text-gray-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dirección y Contacto -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-map-pin text-gray-400 mr-2"></i> Dirección
+                                </label>
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        name="direccion" 
+                                        id="direccion-input"
+                                        class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" 
+                                        placeholder="CORONEL SANTIAGO BUERAS 218 DEP 501, RANCAGUA"
+                                    >
+                                    <div class="absolute right-3 top-3">
+                                        <i class="fas fa-map-marker-alt text-gray-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-phone text-gray-400 mr-2"></i> Teléfono / Celular
+                                </label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input 
+                                        type="text" 
+                                        name="telefono" 
+                                        id="telefono-input"
+                                        class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                                        placeholder="722955465"
+                                    >
+                                    <input 
+                                        type="text" 
+                                        name="celular" 
+                                        id="celular-input"
+                                        class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                                        placeholder="983495323"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Centros de Costo (NUEVO CAMPO) -->
+                        <div class="border-t border-gray-200 pt-6">
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-signature text-gray-400 mr-2"></i> Nombre de la Empresa
+                                <i class="fas fa-chart-pie text-gray-400 mr-2"></i> Centros de Costo
                                 <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
-                                <input 
-                                    type="text" 
-                                    name="nombre" 
-                                    required 
+                                <textarea 
+                                    name="centros_costo" 
+                                    id="centros-input"
+                                    rows="2" 
                                     class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent input-focus" 
-                                    placeholder="Ej: Agua Potable Rural Los Aromos"
-                                    autocomplete="off"
-                                >
+                                    placeholder="Ej: CENTRO RANCAGUA 100, CENTRO RANCAGUA 200, SEDE SANTA CRUZ"
+                                ></textarea>
                                 <div class="absolute right-3 top-3">
-                                    <i class="fas fa-building text-gray-400"></i>
+                                    <i class="fas fa-sitemap text-gray-400"></i>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">Ingrese el nombre completo de la empresa APR.</p>
+                            <p class="text-xs text-gray-500 mt-2">Los centros de costo se usarán en liquidaciones de sueldo y reportes.</p>
+                            
+                            <!-- Tags de centros de costo -->
+                            <div class="mt-4" id="centros-tags-container" style="display: none;">
+                                <div class="text-sm text-gray-500 mb-2">Centros de costo ingresados:</div>
+                                <div id="centros-tags" class="flex flex-wrap"></div>
+                            </div>
                         </div>
 
+                        <!-- Sectores (separados por coma) -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-map-marker-alt text-gray-400 mr-2"></i> Sectores (separados por coma)
+                                <i class="fas fa-map-marker-alt text-gray-400 mr-2"></i> Sectores / Sucursales
                                 <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
                                 <textarea 
                                     name="sectores" 
-                                    rows="3" 
-                                    class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent input-focus" 
-                                    placeholder="Ej: Centro, Norte, Sur, Villa Los Aromos, Alto del Carmen"
                                     id="sectores-input"
+                                    rows="2" 
+                                    class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent input-focus" 
+                                    placeholder="Ej: Centro, Norte, Sur, Villa Los Aromos"
+                                    required
                                 ></textarea>
                                 <div class="absolute right-3 top-3">
                                     <i class="fas fa-map text-gray-400"></i>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">Estos sectores se usarán para organizar clientes y lecturas.</p>
+                            <p class="text-xs text-gray-500 mt-2">Sectores para organizar clientes y lecturas (se guardan en sectores_json).</p>
                             
-                            <!-- Tags de sectores (visualización) -->
-                            <div class="mt-4" id="sectores-tags-container">
+                            <!-- Tags de sectores -->
+                            <div class="mt-4" id="sectores-tags-container" style="display: none;">
                                 <div class="text-sm text-gray-500 mb-2">Sectores detectados:</div>
-                                <div id="sectores-tags" class="flex flex-wrap">
-                                    <!-- Los tags se generarán dinámicamente -->
+                                <div id="sectores-tags" class="flex flex-wrap"></div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración de colores para app -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <h3 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-palette text-emerald-600 mr-2"></i> Personalización App Móvil
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Color Primario
+                                    </label>
+                                    <div class="flex items-center space-x-3">
+                                        <input 
+                                            type="color" 
+                                            name="color_app_primario" 
+                                            value="#1E40AF"
+                                            class="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                                        >
+                                        <input 
+                                            type="text" 
+                                            name="color_app_primario_text" 
+                                            value="#1E40AF"
+                                            class="block w-full border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        >
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Color Secundario
+                                    </label>
+                                    <div class="flex items-center space-x-3">
+                                        <input 
+                                            type="color" 
+                                            name="color_app_secundario" 
+                                            value="#DC2626"
+                                            class="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                                        >
+                                        <input 
+                                            type="text" 
+                                            name="color_app_secundario_text" 
+                                            value="#DC2626"
+                                            class="block w-full border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        >
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Información adicional -->
-                        <div class="border-t border-gray-200 pt-6 mt-6">
-                            <h3 class="text-lg font-medium text-gray-800 mb-4">Configuraciones Automáticas</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="flex items-start p-4 bg-gray-50 rounded-lg">
-                                    <i class="fas fa-database text-emerald-600 mt-1 mr-3"></i>
-                                    <div>
-                                        <p class="font-medium text-gray-800">Base de Datos</p>
-                                        <p class="text-sm text-gray-600 mt-1">Se creará automáticamente una base de datos dedicada para esta empresa.</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-start p-4 bg-gray-50 rounded-lg">
-                                    <i class="fas fa-user-shield text-emerald-600 mt-1 mr-3"></i>
-                                    <div>
-                                        <p class="font-medium text-gray-800">Usuario Admin</p>
-                                        <p class="text-sm text-gray-600 mt-1">Podrá crear un usuario administrador después de registrar la empresa.</p>
-                                    </div>
+                        <!-- URL del Servidor -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-globe text-gray-400 mr-2"></i> URL del Servidor
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    type="url" 
+                                    name="url_servidor" 
+                                    value="http://localhost:8000"
+                                    class="block w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                >
+                                <div class="absolute right-3 top-3">
+                                    <i class="fas fa-link text-gray-400"></i>
                                 </div>
                             </div>
+                            <p class="text-xs text-gray-500 mt-2">URL base para la API de la app móvil.</p>
                         </div>
+
+                        <!-- Campos ocultos para valores por defecto -->
+                        <input type="hidden" name="color_dashboard" value="#008000">
 
                         <div class="flex flex-col sm:flex-row gap-4 pt-6">
                             <button type="submit" class="btn-primary text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center">
@@ -253,68 +446,60 @@
                 </div>
             </div>
 
-            <!-- Panel Lateral - Información -->
+            <!-- Panel Lateral - Información y Ayuda -->
             <div class="lg:w-1/3">
                 <div class="bg-white rounded-2xl card-shadow p-6 mb-6">
                     <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-info-circle text-emerald-600 mr-2"></i> Información Importante
+                        <i class="fas fa-clipboard-list text-emerald-600 mr-2"></i> Resumen de Datos
                     </h3>
-                    <ul class="space-y-4">
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-emerald-500 mt-1 mr-3"></i>
-                            <div>
-                                <p class="font-medium text-gray-800">Nombre único</p>
-                                <p class="text-sm text-gray-600">Cada empresa debe tener un nombre único en el sistema.</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-emerald-500 mt-1 mr-3"></i>
-                            <div>
-                                <p class="font-medium text-gray-800">Slug automático</p>
-                                <p class="text-sm text-gray-600">El sistema generará automáticamente un slug basado en el nombre.</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-emerald-500 mt-1 mr-3"></i>
-                            <div>
-                                <p class="font-medium text-gray-800">Sectores iniciales</p>
-                                <p class="text-sm text-gray-600">Puede agregar o modificar sectores después de la creación.</p>
-                            </div>
-                        </li>
-                    </ul>
+                    
+                    <!-- Vista previa de datos -->
+                    <div id="data-preview" class="space-y-3">
+                        <div class="text-sm text-gray-500">Complete el formulario para ver la vista previa</div>
+                    </div>
                 </div>
 
-                <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl card-shadow p-6 border border-emerald-100">
-                    <h3 class="text-lg font-bold text-emerald-800 mb-4 flex items-center">
-                        <i class="fas fa-lightbulb text-emerald-600 mr-2"></i> Recomendaciones
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl card-shadow p-6 border border-blue-100">
+                    <h3 class="text-lg font-bold text-blue-800 mb-4 flex items-center">
+                        <i class="fas fa-database text-blue-600 mr-2"></i> Estructura de Datos
                     </h3>
-                    <div class="space-y-3">
-                        <div class="flex items-start">
-                            <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
-                                <span class="text-emerald-700 font-bold text-xs">1</span>
-                            </div>
-                            <p class="text-sm text-emerald-800">Use nombres descriptivos que identifiquen claramente la empresa.</p>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
-                                <span class="text-emerald-700 font-bold text-xs">2</span>
-                            </div>
-                            <p class="text-sm text-emerald-800">Defina sectores coherentes con la organización territorial real.</p>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
-                                <span class="text-emerald-700 font-bold text-xs">3</span>
-                            </div>
-                            <p class="text-sm text-emerald-800">Después de crear la empresa, configure los parámetros administrativos.</p>
-                        </div>
-                    </div>
                     
-                    <div class="mt-6 p-4 bg-white rounded-lg border border-emerald-200">
-                        <div class="flex items-center">
-                            <i class="fas fa-clock text-emerald-600 mr-3"></i>
-                            <div>
-                                <p class="text-sm font-medium text-emerald-800">Tiempo estimado</p>
-                                <p class="text-xs text-emerald-700">Creación: 2-3 minutos</p>
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-blue-800 text-sm mb-2 flex items-center">
+                                <i class="fas fa-check-circle text-green-600 mr-2"></i> Modelo Empresa
+                            </h4>
+                            <ul class="text-xs space-y-1 text-gray-700">
+                                <li>• <span class="font-mono">nombre</span> → {{ nombre }}</li>
+                                <li>• <span class="font-mono">sectores_json</span> → Sectores ingresados</li>
+                                <li>• <span class="font-mono">logo_app</span> → Logo corporativo</li>
+                                <li>• <span class="font-mono">color_app_primario</span> → #1E40AF (azul)</li>
+                                <li>• <span class="font-mono">color_app_secundario</span> → #DC2626 (rojo)</li>
+                                <li>• <span class="font-mono">api_key_app</span> → Generada automáticamente</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-blue-800 text-sm mb-2 flex items-center">
+                                <i class="fas fa-cog text-blue-600 mr-2"></i> Proceso de Creación
+                            </h4>
+                            <ol class="text-xs space-y-2 text-gray-700 list-decimal list-inside">
+                                <li>Validar nombre único de empresa</li>
+                                <li>Crear registro en tabla Empresa</li>
+                                <li>Guardar logo en <span class="font-mono">logos_apps/</span></li>
+                                <li>Crear BD SQLite: <span class="font-mono">db_{slug}.sqlite3</span></li>
+                                <li>Registrar alias en configuración</li>
+                                <li>Generar API key automática</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                            <div class="flex items-start">
+                                <i class="fas fa-lightbulb text-amber-600 mt-1 mr-3"></i>
+                                <div>
+                                    <p class="text-xs font-medium text-amber-800">Centros de Costo</p>
+                                    <p class="text-xs text-amber-700 mt-1">Los centros de costo se almacenan en la tabla de configuración de la BD de la empresa para usar en liquidaciones.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -324,33 +509,110 @@
     </main>
 
     <script>
-        // Manejo dinámico de tags para sectores
         document.addEventListener('DOMContentLoaded', function() {
-            const sectoresInput = document.getElementById('sectores-input');
-            const sectoresTagsContainer = document.getElementById('sectores-tags');
-            const tagsContainer = document.getElementById('sectores-tags-container');
+            // --- PREVISUALIZACIÓN DE LOGO ---
+            const logoInput = document.getElementById('logo-input');
+            const logoPreview = document.getElementById('logo-preview');
             
-            // Ocultar inicialmente el contenedor de tags
-            tagsContainer.style.display = 'none';
+            logoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        logoPreview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-contain rounded-lg">`;
+                        logoPreview.classList.add('has-logo');
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    logoPreview.innerHTML = '<i class="fas fa-cloud-upload-alt text-gray-400 text-3xl"></i>';
+                    logoPreview.classList.remove('has-logo');
+                }
+            });
+
+            // --- VALIDACIÓN Y FORMATEO DE RUT ---
+            const rutInput = document.getElementById('rut-input');
             
-            // Función para actualizar tags
-            function updateTags() {
-                const value = sectoresInput.value;
-                const sectores = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            function formatRut(value) {
+                value = value.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+                if (value.length > 1) {
+                    let rutBody = value.slice(0, -1);
+                    let dv = value.slice(-1);
+                    rutBody = rutBody.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    return rutBody + '-' + dv;
+                }
+                return value;
+            }
+            
+            rutInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/[^0-9kK]/g, '');
+                if (value.length > 0) {
+                    e.target.value = formatRut(value);
+                }
+            });
+
+            // --- MANEJO DE CENTROS DE COSTO ---
+            const centrosInput = document.getElementById('centros-input');
+            const centrosTagsContainer = document.getElementById('centros-tags-container');
+            const centrosTags = document.getElementById('centros-tags');
+            
+            function updateCentrosTags() {
+                const value = centrosInput.value;
+                const centros = value.split(',').map(c => c.trim()).filter(c => c.length > 0);
                 
-                // Limpiar tags existentes
-                sectoresTagsContainer.innerHTML = '';
+                centrosTags.innerHTML = '';
                 
-                // Si no hay sectores, ocultar el contenedor
-                if (sectores.length === 0) {
-                    tagsContainer.style.display = 'none';
+                if (centros.length === 0) {
+                    centrosTagsContainer.style.display = 'none';
                     return;
                 }
                 
-                // Mostrar el contenedor
-                tagsContainer.style.display = 'block';
+                centrosTagsContainer.style.display = 'block';
                 
-                // Crear tags
+                centros.forEach((centro, index) => {
+                    const tag = document.createElement('div');
+                    tag.className = 'centro-tag';
+                    tag.innerHTML = `
+                        ${centro}
+                        <button type="button" onclick="removeCentro(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    centrosTags.appendChild(tag);
+                });
+            }
+            
+            window.removeCentro = function(index) {
+                const value = centrosInput.value;
+                const centros = value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+                centros.splice(index, 1);
+                centrosInput.value = centros.join(', ');
+                updateCentrosTags();
+                updateDataPreview();
+            };
+            
+            centrosInput.addEventListener('input', function() {
+                updateCentrosTags();
+                updateDataPreview();
+            });
+
+            // --- MANEJO DE SECTORES ---
+            const sectoresInput = document.getElementById('sectores-input');
+            const sectoresTagsContainer = document.getElementById('sectores-tags-container');
+            const sectoresTags = document.getElementById('sectores-tags');
+            
+            function updateSectoresTags() {
+                const value = sectoresInput.value;
+                const sectores = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                
+                sectoresTags.innerHTML = '';
+                
+                if (sectores.length === 0) {
+                    sectoresTagsContainer.style.display = 'none';
+                    return;
+                }
+                
+                sectoresTagsContainer.style.display = 'block';
+                
                 sectores.forEach((sector, index) => {
                     const tag = document.createElement('div');
                     tag.className = 'sector-tag';
@@ -360,40 +622,117 @@
                             <i class="fas fa-times"></i>
                         </button>
                     `;
-                    sectoresTagsContainer.appendChild(tag);
+                    sectoresTags.appendChild(tag);
                 });
             }
             
-            // Actualizar tags cuando el usuario escribe
-            sectoresInput.addEventListener('input', updateTags);
-            
-            // Actualizar tags al cargar la página si ya hay contenido
-            updateTags();
-            
-            // Función para eliminar un sector (global para que funcione en los botones)
             window.removeSector = function(index) {
                 const value = sectoresInput.value;
                 const sectores = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
-                
-                // Eliminar el sector en el índice especificado
                 sectores.splice(index, 1);
-                
-                // Actualizar el textarea
                 sectoresInput.value = sectores.join(', ');
-                
-                // Actualizar los tags
-                updateTags();
+                updateSectoresTags();
+                updateDataPreview();
             };
             
-            // Validación del formulario
+            sectoresInput.addEventListener('input', function() {
+                updateSectoresTags();
+                updateDataPreview();
+            });
+
+            // --- VISTA PREVIA DE DATOS ---
+            function updateDataPreview() {
+                const rut = rutInput.value || 'No ingresado';
+                const nombre = document.querySelector('input[name="nombre"]').value || 'No ingresado';
+                const direccion = document.getElementById('direccion-input')?.value || 'No ingresada';
+                const telefono = document.getElementById('telefono-input')?.value || '';
+                const celular = document.getElementById('celular-input')?.value || '';
+                const centros = centrosInput.value || 'No ingresados';
+                const sectores = sectoresInput.value || 'No ingresados';
+                
+                const preview = document.getElementById('data-preview');
+                preview.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center mr-2">
+                                <i class="fas fa-building text-emerald-600 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-gray-500">EMPRESA</p>
+                                <p class="text-sm font-bold text-gray-800">${nombre}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div>
+                                <p class="text-xs text-gray-500">RUT</p>
+                                <p class="text-sm font-semibold text-gray-800">${rut}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Dirección</p>
+                                <p class="text-sm text-gray-800 truncate">${direccion}</p>
+                            </div>
+                        </div>
+                        
+                        ${(telefono || celular) ? `
+                        <div class="mb-3">
+                            <p class="text-xs text-gray-500">Contacto</p>
+                            <p class="text-sm text-gray-800">${telefono} ${celular ? '• ' + celular : ''}</p>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="border-t border-gray-200 my-2 pt-2">
+                            <div class="flex items-start mb-2">
+                                <i class="fas fa-sitemap text-emerald-600 text-xs mt-1 mr-2"></i>
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500">CENTROS DE COSTO</p>
+                                    <p class="text-xs text-gray-700 mt-1">${centros}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-map-marker-alt text-emerald-600 text-xs mt-1 mr-2"></i>
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500">SECTORES</p>
+                                    <p class="text-xs text-gray-700 mt-1">${sectores}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Event listeners para vista previa
+            document.querySelectorAll('input[name="nombre"], #rut-input, #direccion-input, #telefono-input, #celular-input, #centros-input, #sectores-input').forEach(input => {
+                if (input) {
+                    input.addEventListener('input', updateDataPreview);
+                }
+            });
+
+            // --- VALIDACIÓN DEL FORMULARIO ---
             document.getElementById('create-company-form').addEventListener('submit', function(e) {
+                const rut = rutInput.value.trim();
                 const nombre = document.querySelector('input[name="nombre"]').value.trim();
+                const centros = centrosInput.value.trim();
                 const sectores = sectoresInput.value.trim();
+                
+                if (!rut) {
+                    e.preventDefault();
+                    alert('Por favor, ingrese el RUT de la empresa.');
+                    rutInput.focus();
+                    return;
+                }
                 
                 if (!nombre) {
                     e.preventDefault();
                     alert('Por favor, ingrese el nombre de la empresa.');
                     document.querySelector('input[name="nombre"]').focus();
+                    return;
+                }
+                
+                if (!centros) {
+                    e.preventDefault();
+                    alert('Por favor, ingrese al menos un centro de costo.');
+                    centrosInput.focus();
                     return;
                 }
                 
@@ -404,25 +743,53 @@
                     return;
                 }
                 
-                // Mostrar indicador de carga
+                // Validar formato RUT (mínimo)
+                const rutClean = rut.replace(/\./g, '').replace(/-/g, '');
+                if (rutClean.length < 8) {
+                    e.preventDefault();
+                    alert('El RUT ingresado no es válido.');
+                    rutInput.focus();
+                    return;
+                }
+                
+                // Mostrar loading
                 const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creando empresa...';
                 submitBtn.disabled = true;
-                
-                // Restaurar después de 5 segundos (en caso de que algo falle)
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }, 5000);
             });
             
-            // Sugerencia de sectores comunes
-            sectoresInput.addEventListener('focus', function() {
-                if (!this.value) {
-                    this.placeholder = "Ej: Centro, Norte, Sur, Villa Los Aromos, Alto del Carmen";
-                }
-            });
+            // --- SINCRONIZACIÓN COLORES ---
+            const colorPrimario = document.querySelector('input[name="color_app_primario"]');
+            const colorPrimarioText = document.querySelector('input[name="color_app_primario_text"]');
+            const colorSecundario = document.querySelector('input[name="color_app_secundario"]');
+            const colorSecundarioText = document.querySelector('input[name="color_app_secundario_text"]');
+            
+            if (colorPrimario && colorPrimarioText) {
+                colorPrimario.addEventListener('input', function() {
+                    colorPrimarioText.value = this.value;
+                });
+                colorPrimarioText.addEventListener('input', function() {
+                    if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                        colorPrimario.value = this.value;
+                    }
+                });
+            }
+            
+            if (colorSecundario && colorSecundarioText) {
+                colorSecundario.addEventListener('input', function() {
+                    colorSecundarioText.value = this.value;
+                });
+                colorSecundarioText.addEventListener('input', function() {
+                    if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                        colorSecundario.value = this.value;
+                    }
+                });
+            }
+            
+            // Inicializar
+            updateCentrosTags();
+            updateSectoresTags();
+            updateDataPreview();
         });
     </script>
 </body>

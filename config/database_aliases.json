@@ -1,0 +1,46 @@
+{
+  "apr-requinoa": {
+    "alias": "db_apr-requinoa",
+    "nombre": "APR REQUINOA",
+    "rut": "12.343.324-4",
+    "direccion": "COMUNA REQUINOA",
+    "telefono": "72323342",
+    "celular": "996578664",
+    "centros_costo": [
+      "VILLA JARDIN",
+      "COMERCIO",
+      "MURIALDO",
+      "EL ABRA"
+    ],
+    "sectores": [
+      "VILLA JARDIN",
+      "COMERCIO",
+      "MURIALDO",
+      "EL ABRA"
+    ],
+    "db_path": "C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-requinoa.sqlite3",
+    "fecha_creacion": "2026-02-12T15:55:25.654687+00:00"
+  },
+  "apr-vaticano": {
+    "alias": "db_apr-vaticano",
+    "nombre": "APR VATICANO",
+    "rut": "76.232.132-3",
+    "direccion": "SECTOR EL VATICANO N1",
+    "telefono": "72323342",
+    "celular": "996578664",
+    "centros_costo": [
+      "ADMINISTRACION",
+      "INFORMATICA",
+      "LECTURAS",
+      "CONTABILIDAD"
+    ],
+    "sectores": [
+      "VATICANO",
+      "LAS MERCEDES",
+      "LAS CABRAS",
+      "LAS BANDURRIAS"
+    ],
+    "db_path": "C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-vaticano.sqlite3",
+    "fecha_creacion": "2026-02-12T16:19:17.934099+00:00"
+  }
+}

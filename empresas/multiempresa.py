@@ -341,6 +341,7 @@ def crear_tabla_lecturas_manual(alias):
     Crea la tabla lecturas_lecturamovil manualmente (workaround de emergencia).
     """
     try:
+        from django.db import connections
         connection = connections[alias]
         
         with connection.cursor() as cursor:
@@ -368,21 +369,30 @@ def crear_tabla_lecturas_manual(alias):
             cursor.execute(sql)
             
             # Crear índices
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_lecturas_empresa_estado ON lecturas_lecturamovil(empresa_slug, estado);")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_lecturas_cliente_fecha ON lecturas_lecturamovil(cliente, fecha_lectura);")
-            
-            print(f"[SSR] ✅ Tabla lecturas_lecturamovil creada manualmente en {alias}")
-            
-            # Registrar migración falsa
             cursor.execute("""
-                INSERT OR IGNORE INTO django_migrations (app, name, applied)
-                VALUES ('lecturas', '0001_manual_fix', datetime('now'))
+                CREATE INDEX IF NOT EXISTS idx_lecturas_empresa_estado 
+                ON lecturas_lecturamovil(empresa_slug, estado)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_lecturas_cliente_fecha 
+                ON lecturas_lecturamovil(cliente, fecha_lectura)
             """)
             
+            # Registrar migración falsa - CORREGIDO: pasar parámetros como tupla
+            cursor.execute("""
+                INSERT OR IGNORE INTO django_migrations (app, name, applied)
+                VALUES (?, ?, datetime('now'))
+            """, ('lecturas', '0001_manual_fix'))  # ¡Esto es una tupla!
+            
+            connection.commit()
+            
+            print(f"[SSR] ✅ Tabla lecturas_lecturamovil creada manualmente en {alias}")
             return True
             
     except Exception as e:
         print(f"[SSR] ❌ Error creando tabla manual: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 # Función para diagnosticar problemas
@@ -468,3 +478,53 @@ def limpiar_alias_eliminado(slug):
         _migrated_databases.remove(alias)
     
     return True
+
+# En multiempresa.py o en un archivo de utilidades
+
+def obtener_centros_costo(slug):
+    """
+    Obtiene la lista de centros de costo de una empresa.
+    """
+    alias = f'db_{slug}'
+    
+    try:
+        from django.db import connections
+        
+        connection = connections[alias]
+        
+        with connection.cursor() as cursor:
+            # Intentar desde tabla centros_costo
+            cursor.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='centros_costo'
+            """)
+            
+            if cursor.fetchone():
+                cursor.execute("""
+                    SELECT nombre, codigo, activo 
+                    FROM centros_costo 
+                    WHERE activo = 1
+                    ORDER BY nombre
+                """)
+                
+                resultados = cursor.fetchall()
+                if resultados:
+                    return [{'nombre': row[0], 'codigo': row[1], 'activo': row[2]} for row in resultados]
+            
+            # Fallback: obtener desde configuracion
+            cursor.execute("""
+                SELECT valor FROM configuracion WHERE clave = 'centros_costo'
+            """)
+            
+            row = cursor.fetchone()
+            if row and row[0]:
+                import json
+                centros = json.loads(row[0])
+                return [{'nombre': c, 'codigo': c.replace(' ', '_').upper(), 'activo': True} for c in centros]
+            
+            # Si no hay centros de costo, retornar lista vacía
+            return []
+            
+    except Exception as e:
+        print(f"[SSR] Error obteniendo centros de costo para {slug}: {e}")
+        return []

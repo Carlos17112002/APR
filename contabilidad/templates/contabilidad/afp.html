@@ -1,0 +1,792 @@
+<!-- contabilidad/afp.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parámetros AFP · {{ empresa.nombre }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background: #f0f2f5;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        th {
+            background: #f8f9fa;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
+        }
+        
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .input-cotizacion {
+            width: 80px;
+            padding: 6px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: right;
+            font-size: 14px;
+        }
+        
+        .input-cotizacion:focus {
+            outline: none;
+            border-color: #4dabf7;
+            box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.2);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-afp {
+            background: #d0ebff;
+            color: #1864ab;
+        }
+        
+        .badge-inp {
+            background: #fff3bf;
+            color: #e67700;
+        }
+        
+        .badge-sip {
+            background: #d3f9d8;
+            color: #2b8a3e;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary {
+            background: #2a5298;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #2b8a3e;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .search-box {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #4dabf7;
+        }
+        
+        .footer-info {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
+        .codigo-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        
+        .actions-cell {
+            text-align: center;
+            width: 60px;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #fa5252;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .delete-btn:hover {
+            color: #c92a2a;
+        }
+        
+        /* Estilos para el modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            color: #1e3c72;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+        .modal-close:hover {
+            color: #495057;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #4dabf7;
+            box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.2);
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .btn-cancel {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
+        .btn-save {
+            padding: 8px 16px;
+            background: #2b8a3e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-save:hover {
+            background: #1f6c30;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Parámetros</h1>
+            <p>{{ empresa.nombre }}</p>
+        </div>
+        
+        <div class="content">
+            <!-- Buscador -->
+            <div class="search-box">
+                <input type="text" 
+                       id="inputBuscar" 
+                       class="search-input" 
+                       placeholder="Buscar por código o nombre...">
+                <button type="button" class="btn btn-primary" onclick="buscarAFP()">
+                    Buscar
+                </button>
+            </div>
+            
+            <!-- Tabla de AFP -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>Afp</th>
+                        <th>Nombre</th>
+                        <th>Cotización Obligatoria</th>
+                        <th>Código Previred</th>
+                        <th>Régimen Previsional</th>
+                        <th>Código Dirección del Trabajo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="afpTableBody">
+                    {% for afp in afps %}
+                    <tr data-afp-id="{{ afp.id }}">
+                        <td class="codigo-cell">{{ afp.codigo }}</td>
+                        <td>{{ afp.nombre }}</td>
+                        <td>
+                            <input type="number" 
+                                   step="0.01" 
+                                   min="0" 
+                                   max="100"
+                                   value="{{ afp.cotizacion_obligatoria }}" 
+                                   class="input-cotizacion"
+                                   data-afp-id="{{ afp.id }}"
+                                   onchange="actualizarCotizacion(this)">
+                        </td>
+                        <td class="codigo-cell">{{ afp.codigo_previred }}</td>
+                        <td>
+                            {% if afp.regimen == 'AFP' %}
+                            <span class="badge badge-afp">{{ afp.regimen }}</span>
+                            {% elif afp.regimen == 'INP' %}
+                            <span class="badge badge-inp">{{ afp.regimen }}</span>
+                            {% elif afp.regimen == 'SIP' %}
+                            <span class="badge badge-sip">{{ afp.regimen }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="codigo-cell">{{ afp.codigo_dt }}</td>
+                        <td class="actions-cell">
+                            <button class="delete-btn" onclick="eliminarAFP({{ afp.id }}, '{{ afp.codigo }}')">
+                                ✕
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Total registros -->
+            <div id="totalRegistros" style="text-align: right; margin: 10px 0; font-size: 12px; color: #6c757d;">
+                Total: {{ total_afp }} registros
+            </div>
+            
+            <!-- Botones (exactamente como en la imagen) -->
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="buscarAFP()">
+                    Buscar
+                </button>
+                <button class="btn btn-success" onclick="mostrarModalAgregar()">
+                    Agregar
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='{% url 'panel_remuneraciones' alias=alias %}'">
+                    Salir
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer-info">
+            Sistema de Gestión de AFP · {{ empresa.nombre }}
+        </div>
+    </div>
+    
+    <!-- Modal para agregar AFP -->
+    <div id="modalAgregar" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Agregar Nueva AFP</h2>
+                <button class="modal-close" onclick="cerrarModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Código AFP *</label>
+                    <input type="text" id="nuevoCodigo" class="form-control" 
+                           placeholder="Ej: CUMP, HABI" maxlength="10" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Nombre *</label>
+                    <input type="text" id="nuevoNombre" class="form-control" 
+                           placeholder="Nombre de la AFP" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Cotización Obligatoria (%)</label>
+                    <input type="number" step="0.01" id="nuevaCotizacion" class="form-control" 
+                           value="0.00" min="0" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Código Previred</label>
+                    <input type="text" id="nuevoPrevired" class="form-control" 
+                           placeholder="Ej: 03, 05">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Régimen</label>
+                    <select id="nuevoRegimen" class="form-control">
+                        <option value="AFP">AFP</option>
+                        <option value="INP">INP</option>
+                        <option value="SIP">SIP</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Código DT</label>
+                    <input type="text" id="nuevoCodigoDT" class="form-control" 
+                           placeholder="Código Dirección del Trabajo">
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-save" onclick="agregarAFP()">Guardar</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // CSRF Token
+        const csrfToken = "{{ csrf_token }}";
+        
+        // Variables globales
+        let afpsData = [];
+        
+        // Funciones del modal
+        function mostrarModalAgregar() {
+            document.getElementById('modalAgregar').style.display = 'flex';
+            document.getElementById('nuevoCodigo').focus();
+        }
+        
+        function cerrarModal() {
+            document.getElementById('modalAgregar').style.display = 'none';
+            // Limpiar campos
+            document.getElementById('nuevoCodigo').value = '';
+            document.getElementById('nuevoNombre').value = '';
+            document.getElementById('nuevaCotizacion').value = '0.00';
+            document.getElementById('nuevoPrevired').value = '';
+            document.getElementById('nuevoRegimen').value = 'AFP';
+            document.getElementById('nuevoCodigoDT').value = '';
+        }
+        
+        // Función para buscar AFP
+        function buscarAFP() {
+            const busqueda = document.getElementById('inputBuscar').value.trim();
+            
+            fetch('{% url "buscar_afp" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ busqueda: busqueda })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    afpsData = data.resultados;
+                    actualizarTabla(data.resultados);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        function actualizarTabla(resultados) {
+            const tbody = document.getElementById('afpTableBody');
+            tbody.innerHTML = '';
+            
+            if (resultados.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px; color: #6c757d;">
+                            No se encontraron resultados
+                        </td>
+                    </tr>
+                `;
+            } else {
+                resultados.forEach(afp => {
+                    const badgeClass = afp.regimen === 'AFP' ? 'badge-afp' : 
+                                     afp.regimen === 'INP' ? 'badge-inp' : 'badge-sip';
+                    
+                    // Formatear el valor para el input
+                    let cotizacionValue = afp.cotizacion;
+                    if (typeof cotizacionValue === 'string') {
+                        cotizacionValue = cotizacionValue.replace(',', '.');
+                    }
+                    // Asegurar 2 decimales
+                    cotizacionValue = parseFloat(cotizacionValue).toFixed(2);
+                    
+                    const row = document.createElement('tr');
+                    row.setAttribute('data-afp-id', afp.id);
+                    row.innerHTML = `
+                        <td class="codigo-cell">${afp.codigo}</td>
+                        <td>${afp.nombre}</td>
+                        <td>
+                            <input type="number" 
+                                   step="0.01" 
+                                   min="0" 
+                                   max="100"
+                                   value="${cotizacionValue}" 
+                                   class="input-cotizacion"
+                                   data-afp-id="${afp.id}"
+                                   onchange="actualizarCotizacion(this)">
+                        </td>
+                        <td class="codigo-cell">${afp.codigo_previred}</td>
+                        <td>
+                            <span class="badge ${badgeClass}">${afp.regimen}</span>
+                        </td>
+                        <td class="codigo-cell">${afp.codigo_dt}</td>
+                        <td class="actions-cell">
+                            <button class="delete-btn" onclick="eliminarAFP(${afp.id}, '${afp.codigo}')">
+                                ✕
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+            // Actualizar contador
+            document.getElementById('totalRegistros').innerHTML = 
+                `Total: ${resultados.length} registros`;
+        }
+        
+        // Función para actualizar cotización
+        function actualizarCotizacion(input) {
+            const afpId = input.getAttribute('data-afp-id');
+            let nuevaCotizacion = input.value;
+            
+            // Reemplazar coma por punto si el usuario escribió con coma
+            nuevaCotizacion = nuevaCotizacion.replace(',', '.');
+            nuevaCotizacion = parseFloat(nuevaCotizacion);
+            
+            if (isNaN(nuevaCotizacion) || nuevaCotizacion < 0 || nuevaCotizacion > 100) {
+                alert('La cotización debe ser un número entre 0 y 100');
+                return;
+            }
+            
+            fetch('{% url "actualizar_cotizacion" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    afp_id: afpId,
+                    cotizacion: nuevaCotizacion
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert('Error: ' + data.error);
+                    // Revertir el valor si hay error
+                    const afp = afpsData.find(a => a.id == afpId);
+                    if (afp) {
+                        input.value = parseFloat(afp.cotizacion).toFixed(2);
+                    }
+                } else {
+                    // Actualizar en los datos locales
+                    const index = afpsData.findIndex(a => a.id == afpId);
+                    if (index !== -1) {
+                        afpsData[index].cotizacion = nuevaCotizacion;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+                // Revertir el valor si hay error de conexión
+                const afp = afpsData.find(a => a.id == afpId);
+                if (afp) {
+                    input.value = parseFloat(afp.cotizacion).toFixed(2);
+                }
+            });
+        }
+        
+        // Función para agregar AFP
+        function agregarAFP() {
+            const codigo = document.getElementById('nuevoCodigo').value.trim().toUpperCase();
+            const nombre = document.getElementById('nuevoNombre').value.trim();
+            let cotizacion = document.getElementById('nuevaCotizacion').value;
+            
+            // Reemplazar coma por punto
+            cotizacion = cotizacion.replace(',', '.');
+            
+            const previred = document.getElementById('nuevoPrevired').value.trim();
+            const regimen = document.getElementById('nuevoRegimen').value;
+            const codigoDT = document.getElementById('nuevoCodigoDT').value.trim();
+            
+            if (!codigo || !nombre) {
+                alert('Código y Nombre son obligatorios');
+                return;
+            }
+            
+            fetch('{% url "agregar_afp" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    codigo: codigo,
+                    nombre: nombre,
+                    cotizacion: cotizacion,
+                    codigo_previred: previred,
+                    regimen: regimen,
+                    codigo_dt: codigoDT
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('AFP agregada correctamente');
+                    cerrarModal();
+                    // Agregar a la tabla sin recargar
+                    const nuevaAFP = {
+                        id: data.afp_id,
+                        codigo: codigo,
+                        nombre: nombre,
+                        cotizacion: parseFloat(cotizacion),
+                        codigo_previred: previred,
+                        regimen: regimen,
+                        codigo_dt: codigoDT
+                    };
+                    
+                    afpsData.push(nuevaAFP);
+                    actualizarTabla(afpsData);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        // Función para eliminar AFP (CORREGIDA)
+        function eliminarAFP(afpId, codigo) {
+            if (!confirm(`¿Está seguro de eliminar la AFP ${codigo}?`)) {
+                return;
+            }
+            
+            fetch('{% url "eliminar_afp" alias=alias %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    afp_id: afpId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    // Eliminar de los datos locales
+                    afpsData = afpsData.filter(afp => afp.id !== afpId);
+                    
+                    // Eliminar la fila de la tabla
+                    const row = document.querySelector(`tr[data-afp-id="${afpId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                    
+                    // Actualizar contador
+                    const totalRows = document.querySelectorAll('#afpTableBody tr').length;
+                    // Verificar si hay mensaje de "no resultados"
+                    const noResultsRow = document.querySelector('#afpTableBody tr td[colspan="7"]');
+                    const actualRows = noResultsRow ? 0 : totalRows;
+                    document.getElementById('totalRegistros').innerHTML = 
+                        `Total: ${actualRows} registros`;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            });
+        }
+        
+        // Permitir buscar con Enter
+        document.getElementById('inputBuscar').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarAFP();
+            }
+        });
+        
+        // Cerrar modal con Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('modalAgregar').style.display === 'flex') {
+                cerrarModal();
+            }
+        });
+        
+        // Cerrar modal haciendo clic fuera
+        document.getElementById('modalAgregar').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+        
+        // Inicializar datos y corregir valores de inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            // Guardar los datos iniciales
+            afpsData = [
+                {% for afp in afps %}
+                {
+                    id: {{ afp.id }},
+                    codigo: '{{ afp.codigo }}',
+                    nombre: '{{ afp.nombre }}',
+                    cotizacion: {{ afp.cotizacion_obligatoria }},
+                    codigo_previred: '{{ afp.codigo_previred }}',
+                    regimen: '{{ afp.regimen }}',
+                    codigo_dt: '{{ afp.codigo_dt }}'
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ];
+            
+            // Corregir valores en los inputs existentes
+            setTimeout(function() {
+                document.querySelectorAll('.input-cotizacion').forEach(input => {
+                    let value = input.value;
+                    // Si tiene más de 2 decimales, truncar
+                    if (value.includes('.')) {
+                        const parts = value.split('.');
+                        if (parts[1].length > 2) {
+                            value = parseFloat(value).toFixed(2);
+                            input.value = value;
+                        }
+                    }
+                });
+            }, 100);
+        });
+    </script>
+</body>
+</html>

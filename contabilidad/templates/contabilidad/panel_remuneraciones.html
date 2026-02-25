@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Remuneraciones · {{ empresa.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #7c3aed;
+            --primary-dark: #5b21b6;
+            --secondary: #2563eb;
+            --accent: #10b981;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f3f4f6 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.12);
+        }
+        
+        .gradient-navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s ease;
+            color: white;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(124, 58, 237, 0.3);
+        }
+        
+        .section-title {
+            position: relative;
+            padding-left: 0.75rem;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .module-card {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .module-card:hover {
+            color: inherit;
+        }
+        
+        .module-icon {
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .afp-bg {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .isapre-bg {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            color: white;
+        }
+        
+        .trabajador-bg {
+            background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);
+            color: white;
+        }
+        
+        .periodo-bg {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+        }
+        
+        .liquidacion-bg {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        .arrow-icon {
+            opacity: 0;
+            transform: translateX(-5px);
+            transition: all 0.3s ease;
+        }
+        
+        .module-card:hover .arrow-icon {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .module-card:hover .module-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            border: 1px solid rgba(124, 58, 237, 0.1);
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .current-period {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .current-period i {
+            font-size: 14px;
+        }
+        
+        .search-container {
+            position: relative;
+        }
+        
+        .search-input {
+            padding-right: 40px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+        }
+        
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        
+        .search-btn:hover {
+            color: var(--primary);
+        }
+        
+        /* Animaciones */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        
+        .animate-delay-100 {
+            animation-delay: 0.1s;
+        }
+        
+        .animate-delay-200 {
+            animation-delay: 0.2s;
+        }
+        
+        /* Nueva animación para el cuarto módulo */
+        .animate-delay-300 {
+            animation-delay: 0.3s;
+        }
+        
+        @media (max-width: 768px) {
+            .module-card {
+                padding: 1rem !important;
+            }
+            
+            .module-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+            
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .quick-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
+
+    <!-- Navbar con nombre de empresa y botón volver -->
+    <nav class="gradient-navbar text-white sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <!-- Botón Volver -->
+                    <a href="{% url 'panel_libro_sii' alias=alias %}" 
+                       class="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 group">
+                        <i class="fas fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+                        <span class="text-sm font-medium">Volver al Panel</span>
+                    </a>
+                    
+                    <!-- Separador -->
+                    <div class="h-6 w-px bg-white/30"></div>
+                    
+                    <!-- Nombre de la Empresa -->
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-white/20 p-2 rounded-lg">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-lg">{{ empresa.nombre|truncatechars:20 }}</h1>
+                            <p class="text-xs opacity-90">Panel de Remuneraciones</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información de período y usuario -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <div class="current-period">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span class="font-semibold">{{ mes }}/{{ año }}</span>
+                    </div>
+                    <div class="flex items-center text-sm bg-white/10 px-4 py-2 rounded-lg">
+                        <i class="fas fa-user-circle mr-2 text-lg"></i>
+                        <span>{{ usuario.nombre|default:"Administrador"|truncatechars:15 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Barra de búsqueda y período actual (mobile) -->
+        <div class="mb-6 md:hidden">
+            <div class="flex flex-col space-y-4">
+                <div class="current-period w-full justify-center">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="font-semibold">Período: {{ mes }}/{{ año }}</span>
+                </div>
+                <div class="search-container">
+                    <input type="text" 
+                           placeholder="Buscar módulo..." 
+                           class="search-input w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none"
+                           id="searchInput">
+                    <button class="search-btn" id="searchButton">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="space-y-10">
+            
+            <!-- Sección: Instituciones Previsionales (AFP e Isapre) -->
+            <section class="animate-fade-in-up">
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 section-title">
+                        Instituciones Previsionales
+                    </h2>
+                    <p class="text-gray-600 mt-2">Gestiona las instituciones de seguridad social de tus trabajadores</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Módulo AFP -->
+                    <div class="module-card-wrapper animate-fade-in-up">
+                        <a href="{% url 'panel_afp' alias=alias %}" class="module-card glass-card p-6 block">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="module-icon afp-bg">
+                                        <i class="fas fa-hand-holding-usd"></i>
+                                    </div>
+                                    <h3 class="font-bold text-gray-800 text-lg mb-2">AFP</h3>
+                                    <p class="text-gray-600 text-sm mb-4">
+                                        Administración de fondos de pensiones, cotizaciones y declaraciones de AFP
+                                    </p>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-gray-500">
+                                            <i class="fas fa-users mr-1"></i>
+                                            {{ afp.trabajadores|default:"0" }} trabajadores
+                                        </span>
+                                        <i class="fas fa-arrow-right text-blue-600 arrow-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <!-- Módulo Isapre -->
+                    <div class="module-card-wrapper animate-fade-in-up animate-delay-100">
+                        <a href="{% url 'panel_isapre' alias=alias %}" class="module-card glass-card p-6 block">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="module-icon isapre-bg">
+                                        <i class="fas fa-heartbeat"></i>
+                                    </div>
+                                    <h3 class="font-bold text-gray-800 text-lg mb-2">Isapre</h3>
+                                    <p class="text-gray-600 text-sm mb-4">
+                                        Gestión de planes de salud, cotizaciones y beneficios médicos previsionales
+                                    </p>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-gray-500">
+                                            <i class="fas fa-file-medical mr-1"></i>
+                                            {{ isapre.planes|default:"0" }} planes activos
+                                        </span>
+                                        <i class="fas fa-arrow-right text-green-600 arrow-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Sección: Liquidaciones y Nómina (con 4 módulos, incluido Centro de Costo) -->
+            <section class="animate-fade-in-up animate-delay-200">
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 section-title">
+                        Liquidaciones y Nómina
+                    </h2>
+                    <p class="text-gray-600 mt-2">Gestión completa de liquidaciones de sueldos y documentación</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <!-- Módulo Período -->
+                    <div class="module-card-wrapper animate-fade-in-up">
+                        <a href="{% url 'panel_periodos' alias=alias %}" class="module-card glass-card p-6 block">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="module-icon periodo-bg">
+                                        <i class="fas fa-calendar-week"></i>
+                                    </div>
+                                    <h3 class="font-bold text-gray-800 text-lg mb-2">Períodos</h3>
+                                    <p class="text-gray-600 text-sm mb-4">
+                                        Gestión de períodos de pago, UF, UTM y días hábiles
+                                    </p>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-gray-500">
+                                            <i class="fas fa-calendar-alt mr-1"></i>
+                                            {{ periodos_activos|default:"1" }} activos
+                                        </span>
+                                        <i class="fas fa-arrow-right text-orange-600 arrow-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <!-- Módulo Trabajador -->
+                    <div class="module-card-wrapper animate-fade-in-up animate-delay-100">
+                        <a href="{% url 'lista_trabajadores' alias=alias %}" class="module-card glass-card p-6 block">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="module-icon trabajador-bg">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                    <h3 class="font-bold text-gray-800 text-lg mb-2">Trabajadores</h3>
+                                    <p class="text-gray-600 text-sm mb-4">
+                                        Gestión de empleados, contratos y datos laborales
+                                    </p>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-gray-500">
+                                            <i class="fas fa-users mr-1"></i>
+                                            {{ total_trabajadores|default:"0" }} activos
+                                        </span>
+                                        <i class="fas fa-arrow-right text-green-600 arrow-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <!-- Módulo Liquidación -->
+                    <div class="module-card-wrapper animate-fade-in-up animate-delay-200">
+                        <a href="{% url 'panel_liquidaciones' alias=alias %}" class="module-card glass-card p-6 block">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="module-icon liquidacion-bg">
+                                        <i class="fas fa-calculator"></i>
+                                    </div>
+                                    <h3 class="font-bold text-gray-800 text-lg mb-2">Liquidaciones</h3>
+                                    <p class="text-gray-600 text-sm mb-4">
+                                        Cálculo de sueldos, cotizaciones e impuestos
+                                    </p>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-gray-500">
+                                            <i class="fas fa-file-invoice mr-1"></i>
+                                            {{ liquidaciones_mes|default:"0" }} este mes
+                                        </span>
+                                        <i class="fas fa-arrow-right text-purple-600 arrow-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <!-- Módulo Centro de Costo (NUEVO) -->
+                    <div class="module-card-wrapper animate-fade-in-up animate-delay-300">
+                        <a href="{% url 'centro_costo_list' alias=alias %}" class="module-card glass-card p-6 block">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="module-icon" style="background: linear-gradient(135deg, #f97316 0%, #c2410c 100%); color: white;">
+                                        <i class="fas fa-chart-pie"></i>
+                                    </div>
+                                    <h3 class="font-bold text-gray-800 text-lg mb-2">Centro de Costo</h3>
+                                    <p class="text-gray-600 text-sm mb-4">
+                                        Gestión de centros de costo, asignación y reportes
+                                    </p>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-gray-500">
+                                            <i class="fas fa-sitemap mr-1"></i>
+                                            {{ total_centros_costo|default:"0" }} activos
+                                        </span>
+                                        <i class="fas fa-arrow-right text-orange-600 arrow-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Estadísticas rápidas -->
+            <section class="animate-fade-in-up animate-delay-300">
+                <div class="glass-card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-800">Resumen del Período</h3>
+                    </div>
+                    <div class="quick-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ total_trabajadores|default:"0" }}</div>
+                            <div class="stat-label">Trabajadores Activos</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${{ total_remuneraciones|default:"0"|floatformat:0 }}</div>
+                            <div class="stat-label">Total Remuneraciones</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ liquidaciones_mes|default:"0" }}</div>
+                            <div class="stat-label">Liquidaciones Mes</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ periodos_activos|default:"1" }}</div>
+                            <div class="stat-label">Períodos Activos</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
+                        <div class="flex justify-between">
+                            <span>Última liquidación: {{ ultima_liquidacion|default:"No hay" }}</span>
+                            <span>Estado: <span class="text-green-600 font-medium">✔ Sistema operativo</span></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div class="mb-4 md:mb-0">
+                <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Panel de Remuneraciones v2.0
+            </div>
+            <div class="flex items-center space-x-4">
+                <span>
+                    <i class="fas fa-sync-alt mr-1"></i> 
+                    Actualizado: {% now "d/m/Y H:i" %}
+                </span>
+                <span class="text-green-600 font-medium flex items-center">
+                    <i class="fas fa-circle text-xs mr-1 animate-pulse"></i>
+                    Sistema activo
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Funcionalidad de búsqueda
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+            const modules = document.querySelectorAll('.module-card-wrapper');
+            
+            // Función de búsqueda
+            function filterModules(searchTerm) {
+                searchTerm = searchTerm.toLowerCase();
+                modules.forEach(module => {
+                    const text = module.textContent.toLowerCase();
+                    if (text.includes(searchTerm)) {
+                        module.style.display = 'block';
+                    } else {
+                        module.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Event listeners
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    filterModules(e.target.value);
+                });
+            }
+            
+            if (searchButton) {
+                searchButton.addEventListener('click', function() {
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                });
+            }
+            
+            // Efecto de clic en módulos
+            const moduleCards = document.querySelectorAll('.module-card');
+            moduleCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+            
+            // Función para mostrar notificaciones toast
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transform translate-x-full transition-transform duration-300 ${
+                    type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                }`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.transform = 'translateX(0)';
+                }, 10);
+                
+                setTimeout(() => {
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 300);
+                }, 3000);
+            }
+            
+            // Mostrar notificación de bienvenida
+            setTimeout(() => {
+                showToast(`Bienvenido al Panel de Remuneraciones - {{ empresa.nombre }}`, 'success');
+            }, 1000);
+        });
+    </script>
+
+</body>
+</html>

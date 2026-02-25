@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 9pt;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .empresa-nombre {
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .empresa-rut {
+            font-size: 10pt;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .empresa-direccion {
+            font-size: 9pt;
+            margin: 2px 0;
+        }
+        
+        .titulo {
+            text-align: center;
+            font-size: 11pt;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 15px 0;
+        }
+        
+        .datos-personales {
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+        
+        .datos-personales p {
+            margin: 2px 0;
+        }
+        
+        .tabla-liquidacion {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+        
+        .tabla-liquidacion th {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: left;
+        }
+        
+        .tabla-liquidacion td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            text-align: left;
+        }
+        
+        .columna-haberes {
+            width: 40%;
+        }
+        
+        .columna-descuentos {
+            width: 40%;
+        }
+        
+        .columna-monto {
+            width: 20%;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .firma-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #000;
+            text-align: center;
+            font-size: 9pt;
+        }
+        
+        .totales-finales {
+            margin-top: 20px;
+            border-top: 2px solid #000;
+            padding-top: 10px;
+            font-weight: bold;
+        }
+        
+        .total-numero {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+        }
+        
+        .leyenda-deposito {
+            font-size: 8pt;
+            margin-top: 20px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+        
+        .seccion-contenido {
+            margin-bottom: 15px;
+        }
+        
+        .texto-derecha {
+            text-align: right;
+        }
+        
+        .texto-centro {
+            text-align: center;
+        }
+        
+        .separador {
+            height: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="empresa-nombre">{{ empresa.nombre }}</div>
+        <div class="empresa-rut">RUT: {{ empresa.rut }}</div>
+        <div class="empresa-direccion">{{ empresa.direccion }}</div>
+        {% if empresa.telefono %}<div class="empresa-direccion">Teléfono: {{ empresa.telefono }}</div>{% endif %}
+        {% if empresa.celular %}<div class="empresa-direccion">Cel: {{ empresa.celular }}</div>{% endif %}
+    </div>
+    
+    <div class="titulo">LIQUIDACIÓN DE SUELDO MENSUAL</div>
+    
+    <div class="seccion-contenido datos-personales">
+        <p><strong>RUT:</strong> {{ trabajador.rut }}</p>
+        <p><strong>Nombre:</strong> {{ trabajador.nombre_completo }}</p>
+        <p><strong>Fecha Contrato:</strong> {{ trabajador.fecha_contrato|date:"d/m/Y" }}</p>
+        <p><strong>Año:</strong> {{ periodo.anio }} <strong>Mes:</strong> {{ periodo.mes }}</p>
+        <p><strong>CC:</strong> {{ trabajador.centro_costo_nombre }}</p>
+        <p><strong>Sueldo Base:</strong> ${{ datos.sueldo_base|floatformat:0 }}</p>
+        <p><strong>Cargo:</strong> {{ trabajador.cargo }}</p>
+    </div>
+    
+    <table class="tabla-liquidacion">
+        <thead>
+            <tr>
+                <th class="columna-haberes">HABERES</th>
+                <th class="columna-monto">MONTO ($)</th>
+                <th class="columna-descuentos">DESCUENTOS</th>
+                <th class="columna-monto">MONTO ($)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Días trabajados -->
+            <tr>
+                <td>Días Trabajados: {{ datos.dias_trabajados }}</td>
+                <td class="columna-monto"></td>
+                <td>AFP: {{ datos.afp_nombre }} {{ datos.porcentaje_afp|default:"10.58" }}%</td>
+                <td class="columna-monto"></td>
+            </tr>
+            
+            <!-- Sueldo -->
+            <tr>
+                <td>Sueldo</td>
+                <td class="columna-monto">${{ datos.sueldo_base|floatformat:0 }}</td>
+                <td>Base AFP:</td>
+                <td class="columna-monto">${{ datos.sueldo_base|floatformat:0 }}</td>
+            </tr>
+            
+            <!-- Horas -->
+            <tr>
+                <td>Horas: {{ datos.horas_trabajadas|default:"180.00" }}</td>
+                <td class="columna-monto"></td>
+                <td>Cotización AFP:</td>
+                <td class="columna-monto">${{ datos.cotizacion_afp|floatformat:0 }}</td>
+            </tr>
+            
+            <!-- Horas Extras -->
+            <tr>
+                <td>Total Horas Extras: 50.00%</td>
+                <td class="columna-monto">${{ datos.horas_extra|floatformat:0 }}</td>
+                {% if datos.isapre_nombre %}
+                <td>Isapre: {{ datos.isapre_nombre }}</td>
+                <td class="columna-monto">${{ datos.diferencia_isapre|floatformat:0 }}</td>
+                {% else %}
+                <td>Isapre: Fonasa 7% Obligatorio</td>
+                <td class="columna-monto">${{ datos.diferencia_isapre|floatformat:0 }}</td>
+                {% endif %}
+            </tr>
+            
+            <!-- Bonos -->
+            {% if datos.bonos > 0 %}
+            <tr>
+                <td>BONO CUMPLIMIENTO METAS</td>
+                <td class="columna-monto">${{ datos.bonos|floatformat:0 }}</td>
+                <td>Total Previsión:</td>
+                <td class="columna-monto">
+                    ${% widthratio datos.cotizacion_afp|add:datos.diferencia_isapre 1 1 as total_prevision %}
+                    {{ total_prevision|floatformat:0 }}
+                </td>
+            </tr>
+            {% endif %}
+            
+            <!-- Bono Sábados (ejemplo) -->
+            {% if datos.bono_sabados > 0 %}
+            <tr>
+                <td>Bono Sabados</td>
+                <td class="columna-monto">${{ datos.bono_sabados|floatformat:0 }}</td>
+                <td>Gratificación:</td>
+                <td class="columna-monto">${{ datos.gratificacion|floatformat:0 }}</td>
+            </tr>
+            {% endif %}
+            
+            <!-- Gratificación -->
+            {% if datos.gratificacion > 0 %}
+            <tr>
+                <td>Gratificación</td>
+                <td class="columna-monto">${{ datos.gratificacion|floatformat:0 }}</td>
+                <td>Días no Trabajados</td>
+                <td class="columna-monto"></td>
+            </tr>
+            {% endif %}
+            
+            <!-- Vacaciones -->
+            <tr>
+                <td>Vacación:</td>
+                <td class="columna-monto"></td>
+                <td>Licencia:</td>
+                <td class="columna-monto"></td>
+            </tr>
+            
+            <!-- Licencia -->
+            <tr>
+                <td>Licencia:</td>
+                <td class="columna-monto"></td>
+                <td>Faltas:</td>
+                <td class="columna-monto"></td>
+            </tr>
+            
+            <!-- Faltas -->
+            <tr>
+                <td>Faltas:</td>
+                <td class="columna-monto"></td>
+                <td>Cargas:</td>
+                <td class="columna-monto"></td>
+            </tr>
+            
+            <!-- Cargas -->
+            <tr>
+                <td>Cargas:</td>
+                <td class="columna-monto"></td>
+                <td>Base Tributable:</td>
+                <td class="columna-monto">
+                    ${{ datos.sueldo_base|add:datos.bonos|add:datos.gratificacion|add:datos.horas_extra|floatformat:0 }}
+                </td>
+            </tr>
+            
+            <!-- Asignación Movilización -->
+            <tr>
+                <td>Asignación Movilización:</td>
+                <td class="columna-monto">${{ datos.movilizacion|floatformat:0 }}</td>
+                <td>Impuestos:</td>
+                <td class="columna-monto">${{ datos.impuesto|default:"0"|floatformat:0 }}</td>
+            </tr>
+            
+            <!-- Asignación Colación -->
+            <tr>
+                <td>Asignación Colación:</td>
+                <td class="columna-monto">${{ datos.colacion|floatformat:0 }}</td>
+                <td></td>
+                <td class="columna-monto"></td>
+            </tr>
+            
+            <!-- Total Haberes -->
+            <tr>
+                <td><strong>TOTAL HABERES:</strong></td>
+                <td class="columna-monto"><strong>${{ datos.total_haberes|floatformat:0 }}</strong></td>
+                <td><strong>TOTAL DESCUENTO:</strong></td>
+                <td class="columna-monto"><strong>${{ datos.total_descuentos|floatformat:0 }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="separador"></div>
+    
+    <div class="seccion-contenido">
+        <p class="texto-centro">Certifico que he recibido conforme y no tengo cargos ni cobro alguno posterior que hacer, por ninguno de los conceptos comprometidos en ella.</p>
+    </div>
+    
+    <div class="firma-section">
+        <p>___________________________________</p>
+        <p>FIRMA TRABAJADOR</p>
+    </div>
+    
+    <div class="totales-finales">
+        <table style="width: 100%;">
+            <tr>
+                <td><strong>ALCANCE LÍQUIDO:</strong></td>
+                <td class="total-numero"><strong>${{ datos.liquido_pagable|floatformat:0 }}</strong></td>
+            </tr>
+            <tr>
+                <td><strong>TOTAL A PAGAR:</strong></td>
+                <td class="total-numero"><strong>${{ datos.liquido_pagable|floatformat:0 }}</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="leyenda-deposito">
+        <p>SON: {{ datos.liquido_en_letras|default:"UN MILLON SETENTA Y OCHO MIL SETECIENTOS OCHENTA Y OCHO" }} PESOS DEPOSITADO EN LA CUENTA {{ trabajador.cuenta_bancaria|default:"000074620358" }} DEL BANCO DE CHILE</p>
+    </div>
+    
+    <div class="separador"></div>
+    
+    <div class="seccion-contenido">
+        <p class="texto-centro">La presente liquidación se emite en 2 copias quedando una en poder del trabajador y otra en poder del empleador.</p>
+    </div>
+</body>
+</html>

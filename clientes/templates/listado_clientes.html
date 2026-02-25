@@ -2,724 +2,539 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Clientes de {{ empresa.nombre }}</title>
+  <title>Clientes · {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    body {
+    * {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      min-height: 100vh;
     }
     
-    .card-shadow {
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
-    }
-    
-    .gradient-primary {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    }
-    
-    .gradient-secondary {
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    }
-    
-    .table-row-hover:hover {
-      background-color: #f8fafc;
-      transform: translateY(-1px);
+    /* Estilos mínimos personalizados */
+    .stats-card {
       transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      transition: all 0.3s ease;
-    }
-    
-    .btn-primary:hover {
+    .stats-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(5, 150, 105, 0.2);
+      box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.06);
     }
-    
-    .sector-badge {
-      display: inline-block;
+    .table-row-hover:hover {
+      background-color: #f9fafb;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
       padding: 0.25rem 0.75rem;
       border-radius: 9999px;
       font-size: 0.75rem;
-      font-weight: 600;
-    }
-    
-    .stats-card {
-      background: white;
-      border-radius: 12px;
-      padding: 1.25rem;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .stats-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4px;
-      height: 100%;
-    }
-    
-    .stats-card.green::before {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    }
-    
-    .stats-card.blue::before {
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    }
-    
-    .stats-card.purple::before {
-      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    }
-    
-    .stats-card.amber::before {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    }
-    
-    .input-focus:focus {
-      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
-      border-color: #059669;
-    }
-    
-    .table-header {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    }
-    
-    .empty-state {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      border: 2px dashed #cbd5e1;
-    }
-    
-    .pagination-btn {
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      background: white;
-      color: #374151;
       font-weight: 500;
-      transition: all 0.2s ease;
+      white-space: nowrap;
     }
     
-    .pagination-btn:hover:not(.disabled) {
-      background: #f3f4f6;
-      border-color: #d1d5db;
-    }
-    
-    .pagination-btn.active {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      color: white;
-      border-color: #059669;
-    }
-    
-    .pagination-btn.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    /* Modal styles */
+    /* Estilos para modales */
     .modal-overlay {
-      position: fixed;
-      inset: 0;
       background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      animation: fadeIn 0.2s ease;
+      backdrop-filter: blur(4px);
     }
-    
     .modal-content {
-      background: white;
-      border-radius: 16px;
-      max-width: 90vw;
-      max-height: 90vh;
-      animation: slideUp 0.3s ease;
+      animation: modalSlideIn 0.2s ease;
     }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    @keyframes slideUp {
-      from { transform: translateY(20px); opacity: 0; }
+    @keyframes modalSlideIn {
+      from { transform: translateY(-20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
     
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
-      z-index: 1000;
-      animation: slideInRight 0.3s ease;
-    }
-    
-    @keyframes slideInRight {
+    /* Animación para toast */
+    @keyframes slideIn {
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
+    .toast-animation {
+      animation: slideIn 0.2s ease forwards;
+    }
+    
+    /* Estilo para el header de tabla */
+    .table-header {
+      background-color: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
   </style>
 </head>
-<body>
+<body class="bg-gray-50">
 
-  <!-- Header -->
-  <div class="gradient-primary text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-          <div class="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
-            <i class="fas fa-users text-white text-xl"></i>
+  <!-- Navbar consistente con panel SSR -->
+  <header class="bg-emerald-700 text-white sticky top-0 z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo + Empresa -->
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 bg-white/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-users text-white text-sm"></i>
           </div>
           <div>
-            <h1 class="text-2xl font-bold">Gestión de Clientes</h1>
-            <p class="text-sm opacity-90">{{ empresa.nombre }}</p>
+            <h1 class="font-semibold text-base">{{ empresa.nombre|truncatechars:25 }}</h1>
+            <p class="text-xs text-emerald-100">Gestión de Clientes</p>
           </div>
         </div>
         
-        <div class="flex items-center space-x-4">
-          <a href="{% url 'crear_cliente' alias=slug %}" 
-             class="bg-white text-emerald-700 hover:bg-gray-100 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
-            <i class="fas fa-user-plus mr-2"></i> Nuevo Cliente
+        <!-- Navegación -->
+        <div class="flex items-center gap-3">
+          <a href="{% url 'panel_empresa' slug=slug %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fas fa-arrow-left text-xs"></i>
+            <span class="hidden sm:inline">Volver al panel</span>
           </a>
-          <a href="{% url 'panel_empresa' slug=slug %}" 
-             class="text-white hover:bg-white/20 px-4 py-2.5 rounded-lg transition-colors flex items-center">
-            <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+          <a href="{% url 'logout_ssr' %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fas fa-sign-out-alt text-xs"></i>
+            <span class="hidden sm:inline">Salir</span>
           </a>
         </div>
       </div>
     </div>
-  </div>
+  </header>
 
-  <!-- Modal de confirmación para eliminar cliente -->
-  <div id="deleteModal" class="modal-overlay hidden">
-    <div class="modal-content w-full max-w-md">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center">
-            <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center mr-3">
-              <i class="fas fa-exclamation-triangle text-red-600"></i>
-            </div>
-            <h2 class="text-xl font-bold text-gray-900">Confirmar Eliminación</h2>
-          </div>
-          <button onclick="closeDeleteModal()" class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-        
-        <div class="mb-6">
-          <p class="text-gray-700 mb-2">¿Está seguro de que desea eliminar al cliente:</p>
-          <p class="text-lg font-bold text-red-600 mb-3" id="deleteClientName"></p>
-          <p class="text-sm text-gray-500">
-            <i class="fas fa-exclamation-circle mr-1"></i>
-            Esta acción no se puede deshacer y se eliminarán todos los datos asociados.
-          </p>
-        </div>
-        
-        <form id="deleteForm" method="post" action="" class="space-y-4">
-          {% csrf_token %}
-          <input type="hidden" name="cliente_id" id="deleteClientId">
-          <div class="flex justify-end space-x-3">
-            <button type="button" onclick="closeDeleteModal()" 
-                    class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-              Cancelar
-            </button>
-            <button type="submit" 
-                    class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center">
-              <i class="fas fa-trash-alt mr-2"></i> Eliminar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast de notificación -->
-  <div id="successToast" class="toast hidden w-96">
-    <div class="p-4">
-      <div class="flex items-start">
-        <div class="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center mr-3 flex-shrink-0">
-          <i class="fas fa-check-circle text-emerald-600"></i>
-        </div>
-        <div class="flex-1">
-          <h4 class="font-medium text-gray-900">Cliente eliminado</h4>
-          <p class="text-sm text-gray-600 mt-1">El cliente ha sido eliminado exitosamente.</p>
-        </div>
-        <button onclick="closeToast()" class="text-gray-400 hover:text-gray-600 ml-2">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Contenido principal -->
+  <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     
-    <!-- Mensajes del sistema -->
+    <!-- Header de página -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-2xl font-semibold text-gray-900">Clientes</h2>
+        <p class="text-sm text-gray-500 mt-1">Administra la información de tus clientes y sus medidores</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'crear_cliente' alias=slug %}" 
+           class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+          <i class="fas fa-user-plus"></i>
+          Nuevo Cliente
+        </a>
+        <span class="bg-white px-3 py-2 rounded-lg shadow-sm text-sm flex items-center gap-1.5">
+          <i class="fas fa-users text-emerald-600"></i>
+          {{ clientes|length|default:"0" }} total
+        </span>
+      </div>
+    </div>
+
+    <!-- Mensajes flash -->
     {% if messages %}
-      {% for message in messages %}
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl mb-6 card-shadow flex items-center">
-          <i class="fas fa-check-circle text-emerald-600 mr-3"></i>
-          <div>
-            <p class="font-medium">{{ message }}</p>
+      <div class="mb-6">
+        {% for message in messages %}
+          <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-lg flex items-start gap-3">
+            <i class="fas fa-check-circle text-emerald-600 mt-0.5"></i>
+            <p class="text-sm">{{ message }}</p>
           </div>
-        </div>
-      {% endfor %}
+        {% endfor %}
+      </div>
     {% endif %}
-    
-    <!-- Estadísticas Rápidas -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      <div class="stats-card green card-shadow">
-        <div class="flex justify-between items-start">
+
+    <!-- Estadísticas rápidas (4 columnas) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      
+      <!-- Total Clientes -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 stats-card">
+        <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500 font-medium">Total Clientes</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ clientes.count }}</p>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Clientes</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ clientes|length }}</p>
           </div>
-          <div class="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center">
-            <i class="fas fa-users text-emerald-600"></i>
+          <div class="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <i class="fas fa-users"></i>
           </div>
         </div>
-        <div class="mt-4 pt-3 border-t border-gray-100">
-          <p class="text-xs text-gray-500">
-            <i class="fas fa-clock mr-1"></i> Actualizado ahora
-          </p>
+        <div class="mt-2 text-xs text-gray-500">
+          <i class="fas fa-user-plus mr-1"></i> Último: {% if clientes.0 %}{{ clientes.0.fecha_creacion|date:"d/m" }}{% else %}--{% endif %}
         </div>
       </div>
       
-      <div class="stats-card blue card-shadow">
-        <div class="flex justify-between items-start">
+      <!-- Sectores Activos -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 stats-card">
+        <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500 font-medium">Sectores Activos</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ sectores|length }}</p>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Sectores</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ sectores|length|default:"0" }}</p>
           </div>
-          <div class="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
-            <i class="fas fa-map-marked-alt text-blue-600"></i>
+          <div class="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+            <i class="fas fa-map-marked-alt"></i>
           </div>
         </div>
-        <div class="mt-4 pt-3 border-t border-gray-100">
-          <p class="text-xs text-gray-500">
-            <i class="fas fa-map mr-1"></i> Distribución geográfica
-          </p>
+        <div class="mt-2 text-xs text-gray-500">
+          <i class="fas fa-map-pin mr-1"></i> Distribución geográfica
         </div>
       </div>
       
-      <div class="stats-card purple card-shadow">
-        <div class="flex justify-between items-start">
+      <!-- Con Email -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 stats-card">
+        <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500 font-medium">Con Email</p>
-            {% with emails=clientes|dictsort:"email"|length %}
-              <p class="text-2xl font-bold text-gray-900 mt-1">{{ emails }}</p>
-            {% endwith %}
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Con Email</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">
+              {% with emails=clientes|dictsort:"email"|length %}
+                {{ emails }}
+              {% endwith %}
+            </p>
           </div>
-          <div class="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
-            <i class="fas fa-envelope text-purple-600"></i>
+          <div class="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+            <i class="fas fa-envelope"></i>
           </div>
         </div>
-        <div class="mt-4 pt-3 border-t border-gray-100">
-          <p class="text-xs text-gray-500">
-            <i class="fas fa-check-circle mr-1"></i> Contacto digital
-          </p>
+        <div class="mt-2 text-xs text-gray-500">
+          <i class="fas fa-check-circle mr-1"></i> Contacto digital
         </div>
       </div>
       
-      <div class="stats-card amber card-shadow">
-        <div class="flex justify-between items-start">
+      <!-- Último Registro -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 stats-card">
+        <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500 font-medium">Último Registro</p>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Último Registro</p>
             <p class="text-lg font-bold text-gray-900 mt-1">
               {% if clientes.0 %}
-                {{ clientes.0.fecha_creacion|date:"d/m" }}
+                {{ clientes.0.fecha_creacion|date:"d/m/Y" }}
               {% else %}
                 --
               {% endif %}
             </p>
           </div>
-          <div class="h-12 w-12 rounded-lg bg-amber-100 flex items-center justify-center">
-            <i class="fas fa-calendar-plus text-amber-600"></i>
+          <div class="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+            <i class="fas fa-calendar-plus"></i>
           </div>
         </div>
-        <div class="mt-4 pt-3 border-t border-gray-100">
-          <p class="text-xs text-gray-500">
-            <i class="fas fa-history mr-1"></i> Actividad reciente
-          </p>
+        <div class="mt-2 text-xs text-gray-500">
+          <i class="fas fa-history mr-1"></i> Actividad reciente
         </div>
       </div>
     </div>
-    
-    <!-- Panel de Filtros y Búsqueda -->
-    <div class="bg-white rounded-xl card-shadow p-6 mb-8">
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h2 class="text-xl font-semibold text-gray-900">Filtros y Búsqueda</h2>
-          <p class="text-gray-500 text-sm mt-1">Encuentre clientes específicos utilizando los filtros disponibles</p>
+
+    <!-- Filtros compactos -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 mb-8">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+            <i class="fas fa-filter text-sm"></i>
+          </div>
+          <h3 class="font-medium text-gray-900">Filtros</h3>
         </div>
-        <button id="toggleFilters" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium flex items-center">
-          <i class="fas fa-filter mr-2"></i> Mostrar/Ocultar Filtros
-        </button>
+        
+        <div class="flex flex-wrap items-center gap-3">
+          <select name="sector" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+            <option value="">Todos los sectores</option>
+            {% for sector in sectores %}
+              <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
+            {% endfor %}
+          </select>
+          
+          <div class="relative">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text" name="rut" value="{{ request.GET.rut }}" 
+                   placeholder="RUT" 
+                   class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-40">
+          </div>
+          
+          <div class="relative">
+            <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text" name="nombre" value="{{ request.GET.nombre }}" 
+                   placeholder="Nombre" 
+                   class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-40">
+          </div>
+          
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+            <i class="fas fa-filter"></i>
+            Aplicar
+          </button>
+          
+          <a href="{% url 'listado_clientes' alias=slug %}" class="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 flex items-center gap-1.5">
+            <i class="fas fa-redo"></i>
+            Limpiar
+          </a>
+        </div>
       </div>
+    </div>
+
+    <!-- Tabla de clientes -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       
-      <div id="filtersContainer">
-        <form method="get" class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-map mr-1.5 text-gray-400"></i>Sector
-              </label>
-              <select name="sector" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors">
-                <option value="">Todos los sectores</option>
-                {% for sector in sectores %}
-                  <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-search mr-1.5 text-gray-400"></i>Buscar por RUT
-              </label>
-              <input type="text" name="rut" value="{{ request.GET.rut }}" 
-                     class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
-                     placeholder="Ej: 12.345.678-9">
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-user mr-1.5 text-gray-400"></i>Buscar por Nombre
-              </label>
-              <input type="text" name="nombre" value="{{ request.GET.nombre }}" 
-                     class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-colors"
-                     placeholder="Nombre del cliente">
-            </div>
+      <!-- Header de tabla con búsqueda -->
+      <div class="p-4 border-b border-gray-200 bg-gray-50/50">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-list text-emerald-600"></i>
+            <h3 class="font-medium text-gray-900">Listado de Clientes</h3>
+            {% if request.GET.sector or request.GET.rut or request.GET.nombre %}
+              <span class="status-badge bg-emerald-100 text-emerald-700 text-[10px]">
+                Filtrado
+              </span>
+            {% endif %}
           </div>
           
-          <div class="flex justify-between items-center pt-4 border-t border-gray-100">
-            <a href="{% url 'listado_clientes' alias=slug %}" 
-               class="text-gray-600 hover:text-gray-900 text-sm font-medium flex items-center">
-              <i class="fas fa-redo mr-2"></i> Limpiar Filtros
-            </a>
-            
-            <div class="flex space-x-3">
-              <button type="submit" 
-                      class="btn-primary text-white px-5 py-3 rounded-lg font-medium flex items-center">
-                <i class="fas fa-filter mr-2"></i> Aplicar Filtros
-              </button>
-              
-              <button type="button" onclick="exportToCSV()" 
-                      class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-5 py-3 rounded-lg font-medium flex items-center transition-colors">
-                <i class="fas fa-download mr-2"></i> Exportar
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-    
-    <!-- Tabla de Clientes -->
-    <div class="bg-white rounded-xl card-shadow overflow-hidden">
-      <div class="px-6 py-5 border-b border-gray-200">
-        <div class="flex justify-between items-center">
-          <div>
-            <h2 class="text-xl font-semibold text-gray-900">Lista de Clientes</h2>
-            <p class="text-gray-500 text-sm mt-1">
-              {% if request.GET.sector or request.GET.rut or request.GET.nombre %}
-                Mostrando {{ clientes.count }} cliente{{ clientes.count|pluralize }} filtrado{{ clientes.count|pluralize }}
-              {% else %}
-                Todos los clientes registrados
-              {% endif %}
-            </p>
-          </div>
-          
-          <div class="flex items-center space-x-3">
+          <div class="flex items-center gap-3">
             <div class="relative">
-              <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-              <input type="text" placeholder="Buscar en tabla..." id="tableSearch" 
-                     class="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-64">
+              <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+              <input type="text" id="tableSearch" placeholder="Buscar en tabla..." 
+                     class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-64">
             </div>
-            <div class="text-sm text-gray-500">
-              <i class="fas fa-sort-amount-down mr-1"></i>
-              Ordenar por:
-              <select id="sortSelect" class="ml-2 border-none bg-transparent focus:ring-0">
-                <option value="nombre">Nombre</option>
-                <option value="rut">RUT</option>
-                <option value="sector">Sector</option>
-              </select>
-            </div>
+            <button onclick="exportToCSV()" class="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition-colors" title="Exportar">
+              <i class="fas fa-download"></i>
+            </button>
           </div>
         </div>
       </div>
-      
+
+      <!-- Tabla -->
       {% if clientes %}
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr class="table-header text-white">
-                <th scope="col" class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">
-                  <div class="flex items-center">
-                    <i class="fas fa-user mr-2"></i> Cliente
-                  </div>
-                </th>
-                <th scope="col" class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">
-                  <div class="flex items-center">
-                    <i class="fas fa-id-card mr-2"></i> RUT
-                  </div>
-                </th>
-                <th scope="col" class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">
-                  <div class="flex items-center">
-                    <i class="fas fa-tachometer-alt mr-2"></i> Medidor
-                  </div>
-                </th>
-                <th scope="col" class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">
-                  <div class="flex items-center">
-                    <i class="fas fa-map-marker-alt mr-2"></i> Sector
-                  </div>
-                </th>
-                <th scope="col" class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">
-                  <div class="flex items-center">
-                    <i class="fas fa-envelope mr-2"></i> Contacto
-                  </div>
-                </th>
-                <th scope="col" class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">
-                  Acciones
-                </th>
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RUT</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medidor</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody id="tablaClientesBody" class="bg-white divide-y divide-gray-200">
               {% for cliente in clientes %}
-              <tr class="table-row-hover transition-all duration-200" data-client-id="{{ cliente.id }}">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center mr-3">
-                      <span class="text-emerald-800 font-semibold">{{ cliente.nombre|first|upper }}</span>
-                    </div>
-                    <div>
-                      <div class="font-medium text-gray-900">{{ cliente.nombre }}</div>
-                      <div class="text-xs text-gray-500">
-                        <i class="fas fa-calendar mr-1"></i>
-                        {{ cliente.fecha_creacion|date:"d/m/Y" }}
+                <tr class="table-row-hover transition-colors" data-client-id="{{ cliente.id }}">
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center mr-2.5">
+                        <span class="text-emerald-700 font-semibold text-xs">{{ cliente.nombre|first|upper }}</span>
+                      </div>
+                      <div>
+                        <span class="text-sm font-medium text-gray-900">{{ cliente.nombre }}</span>
+                        <div class="text-xs text-gray-500">{{ cliente.fecha_creacion|date:"d/m/Y" }}</div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="font-mono text-gray-900 font-medium">{{ cliente.rut }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="h-8 w-8 rounded-md bg-blue-50 flex items-center justify-center mr-2">
-                      <i class="fas fa-bolt text-blue-600 text-sm"></i>
-                    </div>
-                    <span class="font-medium text-gray-900">{{ cliente.medidor }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="sector-badge 
-                    {% if cliente.sector == 'Norte' %}bg-blue-100 text-blue-800
-                    {% elif cliente.sector == 'Sur' %}bg-green-100 text-green-800
-                    {% elif cliente.sector == 'Este' %}bg-amber-100 text-amber-800
-                    {% elif cliente.sector == 'Oeste' %}bg-purple-100 text-purple-800
-                    {% else %}bg-gray-100 text-gray-800{% endif %}">
-                    <i class="fas fa-map-marker-alt mr-1"></i>{{ cliente.sector }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {% if cliente.email %}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap font-mono text-sm text-gray-900">
+                    {{ cliente.rut }}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap">
                     <div class="flex items-center">
-                      <i class="fas fa-envelope text-gray-400 mr-2"></i>
-                      <a href="mailto:{{ cliente.email }}" class="text-emerald-700 hover:text-emerald-900 hover:underline">
-                        {{ cliente.email|truncatechars:20 }}
-                      </a>
+                      <div class="h-7 w-7 rounded-md bg-blue-50 flex items-center justify-center mr-2">
+                        <i class="fas fa-bolt text-blue-600 text-xs"></i>
+                      </div>
+                      <span class="text-sm font-medium text-gray-900">{{ cliente.medidor }}</span>
                     </div>
-                  {% else %}
-                    <span class="text-gray-400 text-sm italic">
-                      <i class="fas fa-envelope-slash mr-1"></i>Sin email
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium
+                      {% if cliente.sector == 'Norte' %}bg-blue-50 text-blue-700
+                      {% elif cliente.sector == 'Sur' %}bg-green-50 text-green-700
+                      {% elif cliente.sector == 'Este' %}bg-amber-50 text-amber-700
+                      {% elif cliente.sector == 'Oeste' %}bg-purple-50 text-purple-700
+                      {% else %}bg-gray-50 text-gray-700{% endif %}">
+                      <i class="fas fa-map-marker-alt mr-1 text-[8px]"></i>
+                      {{ cliente.sector }}
                     </span>
-                  {% endif %}
-                  
-                  {% if cliente.telefono %}
-                    <div class="text-xs text-gray-500 mt-1">
-                      <i class="fas fa-phone mr-1"></i>{{ cliente.telefono }}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    {% if cliente.email %}
+                      <div class="flex items-center text-sm">
+                        <i class="fas fa-envelope text-gray-400 mr-1.5 text-xs"></i>
+                        <span class="text-gray-600 text-xs">{{ cliente.email|truncatechars:20 }}</span>
+                      </div>
+                    {% else %}
+                      <span class="text-gray-400 text-xs italic">Sin email</span>
+                    {% endif %}
+                    {% if cliente.telefono %}
+                      <div class="text-xs text-gray-500 mt-0.5">
+                        <i class="fas fa-phone mr-1"></i>{{ cliente.telefono }}
+                      </div>
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
+                         class="h-7 w-7 rounded-md text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center"
+                         title="Ver detalles">
+                        <i class="fas fa-eye text-xs"></i>
+                      </a>
+                      <a href="{% url 'editar_cliente' alias=slug cliente_id=cliente.id %}" 
+                         class="h-7 w-7 rounded-md text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center"
+                         title="Editar">
+                        <i class="fas fa-edit text-xs"></i>
+                      </a>
+                      <a href="{% url 'historial_cliente' alias=slug cliente_id=cliente.id %}" 
+                         class="h-7 w-7 rounded-md text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center"
+                         title="Historial">
+                        <i class="fas fa-history text-xs"></i>
+                      </a>
+                      <button onclick="openDeleteModal('{{ cliente.id }}', '{{ cliente.nombre|escapejs }}')" 
+                              class="h-7 w-7 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
+                              title="Eliminar">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                      </button>
                     </div>
-                  {% endif %}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                  <div class="flex space-x-2">
-                    <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
-                       class="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors" 
-                       title="Ver Detalles">
-                      <i class="fas fa-eye"></i>
-                    </a>
-                    <a href="{% url 'editar_cliente' alias=slug cliente_id=cliente.id %}" 
-                       class="text-emerald-600 hover:text-emerald-900 p-2 rounded-lg hover:bg-emerald-50 transition-colors" 
-                       title="Editar">
-                      <i class="fas fa-edit"></i>
-                    </a>
-                    <button class="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors" 
-                            onclick="openDeleteModal('{{ cliente.id }}', '{{ cliente.nombre|escapejs }}')" 
-                            title="Eliminar">
-                      <i class="fas fa-trash-alt"></i>
-                    </button>
-                    <a href="{% url 'historial_cliente' alias=slug cliente_id=cliente.id %}" 
-                       class="text-purple-600 hover:text-purple-900 p-2 rounded-lg hover:bg-purple-50 transition-colors" 
-                       title="Historial">
-                      <i class="fas fa-history"></i>
-                    </a>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-        
-        <!-- Paginación -->
+
+        <!-- Paginación simplificada -->
         {% if clientes.has_other_pages %}
-        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <div class="flex justify-between items-center">
-            <div class="text-sm text-gray-500">
-              Mostrando clientes del {{ clientes.start_index }} al {{ clientes.end_index }} de {{ clientes.paginator.count }}
-            </div>
-            <div class="flex space-x-2">
+          <div class="px-4 py-3 border-t border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs text-gray-500">
+              Mostrando {{ clientes.start_index }} - {{ clientes.end_index }} de {{ clientes.paginator.count }}
+            </span>
+            <div class="flex items-center gap-1">
               {% if clientes.has_previous %}
                 <a href="?page={{ clientes.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
-                   class="pagination-btn">
-                  <i class="fas fa-chevron-left mr-1"></i> Anterior
+                   class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                  <i class="fas fa-chevron-left"></i>
                 </a>
-              {% else %}
-                <span class="pagination-btn disabled">
-                  <i class="fas fa-chevron-left mr-1"></i> Anterior
-                </span>
               {% endif %}
               
-              {% for i in clientes.paginator.page_range %}
-                {% if clientes.number == i %}
-                  <span class="pagination-btn active">{{ i }}</span>
-                {% else %}
-                  <a href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
-                     class="pagination-btn">{{ i }}</a>
-                {% endif %}
-              {% endfor %}
+              <span class="px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg">
+                {{ clientes.number }}
+              </span>
               
               {% if clientes.has_next %}
                 <a href="?page={{ clientes.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
-                   class="pagination-btn">
-                  Siguiente <i class="fas fa-chevron-right ml-1"></i>
+                   class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                  <i class="fas fa-chevron-right"></i>
                 </a>
-              {% else %}
-                <span class="pagination-btn disabled">
-                  Siguiente <i class="fas fa-chevron-right ml-1"></i>
-                </span>
               {% endif %}
             </div>
           </div>
-        </div>
         {% endif %}
-        
+
       {% else %}
         <!-- Estado vacío -->
-        <div class="text-center py-16 empty-state rounded-lg m-6">
-          <div class="mx-auto h-20 w-20 text-gray-300 mb-4">
-            <i class="fas fa-users text-5xl"></i>
+        <div class="text-center py-12">
+          <div class="mx-auto h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <i class="fas fa-users text-gray-400 text-2xl"></i>
           </div>
-          <h3 class="text-lg font-medium text-gray-700 mb-2">No hay clientes registrados</h3>
-          <p class="text-gray-500 max-w-md mx-auto mb-6">
+          <h3 class="text-base font-medium text-gray-900 mb-1">No hay clientes registrados</h3>
+          <p class="text-sm text-gray-500 max-w-sm mx-auto mb-5">
             {% if request.GET.sector or request.GET.rut or request.GET.nombre %}
-              No se encontraron clientes con los filtros aplicados. Intente con otros criterios de búsqueda.
+              No se encontraron clientes con los filtros aplicados.
             {% else %}
-              Aún no has registrado ningún cliente. Comienza agregando tu primer cliente.
+              Comienza agregando tu primer cliente.
             {% endif %}
           </p>
           <a href="{% url 'crear_cliente' alias=slug %}" 
-             class="btn-primary text-white px-5 py-2.5 rounded-lg font-medium inline-flex items-center">
-            <i class="fas fa-user-plus mr-2"></i> Agregar Primer Cliente
+             class="inline-flex items-center gap-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors">
+            <i class="fas fa-user-plus"></i>
+            Agregar Cliente
           </a>
         </div>
       {% endif %}
     </div>
-    
-    <!-- Acciones Adicionales -->
-    <div class="mt-8 bg-white rounded-xl card-shadow p-6">
-      <div class="flex justify-between items-center">
-        <div>
-          <h3 class="text-lg font-medium text-gray-900">Acciones Rápidas</h3>
-          <p class="text-gray-500 text-sm mt-1">Operaciones frecuentes con clientes</p>
+
+    <!-- Acciones rápidas simplificadas -->
+    <div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      <div class="flex items-center gap-4">
+        <div class="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+          <i class="fas fa-bolt text-sm"></i>
         </div>
-        
-        <div class="flex space-x-4">
-          <button onclick="importClients()" 
-                  class="text-gray-700 hover:text-gray-900 hover:bg-gray-100 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
-            <i class="fas fa-file-import mr-2"></i> Importar desde CSV
+        <span class="text-sm font-medium text-gray-900">Acciones rápidas</span>
+        <div class="flex items-center gap-2 ml-auto">
+          <button onclick="generateReport()" class="text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fas fa-chart-bar"></i> Reporte
           </button>
-          <button onclick="generateReport()" 
-                  class="text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
-            <i class="fas fa-chart-bar mr-2"></i> Generar Reporte
-          </button>
-          <button onclick="sendBulkEmail()" 
-                  class="text-blue-700 hover:text-blue-900 hover:bg-blue-50 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
-            <i class="fas fa-paper-plane mr-2"></i> Enviar Notificación
+          <button onclick="importClients()" class="text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fas fa-file-import"></i> Importar
           </button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- MODAL: Confirmar eliminación -->
+  <div id="deleteModal" class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+      <div class="p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900">Confirmar eliminación</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Esta acción no se puede deshacer</p>
+          </div>
+        </div>
+        
+        <div class="mb-6">
+          <p class="text-sm text-gray-700 mb-2">¿Estás seguro de eliminar al cliente:</p>
+          <p class="text-base font-semibold text-red-600" id="deleteClientName"></p>
+        </div>
+        
+        <form id="deleteForm" method="post" action="" class="flex justify-end gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="cliente_id" id="deleteClientId">
+          <button type="button" onclick="closeDeleteModal()" 
+                  class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2">
+            <i class="fas fa-trash-alt"></i>
+            Eliminar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST: Éxito -->
+  <div id="successToast" class="fixed bottom-6 right-6 bg-white shadow-lg rounded-lg border-l-4 border-emerald-500 w-80 hidden toast-animation z-50">
+    <div class="p-4">
+      <div class="flex items-start gap-3">
+        <div class="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-check-circle text-emerald-600 text-sm"></i>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-gray-900">Cliente eliminado</p>
+          <p class="text-xs text-gray-500 mt-1">El cliente se ha eliminado correctamente.</p>
+        </div>
+        <button onclick="closeToast()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Toggle de filtros
-    document.getElementById('toggleFilters').addEventListener('click', function() {
-      const container = document.getElementById('filtersContainer');
-      const icon = this.querySelector('i');
-      
-      if (container.style.display === 'none') {
-        container.style.display = 'block';
-        icon.className = 'fas fa-filter mr-2';
-        this.innerHTML = '<i class="fas fa-filter mr-2"></i> Ocultar Filtros';
-      } else {
-        container.style.display = 'none';
-        icon.className = 'fas fa-filter mr-2';
-        this.innerHTML = '<i class="fas fa-filter mr-2"></i> Mostrar Filtros';
+    // =========== BUSCADOR EN TABLA ===========
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchInput = document.getElementById('tableSearch');
+      if (searchInput) {
+        searchInput.addEventListener('keyup', function(e) {
+          const term = e.target.value.toLowerCase();
+          const rows = document.querySelectorAll('#tablaClientesBody tr');
+          rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(term) ? '' : 'none';
+          });
+        });
       }
     });
-    
-    // Búsqueda en tabla
-    document.getElementById('tableSearch').addEventListener('input', function(e) {
-      const searchTerm = e.target.value.toLowerCase();
-      const rows = document.querySelectorAll('tbody tr');
-      
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
-    });
-    
-    // Ordenar tabla
-    document.getElementById('sortSelect').addEventListener('change', function(e) {
-      alert('Funcionalidad de ordenamiento: ' + e.target.value);
-    });
-    
-    // Funciones de eliminación con AJAX
+
+    // =========== MODAL DE ELIMINACIÓN ===========
     let deleteUrlBase = '/{{ slug }}/clientes/';
-    
+
     function openDeleteModal(clientId, clientName) {
       document.getElementById('deleteClientId').value = clientId;
       document.getElementById('deleteClientName').textContent = clientName;
       document.getElementById('deleteForm').action = deleteUrlBase + clientId + '/eliminar/';
       document.getElementById('deleteModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
     }
-    
+
     function closeDeleteModal() {
       document.getElementById('deleteModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
     }
-    
-    // Manejar el formulario de eliminación con AJAX
+
+    // =========== ELIMINACIÓN CON AJAX ===========
     document.getElementById('deleteForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
@@ -728,9 +543,7 @@
       
       fetch(this.action, {
         method: 'POST',
-        headers: {
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-        },
+        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
         body: formData
       })
       .then(response => response.json())
@@ -738,10 +551,10 @@
         closeDeleteModal();
         
         if (data.success) {
-          // Mostrar toast de éxito
+          // Mostrar toast
           document.getElementById('successToast').classList.remove('hidden');
           
-          // Eliminar la fila de la tabla
+          // Eliminar fila con animación
           const row = document.querySelector(`tr[data-client-id="${clientId}"]`);
           if (row) {
             row.style.opacity = '0';
@@ -750,52 +563,43 @@
             setTimeout(() => row.remove(), 300);
           }
           
-          // Ocultar toast después de 3 segundos
-          setTimeout(() => {
-            document.getElementById('successToast').classList.add('hidden');
-          }, 3000);
+          // Ocultar toast
+          setTimeout(() => closeToast(), 3000);
         } else {
-          alert('Error: ' + (data.error || 'No se pudo eliminar el cliente.'));
+          alert('Error: ' + (data.error || 'No se pudo eliminar el cliente'));
         }
       })
       .catch(error => {
         closeDeleteModal();
-        alert('Error al eliminar el cliente: ' + error.message);
-        console.error('Error:', error);
+        alert('Error de conexión');
+        console.error(error);
       });
     });
-    
+
     function closeToast() {
       document.getElementById('successToast').classList.add('hidden');
     }
-    
-    // Funciones de acciones (simuladas)
-    function exportToCSV() {
-      alert('Exportando datos a CSV...');
+
+    // =========== CIERRE DE MODAL AL HACER CLIC FUERA ===========
+    window.onclick = function(event) {
+      const modal = document.getElementById('deleteModal');
+      if (event.target === modal) {
+        closeDeleteModal();
+      }
     }
-    
+
+    // =========== FUNCIONES DE ACCIONES (SIMULADAS) ===========
+    function exportToCSV() {
+      alert('Exportando lista de clientes a CSV...');
+    }
+
     function importClients() {
       alert('Funcionalidad de importación desde CSV');
     }
-    
+
     function generateReport() {
       alert('Generando reporte de clientes...');
     }
-    
-    function sendBulkEmail() {
-      alert('Enviando notificación masiva a clientes...');
-    }
-    
-    // Mostrar mensaje si hay parámetro de éxito en la URL
-    document.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('deleted')) {
-        document.getElementById('successToast').classList.remove('hidden');
-        setTimeout(() => {
-          document.getElementById('successToast').classList.add('hidden');
-        }, 3000);
-      }
-    });
   </script>
 
 </body>
