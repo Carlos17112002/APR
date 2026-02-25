@@ -12,10 +12,7 @@ urlpatterns = [
     path('eliminar/<slug:slug>/', eliminar_empresa, name='eliminar_empresa'),
     path('empresas/<slug:slug>/generar-boletas/', generar_boletas_ssr, name='generar_boletas_ssr'),
     path('listado/', listado_empresas, name='listado_empresas'),
-
     path('api/lecturas-mapa/<slug:slug>/', api_lecturas_mapa, name='api_lecturas_mapa'),
-    path('empresa/<str:empresa_slug>/api/sectores/', 
-         views.obtener_sectores_empresa, 
-         name='obtener_sectores_empresa'),
+    path('empresa/<str:empresa_slug>/api/sectores/', views.obtener_sectores_empresa, name='obtener_sectores_empresa'),
 
 ]
