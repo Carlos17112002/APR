@@ -823,7 +823,7 @@ def descargar_apk(request, empresa_slug):
         raise Http404("La aplicación no está disponible para esta empresa.")
     
     # Ruta corregida: MEDIA_ROOT/apps/v1.apk
-    ruta_apk = os.path.join(settings.MEDIA_ROOT, 'v1.apk')
+    ruta_apk = os.path.join(settings.MEDIA_ROOT, 'app-release.apk')
     
     if not os.path.exists(ruta_apk):
         # Puedes agregar un log para depurar
