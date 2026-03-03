@@ -806,3 +806,35 @@ def api_publica_config(request, empresa_slug):
     """Alias para mantener compatibilidad"""
     return api_descargar_config(request, empresa_slug)
 
+
+from django.http import FileResponse, Http404
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from empresas.models import Empresa
+import os
+from django.conf import settings
+
+@login_required
+def descargar_apk(request, empresa_slug):
+    empresa = get_object_or_404(Empresa, slug=empresa_slug)
+    
+    # Opcional: verificar que la app esté generada
+    if not empresa.app_generada:
+        raise Http404("La aplicación no está disponible para esta empresa.")
+    
+    # Ruta corregida: MEDIA_ROOT/apps/v1.apk
+    ruta_apk = os.path.join(settings.MEDIA_ROOT, 'v1.apk')
+    
+    if not os.path.exists(ruta_apk):
+        # Puedes agregar un log para depurar
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Archivo APK no encontrado en: {ruta_apk}")
+        raise Http404("El archivo APK no se encuentra en el servidor.")
+    
+    response = FileResponse(
+        open(ruta_apk, 'rb'),
+        as_attachment=True,
+        filename=f'v1{empresa.slug}.apk'
+    )
+    return response

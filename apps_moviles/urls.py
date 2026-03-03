@@ -52,4 +52,6 @@ urlpatterns = [
     
     # Preview de JSON generado
     path('preview/<str:empresa_slug>/', views.ver_config_app, name='preview_config'),
+
+    path('descargar-apk/<slug:empresa_slug>/', views.descargar_apk, name='descargar_apk'),
 ]

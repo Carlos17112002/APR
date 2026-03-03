@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load humanize %}
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -62,6 +63,30 @@
             color: #059669;
             font-weight: 600;
         }
+        
+        /* Modal overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-content {
+            animation: modalSlideIn 0.2s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -114,24 +139,20 @@
         
         <!-- Pestañas de navegación -->
         <div class="bg-white rounded-t-xl card-shadow mb-6">
-            <div class="flex border-b border-gray-200">
-                <button id="tabInfo" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium tab-active" 
+            <div class="flex border-b border-gray-200 overflow-x-auto">
+                <button id="tabInfo" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium tab-active whitespace-nowrap" 
                         onclick="switchTab('info')">
                     <i class="fas fa-info-circle mr-2"></i>Información General
                 </button>
-                <button id="tabContratos" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium" 
-                        onclick="switchTab('contratos')">
-                    <i class="fas fa-file-contract mr-2"></i>Contratos
-                </button>
-                <button id="tabLecturas" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium" 
+                <button id="tabLecturas" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium whitespace-nowrap" 
                         onclick="switchTab('lecturas')">
                     <i class="fas fa-tachometer-alt mr-2"></i>Lecturas
                 </button>
-                <button id="tabPagos" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium" 
+                <button id="tabPagos" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium whitespace-nowrap" 
                         onclick="switchTab('pagos')">
                     <i class="fas fa-credit-card mr-2"></i>Pagos
                 </button>
-                <button id="tabHistorial" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium" 
+                <button id="tabHistorial" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium whitespace-nowrap" 
                         onclick="switchTab('historial')">
                     <i class="fas fa-history mr-2"></i>Historial Completo
                 </button>
@@ -267,22 +288,22 @@
                     <div class="bg-white rounded-xl card-shadow p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
                         <div class="space-y-3">
-                            <a href="{% url 'crear_lectura' alias=slug cliente_id=cliente.id %}" 
-                               class="flex items-center justify-between p-3 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">
+                            <button onclick="alert('Funcionalidad en desarrollo')" 
+                                    class="w-full flex items-center justify-between p-3 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">
                                 <div class="flex items-center">
                                     <i class="fas fa-tachometer-alt mr-3"></i>
                                     <span>Registrar Lectura</span>
                                 </div>
                                 <i class="fas fa-arrow-right"></i>
-                            </a>
-                            <a href="#" 
-                               class="flex items-center justify-between p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                            </button>
+                            <button onclick="alert('Funcionalidad en desarrollo')" 
+                                    class="w-full flex items-center justify-between p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
                                 <div class="flex items-center">
                                     <i class="fas fa-credit-card mr-3"></i>
                                     <span>Registrar Pago</span>
                                 </div>
                                 <i class="fas fa-arrow-right"></i>
-                            </a>
+                            </button>
                             <a href="{% url 'historial_cliente' alias=slug cliente_id=cliente.id %}" 
                                class="flex items-center justify-between p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">
                                 <div class="flex items-center">
@@ -320,96 +341,6 @@
             </div>
         </div>
         
-        <!-- Pestaña: Contratos -->
-        <div id="contentContratos" class="tab-content hidden">
-            <div class="bg-white rounded-xl card-shadow overflow-hidden">
-                <div class="px-6 py-5 border-b border-gray-200">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-900">Contratos del Cliente</h2>
-                            <p class="text-gray-500 text-sm mt-1">{{ contratos.count }} contrato{{ contratos.count|pluralize }} registrado{{ contratos.count|pluralize }}</p>
-                        </div>
-                        <a href="#" 
-                           class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
-                            <i class="fas fa-plus mr-2"></i> Nuevo Contrato
-                        </a>
-                    </div>
-                </div>
-                
-                {% if contratos %}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead>
-                            <tr class="bg-gray-50">
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contrato</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Inicio</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Término</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            {% for contrato in contratos %}
-                            <tr class="table-row-hover">
-                                <td class="px-6 py-4">
-                                    <div class="font-medium text-gray-900">#{{ contrato.numero }}</div>
-                                    <div class="text-xs text-gray-500">{{ contrato.descripcion|truncatechars:40 }}</div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                                        {{ contrato.tipo }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    {{ contrato.fecha_inicio|date:"d/m/Y" }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    {% if contrato.fecha_termino %}
-                                        {{ contrato.fecha_termino|date:"d/m/Y" }}
-                                    {% else %}
-                                        <span class="text-gray-400">Indefinido</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4">
-                                    {% if contrato.activo %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
-                                        <i class="fas fa-check-circle mr-1"></i> Activo
-                                    </span>
-                                    {% else %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
-                                        <i class="fas fa-times-circle mr-1"></i> Inactivo
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex space-x-2">
-                                        <a href="#" class="text-blue-600 hover:text-blue-900">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="#" class="text-emerald-600 hover:text-emerald-900">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center py-12">
-                    <i class="fas fa-file-contract text-4xl text-gray-300 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-700 mb-2">No hay contratos registrados</h3>
-                    <p class="text-gray-500 mb-6">Este cliente no tiene contratos asociados.</p>
-                    <a href="#" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Crear Primer Contrato
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        
         <!-- Pestaña: Lecturas -->
         <div id="contentLecturas" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
@@ -419,10 +350,10 @@
                             <h2 class="text-xl font-semibold text-gray-900">Historial de Lecturas</h2>
                             <p class="text-gray-500 text-sm mt-1">{{ lecturas|length }} lectura{{ lecturas|length|pluralize }} registrada{{ lecturas|length|pluralize }}</p>
                         </div>
-                        <a href="{% url 'crear_lectura' alias=slug cliente_id=cliente.id %}" 
-                           class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                        <button onclick="alert('Funcionalidad en desarrollo')" 
+                                class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
                             <i class="fas fa-plus mr-2"></i> Nueva Lectura
-                        </a>
+                        </button>
                     </div>
                 </div>
                 
@@ -482,10 +413,10 @@
                     <i class="fas fa-tachometer-alt text-4xl text-gray-300 mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-700 mb-2">No hay lecturas registradas</h3>
                     <p class="text-gray-500 mb-6">Este cliente no tiene lecturas registradas.</p>
-                    <a href="{% url 'crear_lectura' alias=slug cliente_id=cliente.id %}" 
-                       class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
+                    <button onclick="alert('Funcionalidad en desarrollo')" 
+                            class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
                         <i class="fas fa-plus mr-2"></i> Registrar Primera Lectura
-                    </a>
+                    </button>
                 </div>
                 {% endif %}
             </div>
@@ -500,10 +431,10 @@
                             <h2 class="text-xl font-semibold text-gray-900">Historial de Pagos</h2>
                             <p class="text-gray-500 text-sm mt-1">Total pagado: ${{ total_pagado|floatformat:0|intcomma }}</p>
                         </div>
-                        <a href="#" 
-                           class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                        <button onclick="alert('Funcionalidad en desarrollo')" 
+                                class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
                             <i class="fas fa-plus mr-2"></i> Nuevo Pago
-                        </a>
+                        </button>
                     </div>
                 </div>
                 
@@ -561,15 +492,16 @@
                     <i class="fas fa-credit-card text-4xl text-gray-300 mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-700 mb-2">No hay pagos registrados</h3>
                     <p class="text-gray-500 mb-6">Este cliente no tiene pagos registrados.</p>
-                    <a href="#" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
+                    <button onclick="alert('Funcionalidad en desarrollo')" 
+                            class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
                         <i class="fas fa-plus mr-2"></i> Registrar Primer Pago
-                    </a>
+                    </button>
                 </div>
                 {% endif %}
             </div>
         </div>
         
-        <!-- Pestaña: Historial Completo -->
+        <!-- Pestaña: Historial Completo (solo enlace) -->
         <div id="contentHistorial" class="tab-content hidden">
             <div class="text-center py-12">
                 <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
@@ -583,9 +515,40 @@
         </div>
     </div>
 
-    <!-- Modal de eliminación (mismo que en listado) -->
+    <!-- Modal de eliminación -->
     <div id="deleteModal" class="modal-overlay hidden">
-        <!-- Copia el mismo modal del listado_clientes.html -->
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+            <div class="p-5">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Confirmar eliminación</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Esta acción no se puede deshacer</p>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-sm text-gray-700 mb-2">¿Estás seguro de eliminar al cliente:</p>
+                    <p class="text-base font-semibold text-red-600" id="deleteClientName"></p>
+                </div>
+                
+                <form id="deleteForm" method="post" action="" class="flex justify-end gap-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" id="deleteClientId">
+                    <button type="button" onclick="closeDeleteModal()" 
+                            class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                        <i class="fas fa-trash-alt"></i>
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -656,17 +619,57 @@
             });
         });
         
-        // Funciones de eliminación (mismas que en listado)
+        // Modal de eliminación
         function openDeleteModal(clientId, clientName) {
-            // Implementación similar a listado_clientes.html
-            if (confirm(`¿Está seguro de eliminar al cliente "${clientName}"?`)) {
-                window.location.href = `/{{ slug }}/clientes/${clientId}/eliminar-simple/`;
-            }
+            document.getElementById('deleteClientId').value = clientId;
+            document.getElementById('deleteClientName').textContent = clientName;
+            document.getElementById('deleteForm').action = `/{{ slug }}/clientes/${clientId}/eliminar/`;
+            document.getElementById('deleteModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
         
-        // URL para eliminar cliente
-        const deleteUrlBase = '/{{ slug }}/clientes/';
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Eliminación con AJAX
+        document.getElementById('deleteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const clientId = formData.get('cliente_id');
+            
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/{{ slug }}/listado/';
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo eliminar el cliente'));
+                }
+                closeDeleteModal();
+            })
+            .catch(error => {
+                alert('Error de conexión');
+                console.error(error);
+                closeDeleteModal();
+            });
+        });
+        
+        // Cerrar modal haciendo clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('deleteModal');
+            if (event.target === modal) {
+                closeDeleteModal();
+            }
+        }
     </script>
-
 </body>
 </html>

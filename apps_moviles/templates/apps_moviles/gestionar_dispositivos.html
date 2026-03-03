@@ -4,283 +4,529 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title }}</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --success: #48bb78;
+            --danger: #f56565;
+            --warning: #ecc94b;
+            --gray-bg: #f7fafc;
+            --card-border-radius: 16px;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+        }
+
         body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #edf2f7;
+            font-family: 'Inter', sans-serif;
+            color: #1a202c;
         }
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 4px 10px;
-            border-radius: 50px;
+
+        /* Estadísticas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
-        .status-active {
-            background-color: #d1f7c4;
-            color: #2e7d32;
-        }
-        .status-inactive {
-            background-color: #ffeaea;
-            color: #c62828;
-        }
-        .device-card {
-            border-left: 4px solid;
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
             transition: transform 0.2s;
         }
-        .device-card:hover {
+        .stat-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        .device-online {
-            border-left-color: #4caf50;
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, #9f7aea 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
         }
-        .device-offline {
-            border-left-color: #f44336;
+        .stat-content h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.2;
         }
-        .token-badge {
-            font-family: monospace;
-            background-color: #f8f9fa;
-            padding: 5px 10px;
+        .stat-content p {
+            margin: 0;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        /* Formulario */
+        .form-card {
+            background: white;
+            border-radius: var(--card-border-radius);
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .form-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #2d3748;
+        }
+        .form-title i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        /* Grid de dispositivos */
+        .devices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        .device-card {
+            background: white;
+            border-radius: var(--card-border-radius);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+        }
+        .device-card:hover {
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e0;
+        }
+        .device-header {
+            padding: 1.25rem 1.25rem 0.75rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid #f0f4f8;
+        }
+        .device-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .device-name i {
+            color: var(--primary);
+        }
+        .device-body {
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .info-label {
+            color: #718096;
+            min-width: 85px;
+            font-weight: 500;
+        }
+        .info-value {
+            color: #1a202c;
+            font-weight: 500;
+            word-break: break-word;
+        }
+        .info-value code {
+            background: #f0f4f8;
+            padding: 0.2rem 0.4rem;
             border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .token-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .token-text {
+            background: #f0f4f8;
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #2d3748;
+            border: 1px solid #e2e8f0;
+        }
+        .btn-copy {
+            background: none;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 0.3rem 0.75rem;
             font-size: 0.85rem;
-            cursor: pointer;
+            color: #4a5568;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .btn-copy:hover {
+            background: #f0f4f8;
+            border-color: #cbd5e0;
+        }
+        .btn-copy.copied {
+            background: #c6f6d5;
+            border-color: #48bb78;
+            color: #276749;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-active {
+            background: #c6f6d5;
+            color: #276749;
+        }
+        .status-inactive {
+            background: #fed7d7;
+            color: #9b2c2c;
         }
         .last-connection {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
             font-size: 0.85rem;
         }
         .connection-active {
-            color: #4caf50;
+            color: #276749;
         }
         .connection-inactive {
-            color: #9e9e9e;
+            color: #a0aec0;
         }
-        .btn-custom-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+
+        .device-footer {
+            padding: 1rem 1.25rem 1.25rem 1.25rem;
+            background: #fafcff;
+            border-top: 1px solid #f0f4f8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
             border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #4a5568;
+        }
+        .btn-icon:hover {
+            background: #f0f4f8;
+            border-color: #cbd5e0;
+            transform: scale(1.05);
+        }
+        .btn-icon.btn-warning {
+            background: #fef3c7;
+            border-color: #fbbf24;
+            color: #92400e;
+        }
+        .btn-icon.btn-warning:hover {
+            background: #fde68a;
+        }
+        .btn-icon.btn-success {
+            background: #d1fae5;
+            border-color: #34d399;
+            color: #065f46;
+        }
+        .btn-icon.btn-success:hover {
+            background: #a7f3d0;
+        }
+        .btn-icon.btn-info {
+            background: #dbeafe;
+            border-color: #60a5fa;
+            color: #1e40af;
+        }
+        .btn-icon.btn-info:hover {
+            background: #bfdbfe;
+        }
+        .btn-icon.btn-danger {
+            background: #fee2e2;
+            border-color: #f87171;
+            color: #991b1b;
+        }
+        .btn-icon.btn-danger:hover {
+            background: #fecaca;
+        }
+
+        /* Estado vacío */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: var(--card-border-radius);
+            box-shadow: var(--card-shadow);
+        }
+        .empty-state i {
+            font-size: 4rem;
+            color: #cbd5e0;
+            margin-bottom: 1rem;
+        }
+        .empty-state h4 {
+            color: #2d3748;
+            font-weight: 600;
+        }
+        .empty-state p {
+            color: #718096;
+        }
+
+        /* Alerta */
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 1rem 1.25rem;
+        }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #718096;
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        .back-link:hover {
+            color: #2d3748;
         }
     </style>
 </head>
 <body>
     <div class="container-fluid py-4">
+        <!-- Navegación -->
+        <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="back-link">
+            <i class="bi bi-arrow-left"></i> Volver al panel
+        </a>
+
         <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="text-decoration-none text-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Volver al panel
-                        </a>
-                        <h4 class="mb-0 mt-2">{{ page_title }}</h4>
-                        <p class="text-muted mb-0">Gestiona los dispositivos móviles de {{ empresa.nombre }}</p>
-                    </div>
-                    <div>
-                        <!-- CORREGIDO: Usar variables del contexto -->
-                        <span class="badge bg-primary">{{ total_dispositivos }} dispositivos</span>
-                        <span class="badge bg-success ms-2">{{ dispositivos_activos }} activos</span>
-                    </div>
-                </div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div>
+                <h1 class="h3 mb-1">{{ page_title }}</h1>
+                <p class="text-muted mb-0">Empresa: <strong>{{ empresa.nombre }}</strong></p>
             </div>
         </div>
 
         <!-- Messages -->
         {% if messages %}
-        <div class="row mb-4">
-            <div class="col-12">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                    <i class="bi bi-info-circle me-2"></i> {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Estadísticas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-device-phone"></i></div>
+                <div class="stat-content">
+                    <h3>{{ total_dispositivos }}</h3>
+                    <p>Total dispositivos</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-content">
+                    <h3>{{ dispositivos_activos }}</h3>
+                    <p>Activos</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+                <div class="stat-content">
+                    <h3>{{ total_dispositivos|add:"-"|add:dispositivos_activos }}</h3>
+                    <p>Inactivos</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de registro -->
+        <div class="form-card">
+            <div class="form-title">
+                <i class="bi bi-plus-circle"></i>
+                <span>Registrar nuevo dispositivo</span>
+            </div>
+            <form method="POST" action="">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="crear">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label fw-500">Nombre del dispositivo *</label>
+                        <input type="text" class="form-control" name="nombre" placeholder="Ej: Samsung Galaxy S21" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-500">Identificador único (opcional)</label>
+                        <input type="text" class="form-control" name="identificador" placeholder="Auto-generado si se deja vacío">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                            <i class="bi bi-device-phone me-2"></i>Registrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Listado de dispositivos en tarjetas -->
+        {% if dispositivos %}
+            <div class="devices-grid">
+                {% for dispositivo in dispositivos %}
+                <div class="device-card">
+                    <div class="device-header">
+                        <div class="device-name">
+                            <i class="bi bi-phone"></i>
+                            {{ dispositivo.nombre_dispositivo }}
+                        </div>
+                        {% if dispositivo.activo %}
+                            <span class="status-badge status-active"><i class="bi bi-check-circle"></i> Activo</span>
+                        {% else %}
+                            <span class="status-badge status-inactive"><i class="bi bi-x-circle"></i> Inactivo</span>
+                        {% endif %}
+                    </div>
+                    <div class="device-body">
+                        <div class="info-row">
+                            <span class="info-label">Identificador:</span>
+                            <span class="info-value"><code>{{ dispositivo.identificador }}</code></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Token:</span>
+                            <div class="token-container">
+                                <span class="token-text">{{ dispositivo.token_acceso|truncatechars:12 }}</span>
+                                <button class="btn-copy" onclick="copyToken(this, '{{ dispositivo.token_acceso }}')" title="Copiar token completo">
+                                    <i class="bi bi-clipboard"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Última conexión:</span>
+                            <span class="last-connection {% if dispositivo.ultima_conexion %}connection-active{% else %}connection-inactive{% endif %}">
+                                <i class="bi bi-clock"></i>
+                                {% if dispositivo.ultima_conexion %}
+                                    {{ dispositivo.ultima_conexion|timesince }}
+                                {% else %}
+                                    Nunca
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="device-footer">
+                        <span class="text-muted small">ID: {{ dispositivo.id }}</span>
+                        <div class="action-buttons">
+                            <!-- Toggle Activo -->
+                            <form method="POST" action="" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_activo">
+                                <input type="hidden" name="dispositivo_id" value="{{ dispositivo.id }}">
+                                <button type="submit" class="btn-icon {% if dispositivo.activo %}btn-warning{% else %}btn-success{% endif %}" 
+                                        title="{% if dispositivo.activo %}Desactivar{% else %}Activar{% endif %}">
+                                    {% if dispositivo.activo %}
+                                        <i class="bi bi-pause"></i>
+                                    {% else %}
+                                        <i class="bi bi-play"></i>
+                                    {% endif %}
+                                </button>
+                            </form>
+                            <!-- Renovar Token -->
+                            <form method="POST" action="" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="renovar_token">
+                                <input type="hidden" name="dispositivo_id" value="{{ dispositivo.id }}">
+                                <button type="submit" class="btn-icon btn-info" title="Renovar token">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </form>
+                            <!-- Eliminar -->
+                            <form method="POST" action="" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="eliminar">
+                                <input type="hidden" name="dispositivo_id" value="{{ dispositivo.id }}">
+                                <button type="submit" class="btn-icon btn-danger" 
+                                        onclick="return confirm('¿Estás seguro de eliminar este dispositivo?')"
+                                        title="Eliminar dispositivo">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
-        </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-device-phone"></i>
+                <h4>No hay dispositivos registrados</h4>
+                <p>Registra tu primer dispositivo usando el formulario superior.</p>
+            </div>
         {% endif %}
 
-        <!-- Create Device Form -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="bi bi-plus-circle me-2"></i>Registrar nuevo dispositivo
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="crear">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Nombre del dispositivo</label>
-                                    <input type="text" class="form-control" name="nombre" placeholder="Ej: Samsung Galaxy S21" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Identificador único</label>
-                                    <input type="text" class="form-control" name="identificador" placeholder="Dejar vacío para auto-generar">
-                                    <small class="text-muted">Opcional. Se usará para identificar el dispositivo</small>
-                                </div>
-                                <div class="col-md-4 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-custom-primary w-100">
-                                        <i class="bi bi-device-phone me-2"></i>Registrar dispositivo
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Devices List -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Dispositivos registrados</h5>
-                    </div>
-                    <div class="card-body p-0">
-                        {% if dispositivos %}
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Identificador</th>
-                                        <th>Token de acceso</th>
-                                        <th>Estado</th>
-                                        <th>Última conexión</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for dispositivo in dispositivos %}
-                                    <tr>
-                                        <td class="align-middle">
-                                            <strong>{{ dispositivo.nombre_dispositivo }}</strong>
-                                        </td>
-                                        <td class="align-middle">
-                                            <code>{{ dispositivo.identificador }}</code>
-                                        </td>
-                                        <td class="align-middle">
-                                            <div class="token-badge" onclick="copyToken('{{ dispositivo.token_acceso }}')" title="Haz clic para copiar">
-                                                {{ dispositivo.token_acceso|truncatechars:15 }}
-                                                <i class="bi bi-clipboard ms-2 text-muted"></i>
-                                            </div>
-                                        </td>
-                                        <td class="align-middle">
-                                            {% if dispositivo.activo %}
-                                                <span class="status-badge status-active">
-                                                    <i class="bi bi-check-circle me-1"></i>Activo
-                                                </span>
-                                            {% else %}
-                                                <span class="status-badge status-inactive">
-                                                    <i class="bi bi-x-circle me-1"></i>Inactivo
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="align-middle">
-                                            <div class="last-connection {% if dispositivo.ultima_conexion %}connection-active{% else %}connection-inactive{% endif %}">
-                                                {% if dispositivo.ultima_conexion %}
-                                                    <i class="bi bi-clock me-1"></i>
-                                                    {{ dispositivo.ultima_conexion|timesince }}
-                                                {% else %}
-                                                    <i class="bi bi-clock me-1"></i>
-                                                    Nunca
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                        <td class="align-middle">
-                                            <div class="btn-group" role="group">
-                                                <!-- Toggle Active -->
-                                                <form method="POST" action="" class="d-inline">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="action" value="toggle_activo">
-                                                    <input type="hidden" name="dispositivo_id" value="{{ dispositivo.id }}">
-                                                    <button type="submit" class="btn btn-sm {% if dispositivo.activo %}btn-warning{% else %}btn-success{% endif %}">
-                                                        {% if dispositivo.activo %}
-                                                            <i class="bi bi-pause"></i>
-                                                        {% else %}
-                                                            <i class="bi bi-play"></i>
-                                                        {% endif %}
-                                                    </button>
-                                                </form>
-                                                
-                                                <!-- Renew Token -->
-                                                <form method="POST" action="" class="d-inline">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="action" value="renovar_token">
-                                                    <input type="hidden" name="dispositivo_id" value="{{ dispositivo.id }}">
-                                                    <button type="submit" class="btn btn-sm btn-info mx-1" title="Renovar token">
-                                                        <i class="bi bi-arrow-clockwise"></i>
-                                                    </button>
-                                                </form>
-                                                
-                                                <!-- Delete -->
-                                                <form method="POST" action="" class="d-inline">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="action" value="eliminar">
-                                                    <input type="hidden" name="dispositivo_id" value="{{ dispositivo.id }}">
-                                                    <button type="submit" class="btn btn-sm btn-danger" 
-                                                            onclick="return confirm('¿Estás seguro de eliminar este dispositivo?')">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center py-5">
-                            <div class="mb-3">
-                                <i class="bi bi-device-phone" style="font-size: 3rem; color: #dee2e6;"></i>
-                            </div>
-                            <h5 class="text-muted mb-2">No hay dispositivos registrados</h5>
-                            <p class="text-muted">Registra tu primer dispositivo usando el formulario superior</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Instructions -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h6 class="mb-3">
-                            <i class="bi bi-info-circle me-2"></i>Información importante
-                        </h6>
-                        <ul class="mb-0">
-                            <li class="mb-2">Cada dispositivo necesita un token único para autenticarse</li>
-                            <li class="mb-2">Puedes desactivar dispositivos sin eliminarlos</li>
-                            <li class="mb-2">Renueva el token si sospechas que ha sido comprometido</li>
-                            <li>Los dispositivos inactivos no pueden sincronizar datos</li>
-                        </ul>
-                    </div>
+        <!-- Información adicional -->
+        <div class="form-card mt-4">
+            <div class="d-flex gap-3">
+                <i class="bi bi-info-circle-fill text-primary" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h6 class="fw-600 mb-2">Información importante</h6>
+                    <ul class="text-muted" style="list-style: none; padding-left: 0;">
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Cada dispositivo necesita un token único para autenticarse.</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Puedes desactivar dispositivos sin eliminarlos.</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Renueva el token si sospechas que ha sido comprometido.</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Los dispositivos inactivos no pueden sincronizar datos.</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        function copyToken(token) {
+        function copyToken(button, token) {
             navigator.clipboard.writeText(token).then(() => {
-                // Mostrar notificación
-                const originalElement = event.target.closest('.token-badge');
-                const originalHTML = originalElement.innerHTML;
-                
-                originalElement.innerHTML = '<i class="bi bi-check2"></i> Copiado';
-                originalElement.style.backgroundColor = '#d1f7c4';
-                
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check2"></i> Copiado';
+                button.classList.add('copied');
                 setTimeout(() => {
-                    originalElement.innerHTML = originalHTML;
-                    originalElement.style.backgroundColor = '';
+                    button.innerHTML = originalText;
+                    button.classList.remove('copied');
                 }, 2000);
             });
         }

@@ -3549,3 +3549,379 @@ def ver_liquidacion_pdf(request, alias, periodo_id, trabajador_id):
     
     # Devolver el HTML (que incluirá un script para generar PDF automáticamente)
     return HttpResponse(html)
+
+# contabilidad/views.py (reemplazar las funciones auxiliares y generar_linea_previred)
+
+import io
+from decimal import Decimal
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .models import Periodo, Liquidacion, AFP, Isapre
+
+def formatear_monto(valor):
+    """
+    Convierte un valor Decimal a entero (redondeado) y lo retorna como string sin ceros a la izquierda.
+    Si el valor es None o inválido, retorna '0'.
+    """
+    try:
+        num = int(round(float(valor or 0)))
+        return str(num)
+    except (ValueError, TypeError):
+        return '0'
+
+def formatear_texto(texto, longitud_maxima=0):
+    """
+    Retorna el texto recortado a la longitud máxima (si se especifica) y sin espacios a la derecha.
+    Si es None, retorna cadena vacía.
+    """
+    if texto is None:
+        return ''
+    texto = str(texto).strip()
+    if longitud_maxima and len(texto) > longitud_maxima:
+        texto = texto[:longitud_maxima]
+    return texto
+
+def formatear_porcentaje(valor):
+    """
+    Formatea un porcentaje con dos decimales y coma (ej. "12,34").
+    Si el valor es None o cero, retorna "0,00".
+    """
+    try:
+        num = float(valor or 0)
+        return f"{num:.2f}".replace('.', ',')
+    except (ValueError, TypeError):
+        return "0,00"
+
+def obtener_codigo_afp(nombre_afp):
+    """Retorna el código Previred de una AFP según su nombre."""
+    if not nombre_afp:
+        return ''
+    try:
+        afp = AFP.objects.get(nombre__iexact=nombre_afp)
+        return afp.codigo_previred.strip()
+    except AFP.DoesNotExist:
+        afp = AFP.objects.filter(nombre__icontains=nombre_afp).first()
+        if afp:
+            return afp.codigo_previred.strip()
+    return ''
+
+def obtener_codigo_isapre(nombre_isapre):
+    """Retorna el código Previred de una Isapre según su nombre."""
+    if not nombre_isapre:
+        return ''
+    try:
+        isapre = Isapre.objects.get(nombre__iexact=nombre_isapre)
+        return isapre.codigo_previred.strip()
+    except Isapre.DoesNotExist:
+        isapre = Isapre.objects.filter(nombre__icontains=nombre_isapre).first()
+        if isapre:
+            return isapre.codigo_previred.strip()
+    return ''
+
+def obtener_tramo_asignacion_familiar(promedio_ingresos):
+    """
+    Determina el tramo de asignación familiar según el promedio de ingresos.
+    Usa los valores publicados por Previred (febrero 2026).
+    Retorna 'A', 'B', 'C' o 'D'.
+    """
+    tramos = [
+        (631976, 'A'),
+        (923067, 'B'),
+        (1439668, 'C'),
+    ]
+    for tope, tramo in tramos:
+        if promedio_ingresos <= tope:
+            return tramo
+    return 'D'
+
+def generar_linea_previred(liquidacion):
+    """
+    Genera una línea con 105 campos separados por punto y coma,
+    según especificación de Previred (formato variable por separador, versión 92, febrero 2026).
+    """
+    trab = liquidacion.trabajador
+    periodo = liquidacion.periodo
+    uf_valor = periodo.uf
+
+    # Topes en pesos
+    TOPE_AFP = uf_valor * Decimal('90')
+    TOPE_SC = uf_valor * Decimal('135.2')
+    # Renta imponible para AFP (topeada)
+    renta_imponible = min(liquidacion.total_imponible, TOPE_AFP)
+
+    # Separar RUT
+    rut_partes = trab.rut.split('-')
+    rut_num = rut_partes[0].replace('.', '')
+    dv = rut_partes[1] if len(rut_partes) > 1 else ''
+
+    # Inicializar lista de 105 campos (índices 1..105)
+    campos = [''] * 106
+
+    # ------------------------------------------------------------------
+    # 1-17: Datos básicos del trabajador y período
+    # ------------------------------------------------------------------
+    campos[1] = rut_num                                # RUT (numérico, sin DV)
+    campos[2] = dv                                      # DV
+    campos[3] = formatear_texto(trab.apellido_paterno, 30)
+    campos[4] = formatear_texto(trab.apellido_materno or '', 30)
+    campos[5] = formatear_texto(trab.nombres, 30)
+    campos[6] = formatear_texto(trab.sexo or 'M', 1)
+    campos[7] = '0' if trab.es_chileno else '1'         # Nacionalidad
+    campos[8] = '1'                                     # Tipo Pago (01)
+    periodo_str = f"{periodo.mes:02d}{periodo.anio}"
+    campos[9] = periodo_str                              # Desde
+    campos[10] = periodo_str                             # Hasta
+
+    # Régimen previsional
+    if liquidacion.afp_nombre:
+        regimen = 'AFP'
+    else:
+        regimen = 'INP'
+    campos[11] = regimen
+
+    campos[12] = '0'                                     # Tipo trabajador (activo)
+    campos[13] = str(liquidacion.dias_trabajados)        # Días trabajados
+    campos[14] = '00'                                    # Tipo de línea (principal)
+    campos[15] = '0'                                     # Código movimiento personal
+    campos[16] = ''                                      # Fecha desde
+    campos[17] = ''                                      # Fecha hasta
+
+    # ------------------------------------------------------------------
+    # 18-25: Asignación familiar y cargas
+    # ------------------------------------------------------------------
+    if liquidacion.numero_cargas > 0:
+        tramo = obtener_tramo_asignacion_familiar(liquidacion.promedio_ingresos)
+    else:
+        tramo = 'D'
+    campos[18] = tramo
+
+    campos[19] = str(liquidacion.numero_cargas)                # Cargas simples
+    campos[20] = str(liquidacion.numero_cargas_maternales)     # Cargas maternales
+    campos[21] = '0'                                            # Cargas inválidas
+
+    # Monto asignación familiar
+    montos_tramo = {'A': 22007, 'B': 13505, 'C': 4267, 'D': 0}
+    monto_por_carga = montos_tramo.get(tramo, 0)
+    asignacion_familiar = monto_por_carga * liquidacion.numero_cargas
+    campos[22] = formatear_monto(asignacion_familiar)
+
+    campos[23] = '0'      # Asignación retroactiva
+    campos[24] = '0'      # Reintegro cargas familiares
+    campos[25] = 'N'      # Subsidio trabajador joven
+
+    # ------------------------------------------------------------------
+    # 26-39: Datos de AFP
+    # ------------------------------------------------------------------
+    if liquidacion.afp_nombre:
+        cod_afp = obtener_codigo_afp(liquidacion.afp_nombre)
+        campos[26] = cod_afp                                    # Código AFP
+        campos[27] = formatear_monto(renta_imponible)           # Renta imponible AFP
+        campos[28] = formatear_monto(liquidacion.cotizacion_afp)  # Cotización AFP
+        # SIS: obtener desde modelo o usar 1.54%
+        try:
+            afp_obj = AFP.objects.get(nombre__iexact=liquidacion.afp_nombre)
+            sis_porc = afp_obj.sis
+        except AFP.DoesNotExist:
+            sis_porc = Decimal('1.54')
+        campos[29] = formatear_monto(renta_imponible * sis_porc / 100)
+        campos[30] = formatear_monto(liquidacion.cuenta_2_afp)   # Cuenta 2 AFP
+
+        # Renta sustitutiva y relacionados (no aplica)
+        campos[31] = '0'
+        campos[32] = '0,00'  # Tasa pactada (con coma)
+        campos[33] = '0'
+        campos[34] = '0'
+        campos[35] = ''
+        campos[36] = ''
+
+        # Trabajo pesado
+        campos[37] = ''                                         # Puesto
+        porc_tp = liquidacion.porcentaje_trabajo_pesado or Decimal('0')
+        campos[38] = formatear_porcentaje(porc_tp)              # % trabajo pesado
+        monto_tp = renta_imponible * porc_tp / 100
+        campos[39] = formatear_monto(monto_tp)                  # Monto trabajo pesado
+    else:
+        # Sin AFP
+        campos[26] = ''
+        campos[27] = '0'
+        campos[28] = '0'
+        campos[29] = '0'
+        campos[30] = '0'
+        campos[31] = '0'
+        campos[32] = '0,00'
+        campos[33] = '0'
+        campos[34] = '0'
+        campos[35] = ''
+        campos[36] = ''
+        campos[37] = ''
+        campos[38] = '0,00'
+        campos[39] = '0'
+
+    # ------------------------------------------------------------------
+    # 40-61: APVI, APVC, Afiliado Voluntario (todo vacío/cero)
+    # ------------------------------------------------------------------
+    campos[40] = ''       # Código institución APVI
+    campos[41] = ''       # Número contrato APVI
+    campos[42] = '0'      # Forma pago APVI
+    campos[43] = '0'      # Cotización APVI
+    campos[44] = '0'      # Depósitos convenidos
+    campos[45] = ''       # Código institución APVC
+    campos[46] = ''       # Número contrato APVC
+    campos[47] = '0'      # Forma pago APVC
+    campos[48] = '0'      # Cotización trabajador APVC
+    campos[49] = '0'      # Cotización empleador APVC
+    campos[50] = '0'      # RUT afiliado voluntario
+    campos[51] = ''       # DV afiliado voluntario
+    campos[52] = ''       # Apellido paterno afiliado
+    campos[53] = ''       # Apellido materno afiliado
+    campos[54] = ''       # Nombres afiliado
+    campos[55] = '0'      # Código movimiento personal afiliado
+    campos[56] = ''       # Fecha desde
+    campos[57] = ''       # Fecha hasta
+    campos[58] = ''       # Código AFP afiliado
+    campos[59] = '0'      # Monto capitalización voluntaria
+    campos[60] = '0'      # Monto ahorro voluntario
+    campos[61] = '0'      # Número periodos
+
+    # ------------------------------------------------------------------
+    # 62-74: Datos IPS/ISL/Fonasa (no aplica para trabajadores en AFP)
+    # ------------------------------------------------------------------
+    campos[62] = ''       # Código Ex-Caja
+    campos[63] = '0,00'   # Tasa
+    campos[64] = '0'      # Renta IPS
+    campos[65] = '0'      # Cotización IPS
+    campos[66] = '0'      # Renta desahucio
+    campos[67] = ''       # Código Ex-Caja desahucio
+    campos[68] = '0,00'   # Tasa desahucio
+    campos[69] = '0'      # Cotización desahucio
+    campos[70] = '0'      # Cotización Fonasa
+    campos[71] = '0'      # Cotización Acc. Trabajo (ISL)
+    campos[72] = '0'      # Bonificación Ley 15.386
+    campos[73] = '0'      # Descuento cargas IPS
+    campos[74] = '0'      # Bonos de gobierno
+
+    # ------------------------------------------------------------------
+    # 75-82: Datos de Salud
+    # ------------------------------------------------------------------
+    if liquidacion.isapre_nombre:
+        cod_isapre = obtener_codigo_isapre(liquidacion.isapre_nombre)
+        campos[75] = cod_isapre
+        campos[76] = formatear_texto(trab.fun_isapre or '', 16)
+        renta_salud = renta_imponible
+        campos[77] = formatear_monto(renta_salud)
+        campos[78] = '1'  # Moneda pesos
+        cot_pactada = renta_salud * Decimal('0.07') + (liquidacion.diferencia_isapre or 0)
+        campos[79] = formatear_monto(cot_pactada)
+        campos[80] = formatear_monto(renta_salud * Decimal('0.07'))
+        campos[81] = formatear_monto(liquidacion.diferencia_isapre or 0)
+        campos[82] = '0'  # GES
+    else:
+        # Sin Isapre (Fonasa)
+        campos[75] = '07'                     # Código Fonasa
+        campos[76] = ''
+        renta_salud = renta_imponible
+        campos[77] = formatear_monto(renta_salud)
+        campos[78] = '1'
+        campos[79] = '0'
+        campos[80] = formatear_monto(renta_salud * Decimal('0.07'))
+        campos[81] = '0'
+        campos[82] = '0'
+
+    # ------------------------------------------------------------------
+    # 83-91: Datos CCAF (asumimos empresa sin CCAF)
+    # ------------------------------------------------------------------
+    campos[83] = ''       # Código CCAF
+    campos[84] = formatear_monto(renta_imponible)  # Renta CCAF
+    campos[85] = '0'
+    campos[86] = '0'
+    campos[87] = '0'
+    campos[88] = '0'
+    campos[89] = '0'
+    campos[90] = '0'      # Cotización no afiliados a Isapre
+    campos[91] = '0'      # Descuento cargas familiares CCAF
+
+    # ------------------------------------------------------------------
+    # 92: RIMA
+    # ------------------------------------------------------------------
+    campos[92] = '0'
+
+    # ------------------------------------------------------------------
+    # 93: Tipo de Jornada
+    # ------------------------------------------------------------------
+    jornada_map = {'completa': '1', 'parcial': '2', 'turnos': '1'}
+    jornada = jornada_map.get(trab.tipo_jornada, '1')
+    campos[93] = jornada
+
+    # ------------------------------------------------------------------
+    # 94: Cotización Expectativa de Vida (0,9%)
+    # ------------------------------------------------------------------
+    if regimen == 'AFP' and liquidacion.estado != 'ANULADA':
+        expectativa = renta_imponible * Decimal('0.009')
+    else:
+        expectativa = 0
+    campos[94] = formatear_monto(expectativa)
+
+    # ------------------------------------------------------------------
+    # 95: Cotización Rentabilidad Protegida (no vigente)
+    # ------------------------------------------------------------------
+    campos[95] = '0'
+
+    # ------------------------------------------------------------------
+    # 96-99: Datos Mutual (ejemplo ACHS, tasa 0.93%)
+    # ------------------------------------------------------------------
+    campos[96] = '01'                              # Código ACHS
+    renta_mutual = renta_imponible
+    campos[97] = formatear_monto(renta_mutual)
+    tasa_mutual = Decimal('0.0093')
+    campos[98] = formatear_monto(renta_mutual * tasa_mutual)
+    campos[99] = '001'                              # Sucursal (ejemplo)
+
+    # ------------------------------------------------------------------
+    # 100-102: Datos AFC
+    # ------------------------------------------------------------------
+    renta_afc = min(liquidacion.total_imponible, TOPE_SC)
+    campos[100] = formatear_monto(renta_afc)
+    campos[101] = formatear_monto(liquidacion.cotizacion_afc)
+    campos[102] = formatear_monto(liquidacion.afc_empleador or 0)
+
+    # ------------------------------------------------------------------
+    # 103-104: Pagadora de Subsidios
+    # ------------------------------------------------------------------
+    campos[103] = '0'   # RUT pagadora
+    campos[104] = ''    # DV
+
+    # ------------------------------------------------------------------
+    # 105: Centro de Costos
+    # ------------------------------------------------------------------
+    centro = trab.centro_costo_nombre or ''
+    campos[105] = formatear_texto(centro, 20)
+
+    # Unir con punto y coma
+    linea = ';'.join(campos[1:106])
+    return linea
+
+
+@login_required
+def exportar_nomina_previred(request, alias, periodo_id):
+    """
+    Genera archivo de nómina de trabajadores en formato Previred (largo variable por separador, 105 campos)
+    para el período indicado.
+    """
+    empresa = get_object_or_404(Empresa, slug=alias)
+    periodo = get_object_or_404(Periodo, id=periodo_id, empresa=empresa)
+
+    liquidaciones = Liquidacion.objects.filter(periodo=periodo).select_related('trabajador')
+
+    buffer = io.StringIO()
+    for liq in liquidaciones:
+        linea = generar_linea_previred(liq)
+        buffer.write(linea + '\n')
+
+    contenido = buffer.getvalue()
+    buffer.close()
+
+    nombre_archivo = f"nomina_{periodo.mes:02d}{periodo.anio}.txt"
+    response = HttpResponse(contenido, content_type='text/plain')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response

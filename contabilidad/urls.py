@@ -57,7 +57,7 @@ urlpatterns = [
     path('<slug:alias>/centros-costo/<int:pk>/editar/', views.CentroCostoUpdateView.as_view(), name='centro_costo_update'),
     path('<slug:alias>/centros-costo/<int:pk>/eliminar/', views.CentroCostoDeleteView.as_view(), name='centro_costo_delete'),
     path('<slug:alias>/liquidaciones/ver-pdf/<int:periodo_id>/<int:trabajador_id>/',views.ver_liquidacion_pdf,name='ver_liquidacion_pdf'),
-
+    path('<str:alias>/exportar-nomina-previred/<int:periodo_id>/', views.exportar_nomina_previred, name='exportar_nomina_previred'),
 
 
 ]

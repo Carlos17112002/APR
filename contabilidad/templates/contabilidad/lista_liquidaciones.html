@@ -176,6 +176,9 @@
             </form>
         </div>
 
+
+        
+
         <!-- Estadísticas (calculadas en la vista) -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-xl shadow p-6 text-center">
@@ -199,6 +202,11 @@
         <!-- Tabla de Trabajadores -->
         <div class="bg-white rounded-xl shadow overflow-hidden">
             <div class="overflow-x-auto">
+                <div class="h-px bg-gray-200 my-6">
+                    <a href="{% url 'exportar_nomina_previred' alias=alias periodo_id=periodo.id %}" class="btn btn-primary">
+                        Descargar Nómina Previred
+                    </a>
+                </div>
                 <table class="w-full">
                     <thead class="bg-gray-50">
                         <tr>

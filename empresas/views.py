@@ -51,15 +51,15 @@ def panel_empresa(request, slug):
     try:
         # 1. Obtener la empresa desde la base de datos DEFAULT
         empresa = Empresa.objects.get(slug=slug)
-        
+
         # 2. Verificar que la base de datos de la empresa existe
         alias = f'db_{slug}'
         db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
-        
+
         if not os.path.exists(db_path):
             messages.error(request, 'La base de datos de la empresa no existe')
             return redirect('dashboard_admin_ssr')
-        
+
         # 3. Verificar que podemos conectarnos a la BD de la empresa
         try:
             from django.db import connections
@@ -67,123 +67,105 @@ def panel_empresa(request, slug):
         except Exception as e:
             messages.error(request, f'No se puede conectar a la base de datos: {str(e)}')
             return redirect('dashboard_admin_ssr')
-        
+
         # 4. Importar modelos DINÁMICAMENTE para la base de datos de la empresa
         from clientes.models import Cliente
         from lecturas.models import LecturaMovil
         from avisos.models import Aviso
         from faq.models import PreguntaFrecuente
         from boletas.models import Boleta
-        
-        # Usar .using(alias) para consultar en la BD de la empresa
+
+        # ========== DATOS BÁSICOS ==========
         total_clientes = Cliente.objects.using(alias).count()
-        
-        # Obtener el mes y año actual
+
         ahora = timezone.now()
         mes_actual = ahora.month
         anio_actual = ahora.year
         hoy = ahora.date()
-        
-        # 5. Lecturas del mes actual (CON DATOS REALES)
+
+        # Lecturas del mes actual
         lecturas_mes = LecturaMovil.objects.using(alias).filter(
             fecha_lectura__month=mes_actual,
             fecha_lectura__year=anio_actual,
             empresa_slug=slug
         ).count()
-        
-        # 6. Avisos activos
+
+        # Avisos activos
         avisos_activos = Aviso.objects.using(alias).filter(activo=True).count()
-        
-        # 7. Preguntas frecuentes
+
+        # Preguntas frecuentes
         total_faq = PreguntaFrecuente.objects.using(alias).count()
-        
-        # === CÁLCULOS PARA GRÁFICOS CON DATOS REALES ===
-        
-        # 8. Cálculo de consumo mensual total (USANDO LECTURAS)
+
+        # ========== CONSUMO TOTAL MES ==========
         try:
-            # Sumar consumo de todas las lecturas del mes actual
             consumo_total_mes_result = LecturaMovil.objects.using(alias).filter(
                 fecha_lectura__month=mes_actual,
                 fecha_lectura__year=anio_actual,
                 empresa_slug=slug,
                 consumo__isnull=False
             ).aggregate(total=Sum('consumo'))
-            
             consumo_total_mes = consumo_total_mes_result['total'] or Decimal('0')
-            
         except Exception as e:
             print(f"Error cálculo consumo_total_mes: {e}")
             consumo_total_mes = Decimal('0')
-        
-        # 9. Variación de consumo vs mes anterior (USANDO LECTURAS)
+
+        # ========== VARIACIÓN VS MES ANTERIOR ==========
         try:
-            # Calcular mes anterior
             if mes_actual == 1:
                 mes_anterior = 12
                 anio_anterior = anio_actual - 1
             else:
                 mes_anterior = mes_actual - 1
                 anio_anterior = anio_actual
-            
-            # Consumo del mes anterior
+
             consumo_mes_anterior_result = LecturaMovil.objects.using(alias).filter(
                 fecha_lectura__month=mes_anterior,
                 fecha_lectura__year=anio_anterior,
                 empresa_slug=slug,
                 consumo__isnull=False
             ).aggregate(total=Sum('consumo'))
-            
             consumo_mes_anterior = consumo_mes_anterior_result['total'] or Decimal('0')
-            
-            # Calcular variación porcentual
+
             if consumo_mes_anterior > 0:
-                variacion_consumo = float(
-                    ((consumo_total_mes - consumo_mes_anterior) / consumo_mes_anterior) * 100
-                )
+                variacion_consumo = float(((consumo_total_mes - consumo_mes_anterior) / consumo_mes_anterior) * 100)
             else:
                 variacion_consumo = 100.0 if consumo_total_mes > 0 else 0.0
-                
         except Exception as e:
             print(f"Error cálculo variación: {e}")
             variacion_consumo = 0.0
-        
-        # 10. Estado de lecturas (CON DATOS REALES DEL MODELO)
+
+        # ========== ESTADO DE LECTURAS ==========
         try:
-            # Lecturas completadas (estado = 'cargada' o 'procesada')
             lecturas_completadas = LecturaMovil.objects.using(alias).filter(
                 fecha_lectura__month=mes_actual,
                 fecha_lectura__year=anio_actual,
                 empresa_slug=slug,
                 estado__in=['cargada', 'procesada']
             ).count()
-            
-            # Lecturas pendientes (estado = 'pendiente')
+
             lecturas_pendientes = LecturaMovil.objects.using(alias).filter(
                 fecha_lectura__month=mes_actual,
                 fecha_lectura__year=anio_actual,
                 empresa_slug=slug,
                 estado='pendiente'
             ).count()
-            
-            # Calcular porcentaje
+
             total_lecturas_estado = lecturas_completadas + lecturas_pendientes
             if total_lecturas_estado > 0:
                 porcentaje_lecturas_completadas = (lecturas_completadas / total_lecturas_estado) * 100
             else:
                 porcentaje_lecturas_completadas = 0
-                
         except Exception as e:
             print(f"Error cálculo estado lecturas: {e}")
             lecturas_completadas = 0
-            lecturas_pendientes = lecturas_mes
+            lecturas_pendientes = 0
             porcentaje_lecturas_completadas = 0
-        
-        # 11. Hora pico de consumo (para SSR simplificado)
-        hora_pico_consumo = "10:00"
-        
-        # 12. Top 10 consumidores (USANDO LECTURAS REALES)
+
+        # ========== HORA PICO (simulado) ==========
+        hora_pico_consumo = "10:00"  # Puedes calcularlo si tienes datos horarios
+
+        # ========== TOP 10 CONSUMIDORES ==========
         try:
-            # Obtener los clientes con mayor consumo en el mes
             top_consumidores_data = LecturaMovil.objects.using(alias).filter(
                 fecha_lectura__month=mes_actual,
                 fecha_lectura__year=anio_actual,
@@ -193,8 +175,7 @@ def panel_empresa(request, slug):
             ).values('cliente').annotate(
                 total_consumo=Sum('consumo')
             ).order_by('-total_consumo')[:10]
-            
-            # Obtener detalles de los clientes
+
             top_consumidores = []
             for item in top_consumidores_data:
                 try:
@@ -205,196 +186,126 @@ def panel_empresa(request, slug):
                     })
                 except Cliente.DoesNotExist:
                     continue
-            
-            # Calcular total del top 10
+
             consumo_top10 = sum(item['consumo'] for item in top_consumidores)
-            
         except Exception as e:
             print(f"Error top consumidores: {e}")
             top_consumidores = []
             consumo_top10 = Decimal('0')
-        
-        # 13. Datos para gráfico de consumo histórico (ÚLTIMOS 12 MESES)
+
+        # ========== CONSUMO HISTÓRICO (últimos 12 meses) ==========
         try:
-            # Obtener consumo por mes para los últimos 12 meses desde LECTURAS
             fecha_inicio = ahora - timedelta(days=365)
-            
-            # Consulta optimizada para SQLite con datos de lecturas
+
+            # Corregido: uso de strftime con formato correcto para SQLite
             consumo_historico = LecturaMovil.objects.using(alias).filter(
                 fecha_lectura__gte=fecha_inicio,
                 empresa_slug=slug,
                 consumo__isnull=False
             ).extra({
-                'month': "strftime('%m', fecha_lectura)",
-                'year': "strftime('%Y', fecha_lectura)"
+                'month': "strftime('%%m', fecha_lectura)",  # Doble % para escapar
+                'year': "strftime('%%Y', fecha_lectura)"
             }).values('year', 'month').annotate(
                 total_consumo=Sum('consumo')
             ).order_by('year', 'month')
-            
-            # Preparar datos para el gráfico
+
+            meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                             'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
             meses_grafico = []
             consumo_mensual = []
-            
-            # Diccionario de meses en español
-            meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
-                            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-            
-            # Crear un diccionario para fácil acceso
+
             consumo_dict = {}
             for item in consumo_historico:
                 key = f"{item['year']}-{int(item['month']):02d}"
                 consumo_dict[key] = float(item['total_consumo'] or 0)
-            
-            # Generar secuencia de últimos 12 meses
+
             for i in range(11, -1, -1):
-                fecha = ahora - timedelta(days=30*i)
+                fecha = ahora - timedelta(days=30 * i)
                 mes_num = fecha.month
                 anio_num = fecha.year
                 mes_nombre = meses_espanol[mes_num - 1]
                 anio_corto = str(anio_num)[2:]
-                
                 meses_grafico.append(f"{mes_nombre} '{anio_corto}")
-                
-                # Buscar consumo en el diccionario
+
                 key = f"{anio_num}-{mes_num:02d}"
                 consumo_mes = consumo_dict.get(key, 0.0)
                 consumo_mensual.append(consumo_mes)
-                
         except Exception as e:
             print(f"Error histórico consumo: {e}")
-            # Datos de ejemplo si hay error
-            meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
-                            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-            meses_grafico = [f"{mes} '{str(ahora.year)[2:]}" for mes in meses_espanol]
-            # Generar datos realistas basados en el consumo actual
-            base_consumo = float(consumo_total_mes) if consumo_total_mes > 0 else 1000
-            consumo_mensual = [
-                base_consumo * 0.8, base_consumo * 0.85, base_consumo * 0.9,
-                base_consumo * 0.75, base_consumo, base_consumo * 1.1,
-                base_consumo * 0.9, base_consumo * 1.05, base_consumo * 1.15,
-                base_consumo * 1.1, base_consumo * 1.0, base_consumo * 0.95
-            ]
-        
-        # 14. Distribución por sector (USANDO SECTORES DE LA EMPRESA Y CLIENTES)
+            meses_grafico = []
+            consumo_mensual = []
+
+        # ========== DISTRIBUCIÓN POR SECTOR ==========
         try:
-            # Obtener sectores configurados en la empresa
-            sectores_empresa = empresa.sectores()  # Esto viene del campo sectores_json
-            
-            # Agrupar clientes por sector
+            sectores_empresa = empresa.sectores()  # viene del modelo
+
+            # CORRECCIÓN: Reemplazar sector__ne por exclude
             clientes_por_sector = Cliente.objects.using(alias).filter(
-                sector__isnull=False,
-                sector__ne=''
-            ).values('sector').annotate(
+                sector__isnull=False
+            ).exclude(sector='').values('sector').annotate(
                 total=Count('id')
             ).order_by('-total')
-            
-            # Preparar datos para gráfico
+
             distribucion_sectores = []
-            
             if sectores_empresa:
-                # Usar sectores definidos en la empresa como base
                 for sector in sectores_empresa:
-                    # Buscar si hay clientes en este sector
-                    clientes_sector = next((item for item in clientes_por_sector 
-                                          if item['sector'].strip().lower() == sector.strip().lower()), None)
-                    
-                    total = clientes_sector['total'] if clientes_sector else 0
-                    
-                    # Calcular porcentaje
+                    encontrado = next((item for item in clientes_por_sector
+                                       if item['sector'].strip().lower() == sector.strip().lower()), None)
+                    total = encontrado['total'] if encontrado else 0
                     porcentaje = (total / total_clientes * 100) if total_clientes > 0 else 0
-                    
                     distribucion_sectores.append({
                         'tipo': sector,
                         'total': total,
                         'porcentaje': round(porcentaje, 1)
                     })
             else:
-                # Si no hay sectores configurados, usar sectores de los clientes
                 for item in clientes_por_sector:
                     sector = item['sector']
                     total = item['total']
                     porcentaje = (total / total_clientes * 100) if total_clientes > 0 else 0
-                    
                     distribucion_sectores.append({
                         'tipo': sector,
                         'total': total,
                         'porcentaje': round(porcentaje, 1)
                     })
-            
-            # Si no hay datos de sectores, mostrar distribución simple
-            if not distribucion_sectores:
-                # Agrupar por primeros caracteres de la dirección
-                clientes_por_zona = Cliente.objects.using(alias).filter(
-                    direccion__isnull=False
-                ).extra({
-                    'zona': "SUBSTR(direccion, 1, 3)"
-                }).values('zona').annotate(
-                    total=Count('id')
-                ).order_by('-total')[:5]
-                
-                for item in clientes_por_zona:
-                    zona = item['zona'] or 'Sin zona'
-                    total = item['total']
-                    porcentaje = (total / total_clientes * 100) if total_clientes > 0 else 0
-                    
-                    distribucion_sectores.append({
-                        'tipo': f"Zona {zona}",
-                        'total': total,
-                        'porcentaje': round(porcentaje, 1)
-                    })
-            
-            # Limitar a top 5 sectores y agrupar el resto como "Otros"
+
+            # Limitar a top 5 y agrupar "Otros"
             if len(distribucion_sectores) > 5:
                 top_5 = distribucion_sectores[:5]
                 otros_total = sum(item['total'] for item in distribucion_sectores[5:])
                 otros_porcentaje = sum(item['porcentaje'] for item in distribucion_sectores[5:])
-                
                 distribucion_sectores = top_5 + [{
                     'tipo': 'Otros',
                     'total': otros_total,
                     'porcentaje': round(otros_porcentaje, 1)
                 }]
-                
         except Exception as e:
             print(f"Error distribución sectores: {e}")
-            # Datos de ejemplo basados en sectores comunes
-            distribucion_sectores = [
-                {'tipo': 'Centro', 'total': 45, 'porcentaje': 45.0},
-                {'tipo': 'Norte', 'total': 25, 'porcentaje': 25.0},
-                {'tipo': 'Sur', 'total': 15, 'porcentaje': 15.0},
-                {'tipo': 'Este', 'total': 10, 'porcentaje': 10.0},
-                {'tipo': 'Oeste', 'total': 5, 'porcentaje': 5.0},
-            ]
-        
-        # 15. Datos para tendencia anual (consumo vs lecturas completadas)
+            distribucion_sectores = []  # Vacío, sin datos falsos
+
+        # ========== TENDENCIA ANUAL (consumo vs lecturas) ==========
         try:
-            # Obtener tendencia de consumo (ya calculado)
-            tendencia_consumo = consumo_mensual[-12:]  # Últimos 12 meses
-            
+            tendencia_consumo = consumo_mensual[-12:] if consumo_mensual else []
+
             # Calcular tendencia de lecturas completadas por mes
             tendencia_lecturas = []
             for i in range(11, -1, -1):
-                fecha = ahora - timedelta(days=30*i)
+                fecha = ahora - timedelta(days=30 * i)
                 mes_num = fecha.month
                 anio_num = fecha.year
-                
                 lecturas_mes_historico = LecturaMovil.objects.using(alias).filter(
                     fecha_lectura__month=mes_num,
                     fecha_lectura__year=anio_num,
                     empresa_slug=slug,
                     estado__in=['cargada', 'procesada']
                 ).count()
-                
                 tendencia_lecturas.append(lecturas_mes_historico)
-                
         except Exception as e:
             print(f"Error tendencia: {e}")
-            tendencia_consumo = consumo_mensual
-            # Simular crecimiento de lecturas
-            base_lecturas = max(lecturas_completadas - 5, 0)
-            tendencia_lecturas = [max(0, base_lecturas + i) for i in range(12)]
-        
-        # 16. Consumo promedio por cliente
+            tendencia_consumo = []
+            tendencia_lecturas = []
+
+        # ========== CONSUMO PROMEDIO POR CLIENTE ==========
         try:
             if total_clientes > 0:
                 consumo_promedio = float(consumo_total_mes) / total_clientes
@@ -402,49 +313,80 @@ def panel_empresa(request, slug):
                 consumo_promedio = 0
         except:
             consumo_promedio = 0
-        
-        # 17. Rendimiento del mes (porcentaje de tiempo transcurrido)
+
+        # ========== RENDIMIENTO DEL MES (días transcurridos) ==========
         dia_actual = hoy.day
         dias_en_mes = calendar.monthrange(anio_actual, mes_actual)[1]
         rendimiento_mes = (dia_actual / dias_en_mes) * 100
-        
-        # 18. Datos existentes de helpers
+
+        # ========== HELPERS (con manejo de errores individual) ==========
+        from .helpers import (
+            obtener_certificado_firma,
+            obtener_estado_folios,
+            obtener_tasa_interes,
+            obtener_reajuste_sii,
+            obtener_contratos_corte,
+            obtener_detalle_recaudacion,
+            obtener_produccion_consumo,
+            obtener_puntos_lectura
+        )
+
+        # Cada helper se llama dentro de su propio try/except
         try:
-            from .helpers import (
-                obtener_certificado_firma,
-                obtener_estado_folios,
-                obtener_tasa_interes,
-                obtener_reajuste_sii,
-                obtener_contratos_corte,
-                obtener_detalle_recaudacion,
-                obtener_produccion_consumo,
-                obtener_puntos_lectura
-            )
-            
-            firma = obtener_certificado_firma(alias)
-            folios = obtener_estado_folios(alias)
-            interes = obtener_tasa_interes(alias)
-            reajuste = obtener_reajuste_sii(alias)
+            # CORRECCIÓN: obtener_certificado_firma no recibe argumento
+            firma = obtener_certificado_firma()
+        except Exception as e:
+            print(f"Error helper firma: {e}")
+            firma = None
+
+        try:
+            folios = obtener_estado_folios()
+        except Exception as e:
+            print(f"Error helper folios: {e}")
+            folios = []
+
+        try:
+            interes = obtener_tasa_interes()
+        except Exception as e:
+            print(f"Error helper interés: {e}")
+            interes = None
+
+        try:
+            reajuste = obtener_reajuste_sii()
+        except Exception as e:
+            print(f"Error helper reajuste: {e}")
+            reajuste = None
+
+        try:
             contratos_corte = obtener_contratos_corte(alias)
+        except Exception as e:
+            print(f"Error helper contratos corte: {e}")
+            contratos_corte = []
+
+        try:
             pagos = obtener_detalle_recaudacion(alias, date.today())
+        except Exception as e:
+            print(f"Error helper recaudación: {e}")
+            pagos = []
+
+        try:
             meses, produccion, consumo = obtener_produccion_consumo(alias)
+        except Exception as e:
+            print(f"Error helper producción/consumo: {e}")
+            meses, produccion, consumo = [], [], []
+
+        try:
             puntos_lectura = obtener_puntos_lectura(alias)
         except Exception as e:
-            print(f"Error helpers: {e}")
-            messages.warning(request, f'Algunos datos no están disponibles: {str(e)}')
-            firma = folios = interes = reajuste = None
-            contratos_corte = pagos = puntos_lectura = []
-            meses, produccion, consumo = [], [], []
-        
-        # 19. Preparar datos para tabla top consumidores en template
+            print(f"Error helper puntos lectura: {e}")
+            puntos_lectura = []
+
+        # ========== PREPARAR TOP CONSUMIDORES PARA TEMPLATE ==========
         top_consumidores_template = []
         for idx, item in enumerate(top_consumidores[:10], 1):
             cliente = item['cliente']
             consumo_cliente = item['consumo']
-            
-            # Calcular porcentaje del total
             porcentaje_total = (float(consumo_cliente) / float(consumo_total_mes) * 100) if consumo_total_mes > 0 else 0
-            
             top_consumidores_template.append({
                 'posicion': idx,
                 'nombre': cliente.nombre,
@@ -453,12 +395,10 @@ def panel_empresa(request, slug):
                 'consumo': float(consumo_cliente),
                 'porcentaje': round(porcentaje_total, 1)
             })
-        
-        # 20. También obtener datos para gráfico de sectores (formato para JavaScript)
-        # Preparar datos JSON para el template
-        sectores_para_json = []
+
+        # ========== PREPARAR SECTORES PARA JSON ==========
         colores_base = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#f97316']
-        
+        sectores_para_json = []
         for idx, item in enumerate(distribucion_sectores):
             color_idx = idx % len(colores_base)
             sectores_para_json.append({
@@ -467,10 +407,9 @@ def panel_empresa(request, slug):
                 'porcentaje': item['porcentaje'],
                 'color': colores_base[color_idx]
             })
-        
-        # 21. Renderizar el template con todas las variables
+
+        # ========== CONTEXTO FINAL ==========
         context = {
-            # Variables existentes
             'empresa': empresa,
             'slug': slug,
             'total_clientes': total_clientes,
@@ -489,8 +428,8 @@ def panel_empresa(request, slug):
             'consumo': consumo,
             'puntos_lectura': puntos_lectura,
             'db_existe': os.path.exists(db_path),
-            
-            # === NUEVAS VARIABLES PARA GRÁFICOS ===
+
+            # Variables para gráficos (siempre listas, nunca datos falsos)
             'consumo_total_mes': float(consumo_total_mes),
             'variacion_consumo': round(variacion_consumo, 1),
             'porcentaje_lecturas_completadas': round(porcentaje_lecturas_completadas, 0),
@@ -506,22 +445,18 @@ def panel_empresa(request, slug):
             'tendencia_lecturas': json.dumps(tendencia_lecturas),
             'consumo_promedio': round(consumo_promedio, 2),
             'rendimiento_mes': round(rendimiento_mes, 1),
-            
-            # Fecha actual para referencia
+
             'hoy': hoy,
             'dia_actual': dia_actual,
             'dias_en_mes': dias_en_mes,
-            
-            # Sectores de la empresa (para referencia)
             'sectores_empresa': empresa.sectores(),
         }
-        
+
         return render(request, 'admin_ssr/panel_empresa.html', context)
-        
+
     except Empresa.DoesNotExist:
         messages.error(request, f'La empresa "{slug}" no existe')
         return redirect('dashboard_admin_ssr')
-    
     except Exception as e:
         messages.error(request, f'Error al acceder al panel: {str(e)}')
         import traceback
