@@ -7,7 +7,7 @@ from empresas.models import Empresa
 
 def avisos_view(request, slug):
     alias = f'db_{slug}'
-    empresa = get_object_or_404(Empresa.objects.using(alias), slug=slug)
+    empresa = get_object_or_404(Empresa.objects.using(alias), alias=slug)
 
     if request.method == 'POST':
         titulo = request.POST.get('titulo')

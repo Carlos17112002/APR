@@ -344,15 +344,17 @@
             font-size: 0.875rem;
         }
 
-        /* Tabla de dispositivos */
+        /* Tabla de dispositivos - MEJORADA PARA RESPONSIVE */
         .table-container {
             background: white;
             border-radius: var(--radius-lg);
             border: 1px solid var(--gray-200);
-            overflow: hidden;
+            overflow-x: auto;  /* Cambiado de 'hidden' a 'auto' para permitir scroll horizontal */
+            -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
         }
         .table {
             margin-bottom: 0;
+            min-width: 800px; /* Ancho mínimo para que las columnas no se compriman demasiado */
         }
         .table th {
             background: var(--gray-50);
@@ -371,12 +373,29 @@
             border-bottom: 1px solid var(--gray-200);
             color: var(--gray-700);
             font-size: 0.875rem;
+            white-space: nowrap; /* Evita que el texto se rompa en varias líneas */
         }
         .table tbody tr:hover {
             background-color: var(--gray-50);
         }
         .table tbody tr:last-child td {
             border-bottom: none;
+        }
+
+        /* Ajustes para pantallas muy pequeñas */
+        @media (max-width: 576px) {
+            .table th,
+            .table td {
+                padding: 0.75rem 1rem;  /* Reducir padding */
+                font-size: 0.8rem;       /* Texto más pequeño */
+            }
+            .table {
+                min-width: 700px; /* Aún permite scroll, pero con menos ancho */
+            }
+            .badge {
+                font-size: 0.7rem;
+                padding: 0.25rem 0.5rem;
+            }
         }
 
         /* Indicador de estado */
@@ -473,7 +492,7 @@
             gap: 0.25rem;
         }
 
-        /* Responsive */
+        /* Responsive general */
         @media (max-width: 768px) {
             .company-header {
                 padding: 1.5rem;

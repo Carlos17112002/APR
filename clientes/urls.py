@@ -23,5 +23,5 @@ urlpatterns = [
     # API para obtener clientes con coordenadas (para mapas)
     path('<slug:alias>/lecturas/ruta/', views.clientes_por_alias, name='lecturas_ruta'),
 
-    
+    path('<slug:alias>/clientes/<int:cliente_id>/boleta/', views.ver_boleta_cliente, name='ver_boleta_cliente'),
 ]

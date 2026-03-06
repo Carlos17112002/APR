@@ -67,21 +67,27 @@ def crear_cliente(request, alias):
     })
 
 
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from empresas.models import Empresa
+from clientes.models import Cliente
+from boletas.models import Boleta
+
 def listado_clientes(request, alias):
-    """
-    Lista todos los clientes de una empresa, con filtros opcionales.
-    """
     slug = alias
     alias_db = f'db_{slug}'
-    empresa = Empresa.objects.get(slug=slug)          # desde base default
-    sectores = empresa.sectores()
+    empresa = get_object_or_404(Empresa, slug=slug)
 
+    # Obtener sectores (suponiendo que empresa.sectores() es un método que devuelve lista)
+    sectores = empresa.sectores()  # Asegúrate de que este método existe
+
+    # Obtener clientes desde la base de datos de la empresa
     clientes = Cliente.objects.using(alias_db).all()
 
+    # Filtros
     sector = request.GET.get('sector')
     rut = request.GET.get('rut')
     nombre = request.GET.get('nombre')
-
     if sector:
         clientes = clientes.filter(sector=sector)
     if rut:
@@ -91,12 +97,32 @@ def listado_clientes(request, alias):
 
     clientes = clientes.order_by('nombre')
 
-    return render(request, 'listado_clientes.html', {
+    # Obtener mes y año actual
+    hoy = timezone.now()
+    mes_actual = hoy.month
+    año_actual = hoy.year
+
+    # Obtener IDs de clientes que tienen boleta en el mes actual (en la base por defecto)
+    boletas_del_mes = Boleta.objects.filter(
+        empresa_slug=empresa.slug,
+        fecha_emision__year=año_actual,
+        fecha_emision__month=mes_actual
+    ).values_list('cliente_id', flat=True)
+
+    # Convertir a set para búsqueda eficiente
+    clientes_con_boleta = set(boletas_del_mes)
+
+    # Añadir atributo a cada cliente
+    for cliente in clientes:
+        cliente.boleta_mes = cliente.id in clientes_con_boleta
+
+    context = {
         'empresa': empresa,
         'slug': slug,
         'clientes': clientes,
         'sectores': sectores,
-    })
+    }
+    return render(request, 'listado_clientes.html', context)
 
 
 def detalle_cliente(request, alias, cliente_id):
@@ -284,3 +310,116 @@ def clientes_por_alias(request, alias):
         return JsonResponse(data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from boletas.models import Boleta
+from empresas.models import Empresa
+
+def ver_boleta_cliente(request, alias, cliente_id):
+    empresa = get_object_or_404(Empresa, slug=alias)
+    hoy = timezone.now()
+    boleta = get_object_or_404(
+        Boleta,
+        empresa_slug=empresa.slug,
+        cliente_id=cliente_id,
+        fecha_emision__year=hoy.year,
+        fecha_emision__month=hoy.month
+    )
+    # Aquí renderizas el template de la boleta (debes crearlo)
+    return render(request, 'boletas/detalle_boleta.html', {
+        'boleta': boleta,
+        'empresa': empresa
+    })
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.utils import timezone
+from decimal import Decimal
+from boletas.models import Boleta
+from clientes.models import Cliente
+from lecturas.models import LecturaMovil
+from empresas.models import Empresa
+from boletas.helpers import generar_boletas_por_alias  # si quieres usar la función masiva
+
+def generar_boleta_individual(request, empresa_slug, cliente_id, lectura_id=None):
+    """
+    Genera una boleta para un cliente específico.
+    Si se proporciona lectura_id, la asocia; si no, calcula con la última lectura.
+    """
+    empresa = get_object_or_404(Empresa, slug=empresa_slug)
+    
+    # Obtener cliente desde la base de datos de la empresa
+    alias_db = f'db_{empresa_slug}'
+    cliente = Cliente.objects.using(alias_db).get(id=cliente_id)
+    
+    # Si se proporciona lectura_id, verificar que exista
+    lectura = None
+    if lectura_id:
+        lectura = LecturaMovil.objects.using(alias_db).get(id=lectura_id, cliente_id=cliente_id)
+    
+    # Verificar si ya existe una boleta para este período (mes actual)
+    hoy = timezone.now()
+    mes_actual = hoy.month
+    año_actual = hoy.year
+    periodo_str = f"{año_actual}-{mes_actual:02d}"
+    
+    # Buscar boleta existente (usando la base de datos default donde están las boletas)
+    boleta_existente = Boleta.objects.filter(
+        empresa_slug=empresa_slug,
+        cliente_id=cliente_id,
+        periodo=periodo_str
+    ).first()
+    
+    if boleta_existente:
+        messages.warning(request, f"Ya existe una boleta para {cliente.nombre} en el período {periodo_str}.")
+        return redirect('ver_boleta', boleta_id=boleta_existente.id)
+    
+    # Calcular consumo
+    # Si no hay lectura, usar la última lectura registrada
+    if not lectura:
+        # Obtener la última lectura (podrías tener un método en el modelo)
+        lectura = LecturaMovil.objects.using(alias_db).filter(
+            cliente_id=cliente_id
+        ).order_by('-fecha_lectura').first()
+        if not lectura:
+            messages.error(request, "No hay lecturas para este cliente.")
+            return redirect('listado_clientes', alias=empresa_slug)
+    
+    # Obtener lectura anterior (la penúltima)
+    lectura_anterior = LecturaMovil.objects.using(alias_db).filter(
+        cliente_id=cliente_id
+    ).exclude(id=lectura.id).order_by('-fecha_lectura').first()
+    
+    valor_anterior = lectura_anterior.valor if lectura_anterior else 0
+    valor_actual = lectura.valor
+    consumo = valor_actual - valor_anterior
+    if consumo < 0:
+        consumo = 0  # o manejar reinicio de medidor
+    
+    # Calcular montos (esto debería estar en una función de negocio)
+    tarifa_m3 = Decimal('500')  # ejemplo, debería venir de configuración
+    cargo_fijo = Decimal('2000')
+    monto_consumo = consumo * tarifa_m3
+    total = monto_consumo + cargo_fijo
+    
+    # Crear boleta
+    boleta = Boleta.objects.create(
+        cliente_id=cliente_id,
+        empresa_slug=empresa_slug,
+        lectura_id=lectura.id,
+        periodo=periodo_str,
+        fecha_vencimiento=hoy.replace(day=10) + timezone.timedelta(days=30),  # ejemplo
+        lectura_anterior=valor_anterior,
+        lectura_actual=valor_actual,
+        consumo=consumo,
+        monto_consumo=monto_consumo,
+        cargo_fijo=cargo_fijo,
+        otros_cargos=0,
+        total=total,
+        estado='generada',
+        codigo_barras='',  # generar si es necesario
+    )
+    
+    messages.success(request, f"Boleta generada para {cliente.nombre} por ${total}.")
+    return redirect('ver_boleta', boleta_id=boleta.id)

@@ -122,33 +122,54 @@ class ConfigAppMovil(models.Model):
             self.max_lecturas_pendientes = 1000
             
         super().save(*args, **kwargs)
-# Tu modelo DispositivoMovil ya existe, solo actualízalo:
+# lecturas/models.py
+import uuid
+from django.db import models
+from django.contrib.auth.hashers import make_password, check_password
+from empresas.models import Empresa
+
 class DispositivoMovil(models.Model):
-    """Dispositivos móviles autorizados por empresa"""
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='dispositivos')
-    identificador = models.CharField(max_length=255, unique=True)
+    
+    # Nuevos campos para autenticación con usuario/contraseña
+    usuario = models.CharField(max_length=50, help_text="Nombre de usuario para el dispositivo")
+    password = models.CharField(max_length=128, help_text="Contraseña hasheada")
+    
+    # Campos existentes (algunos ahora opcionales)
+    identificador = models.CharField(max_length=255, blank=True, null=True, unique=True,
+                                     help_text="Identificador interno (opcional, se autogenera si no se provee)")
     nombre_dispositivo = models.CharField(max_length=100, default='Dispositivo Móvil')
     token_acceso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     activo = models.BooleanField(default=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     ultima_conexion = models.DateTimeField(auto_now=True)
     
-    # Campos extendidos
     modelo = models.CharField(max_length=100, blank=True)
     sistema_operativo = models.CharField(max_length=50, blank=True)
     version_app = models.CharField(max_length=20, default='1.0.0')
-    usuario_asignado = models.CharField(max_length=100, blank=True)
-    
+    usuario_asignado = models.CharField(max_length=100, blank=True)  # campo redundante? puedes eliminarlo si no se usa
+
     class Meta:
+        unique_together = ('empresa', 'usuario')  # usuario único por empresa
         verbose_name = "Dispositivo Móvil"
         verbose_name_plural = "Dispositivos Móviles"
-    
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password)
+
     def renovar_token(self):
-        """Renueva el token de acceso"""
-        import uuid
         self.token_acceso = uuid.uuid4()
         self.save()
         return self.token_acceso
-    
+
+    def save(self, *args, **kwargs):
+        # Autogenerar identificador si no se proporciona
+        if not self.identificador:
+            self.identificador = f"dev_{self.empresa.slug}_{self.usuario}_{uuid.uuid4().hex[:8]}"
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.nombre_dispositivo} - {self.empresa.nombre}"
+        return f"{self.usuario} - {self.empresa.nombre}"

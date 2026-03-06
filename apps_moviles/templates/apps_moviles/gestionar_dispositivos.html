@@ -382,7 +382,7 @@
             </div>
         </div>
 
-        <!-- Formulario de registro -->
+        <!-- Formulario de registro (ACTUALIZADO) -->
         <div class="form-card">
             <div class="form-title">
                 <i class="bi bi-plus-circle"></i>
@@ -392,13 +392,17 @@
                 {% csrf_token %}
                 <input type="hidden" name="action" value="crear">
                 <div class="row g-3">
-                    <div class="col-md-5">
-                        <label class="form-label fw-500">Nombre del dispositivo *</label>
-                        <input type="text" class="form-control" name="nombre" placeholder="Ej: Samsung Galaxy S21" required>
+                    <div class="col-md-3">
+                        <label class="form-label fw-500">Usuario *</label>
+                        <input type="text" class="form-control" name="usuario" placeholder="Ej: operador1" required>
                     </div>
-                    <div class="col-md-5">
-                        <label class="form-label fw-500">Identificador único (opcional)</label>
-                        <input type="text" class="form-control" name="identificador" placeholder="Auto-generado si se deja vacío">
+                    <div class="col-md-3">
+                        <label class="form-label fw-500">Contraseña *</label>
+                        <input type="password" class="form-control" name="password" placeholder="••••••••" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-500">Nombre del dispositivo</label>
+                        <input type="text" class="form-control" name="nombre" placeholder="Ej: Tablet Samsung">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary w-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
@@ -406,10 +410,11 @@
                         </button>
                     </div>
                 </div>
+                <small class="text-muted">El identificador interno se generará automáticamente.</small>
             </form>
         </div>
 
-        <!-- Listado de dispositivos en tarjetas -->
+        <!-- Listado de dispositivos en tarjetas (ACTUALIZADO) -->
         {% if dispositivos %}
             <div class="devices-grid">
                 {% for dispositivo in dispositivos %}
@@ -426,9 +431,15 @@
                         {% endif %}
                     </div>
                     <div class="device-body">
+                        <!-- Nuevo: mostrar usuario -->
                         <div class="info-row">
-                            <span class="info-label">Identificador:</span>
-                            <span class="info-value"><code>{{ dispositivo.identificador }}</code></span>
+                            <span class="info-label">Usuario:</span>
+                            <span class="info-value"><strong>{{ dispositivo.usuario }}</strong></span>
+                        </div>
+                        <!-- Identificador interno (opcional) -->
+                        <div class="info-row">
+                            <span class="info-label">ID Interno:</span>
+                            <span class="info-value"><code>{{ dispositivo.identificador|truncatechars:12 }}</code></span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Token:</span>
@@ -501,16 +512,16 @@
             </div>
         {% endif %}
 
-        <!-- Información adicional -->
+        <!-- Información adicional (ACTUALIZADA) -->
         <div class="form-card mt-4">
             <div class="d-flex gap-3">
                 <i class="bi bi-info-circle-fill text-primary" style="font-size: 1.5rem;"></i>
                 <div>
                     <h6 class="fw-600 mb-2">Información importante</h6>
                     <ul class="text-muted" style="list-style: none; padding-left: 0;">
-                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Cada dispositivo necesita un token único para autenticarse.</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Cada dispositivo se autentica con <strong>usuario y contraseña</strong> en la app móvil.</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>El token interno se usa para las comunicaciones API; puedes renovarlo si es necesario.</li>
                         <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Puedes desactivar dispositivos sin eliminarlos.</li>
-                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Renueva el token si sospechas que ha sido comprometido.</li>
                         <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Los dispositivos inactivos no pueden sincronizar datos.</li>
                     </ul>
                 </div>

@@ -667,9 +667,16 @@ def incrementar_version(version):
 # VISTAS ADICIONALES
 # ============================================================================
 
+import time
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from empresas.models import Empresa
+from lecturas.models import DispositivoMovil
+
 @login_required
 def gestionar_dispositivos(request, empresa_slug):
-    """Gestiona dispositivos móviles de una empresa"""
+    """Gestiona dispositivos móviles de una empresa con usuario/contraseña"""
     if not request.user.is_superuser:
         messages.error(request, 'No tienes permisos para esta acción')
         return redirect('dashboard_admin_ssr')
@@ -684,45 +691,56 @@ def gestionar_dispositivos(request, empresa_slug):
         action = request.POST.get('action')
         
         if action == 'crear':
-            nombre = request.POST.get('nombre', 'Nuevo Dispositivo')
-            identificador = request.POST.get('identificador', '').strip()
+            # Obtener campos del formulario
+            usuario = request.POST.get('usuario', '').strip()
+            password = request.POST.get('password', '').strip()
+            nombre = request.POST.get('nombre', '').strip() or 'Dispositivo Móvil'
             
-            if not identificador:
-                identificador = f"dev_{empresa.slug}_{int(time.time())}"
+            # Validaciones básicas
+            if not usuario or not password:
+                messages.error(request, 'Usuario y contraseña son obligatorios.')
+                return redirect('apps_moviles:gestionar_dispositivos', empresa_slug=empresa.slug)
             
-            if DispositivoMovil.objects.filter(identificador=identificador).exists():
-                messages.error(request, 'Ya existe un dispositivo con este identificador')
-            else:
-                dispositivo = DispositivoMovil.objects.create(
-                    empresa=empresa,
-                    nombre_dispositivo=nombre,
-                    identificador=identificador,
-                    activo=True
-                )
-                messages.success(request, f'✅ Dispositivo creado: {dispositivo.nombre_dispositivo}')
-                messages.info(request, f'Token: {dispositivo.token_acceso}')
+            # Verificar unicidad de usuario dentro de la empresa
+            if DispositivoMovil.objects.filter(empresa=empresa, usuario=usuario).exists():
+                messages.error(request, f'Ya existe un dispositivo con el usuario "{usuario}" en esta empresa.')
+                return redirect('apps_moviles:gestionar_dispositivos', empresa_slug=empresa.slug)
+            
+            # Crear dispositivo (el identificador se autogenera en save)
+            dispositivo = DispositivoMovil(
+                empresa=empresa,
+                usuario=usuario,
+                nombre_dispositivo=nombre,
+                activo=True
+            )
+            dispositivo.set_password(password)  # Hashear contraseña
+            dispositivo.save()
+            
+            messages.success(request, f'✅ Dispositivo creado: {dispositivo.nombre_dispositivo}')
+            messages.info(request, f'Usuario: {usuario}')
+            messages.info(request, f'Token interno: {dispositivo.token_acceso} (para referencia)')
             
         elif action == 'renovar_token':
             dispositivo_id = request.POST.get('dispositivo_id')
             dispositivo = get_object_or_404(DispositivoMovil, id=dispositivo_id, empresa=empresa)
             nuevo_token = dispositivo.renovar_token()
-            messages.success(request, f'✅ Token renovado: {nuevo_token}')
+            messages.success(request, f'✅ Token renovado para {dispositivo.usuario}: {nuevo_token}')
             
         elif action == 'toggle_activo':
             dispositivo_id = request.POST.get('dispositivo_id')
             dispositivo = get_object_or_404(DispositivoMovil, id=dispositivo_id, empresa=empresa)
             dispositivo.activo = not dispositivo.activo
             dispositivo.save()
-            
             estado = "activado" if dispositivo.activo else "desactivado"
-            messages.success(request, f'✅ Dispositivo {estado}')
+            messages.success(request, f'✅ Dispositivo {dispositivo.usuario} {estado}')
         
         elif action == 'eliminar':
             dispositivo_id = request.POST.get('dispositivo_id')
             dispositivo = get_object_or_404(DispositivoMovil, id=dispositivo_id, empresa=empresa)
             nombre = dispositivo.nombre_dispositivo
+            usuario = dispositivo.usuario
             dispositivo.delete()
-            messages.success(request, f'✅ Dispositivo eliminado: {nombre}')
+            messages.success(request, f'✅ Dispositivo "{nombre}" (usuario: {usuario}) eliminado.')
         
         return redirect('apps_moviles:gestionar_dispositivos', empresa_slug=empresa.slug)
     

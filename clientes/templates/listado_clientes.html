@@ -171,11 +171,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Con Email</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">
-              {% with emails=clientes|dictsort:"email"|length %}
-                {{ emails }}
-              {% endwith %}
-            </p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ clientes_con_email }}</p>
           </div>
           <div class="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
             <i class="fas fa-envelope"></i>
@@ -211,7 +207,7 @@
 
     <!-- Filtros compactos -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 mb-8">
-      <div class="flex flex-wrap items-center justify-between gap-4">
+      <form method="get" class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <div class="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
             <i class="fas fa-filter text-sm"></i>
@@ -251,7 +247,7 @@
             Limpiar
           </a>
         </div>
-      </div>
+      </form>
     </div>
 
     <!-- Tabla de clientes -->
@@ -294,6 +290,7 @@
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medidor</th>
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boleta</th>
                 <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
@@ -316,7 +313,6 @@
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap">
                     <div class="flex items-center">
-                      <!-- Icono cambiado de fa-bolt a fa-droplet -->
                       <div class="h-7 w-7 rounded-md bg-blue-50 flex items-center justify-center mr-2">
                         <i class="fas fa-droplet text-blue-600 text-xs"></i>
                       </div>
@@ -349,6 +345,20 @@
                       </div>
                     {% endif %}
                   </td>
+                  <!-- Columna Boleta: icono según existencia -->
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    {% if cliente.boleta_mes %}
+                      <a href="{% url 'ver_boleta_cliente' alias=slug cliente_id=cliente.id %}" 
+                         class="inline-flex items-center justify-center h-8 w-8 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+                         title="Ver boleta del mes">
+                        <i class="fas fa-file-invoice text-sm"></i>
+                      </a>
+                    {% else %}
+                      <span class="text-gray-300" title="Sin boleta este mes">
+                        <i class="fas fa-file-invoice text-sm"></i>
+                      </span>
+                    {% endif %}
+                  </td>
                   <td class="px-4 py-3 whitespace-nowrap text-right">
                     <div class="flex items-center justify-end gap-1">
                       <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
@@ -379,7 +389,7 @@
           </table>
         </div>
 
-        <!-- Paginación simplificada -->
+        <!-- Paginación simplificada (si usas paginación) -->
         {% if clientes.has_other_pages %}
           <div class="px-4 py-3 border-t border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-2">
             <span class="text-xs text-gray-500">
@@ -430,15 +440,23 @@
       {% endif %}
     </div>
 
-    <!-- Acciones rápidas simplificadas -->
+    <!-- Acciones rápidas con botón de generar boletas -->
     <div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-100 p-4">
       <div class="flex items-center gap-4">
-        <!-- Icono cambiado de fa-bolt a fa-droplet -->
         <div class="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
           <i class="fas fa-droplet text-sm"></i>
         </div>
         <span class="text-sm font-medium text-gray-900">Acciones rápidas</span>
         <div class="flex items-center gap-2 ml-auto">
+          <!-- Botón de generación de boletas (masivo) -->
+          <form method="post" action="{% url 'generar_boletas_ssr' slug=slug %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" 
+                    class="text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
+                    onclick="return confirm('¿Generar boletas para todos los clientes del mes actual?')">
+              <i class="fas fa-file-invoice"></i> Generar boletas
+            </button>
+          </form>
           <button onclick="generateReport()" class="text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
             <i class="fas fa-chart-bar"></i> Reporte
           </button>

@@ -615,34 +615,71 @@
       </div>
     </div>
 
-    <!-- SECCIÓN: ACCIONES RÁPIDAS con diseño mejorado -->
+    <!-- SECCIÓN: ACCESOS RÁPIDOS (reemplaza acciones del sistema) -->
     <div class="stats-card bg-white rounded-xl p-5 animate-fade-in-up" style="animation-delay: 1s;">
       <div class="flex items-center gap-3 mb-4">
         <div class="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
           <i class="fas fa-bolt text-lg"></i>
         </div>
-        <h3 class="font-semibold text-gray-900">Acciones del Sistema</h3>
+        <h3 class="font-semibold text-gray-900">Accesos Rápidos</h3>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <a href="#" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-tools text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Reparar</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <!-- Liquidaciones (ajusta la URL si existe) -->
+        <a href="{% url 'panel_remuneraciones' alias=empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <i class="fas fa-file-invoice text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
+          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Liquidaciones</p>
         </a>
-        <a href="#" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-clipboard-list text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Logs</p>
-        </a>
-        <a href="#" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-database text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Migraciones</p>
-        </a>
+
+        <!-- Generar Boletas (con modal) -->
         <form id="formBoleta" method="post" action="{% url 'generar_boletas_ssr' slug=slug %}" class="contents">
           {% csrf_token %}
-          <button type="button" onclick="mostrarModalBoleta()" class="btn-3d bg-emerald-50 hover:bg-emerald-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <button type="button" onclick="mostrarModalBoleta()" class="btn-3d bg-emerald-50 hover:bg-emerald-100 p-3 rounded-lg text-center transition-all duration-200 group w-full">
             <i class="fas fa-file-invoice-dollar text-emerald-600 mb-1 group-hover:scale-110 transition-transform"></i>
             <p class="text-xs font-medium text-emerald-700">Generar Boletas</p>
           </button>
         </form>
+
+        <!-- Informes (activa el menú desplegable) -->
+        <a href="#" onclick="document.getElementById('informesMenu').classList.toggle('hidden'); return false;" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <i class="fas fa-chart-bar text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
+          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Informes</p>
+        </a>
+
+        <!-- Configuración App -->
+        <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <i class="fas fa-cog text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
+          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Config. App</p>
+        </a>
+
+        <!-- Dispositivos Móviles -->
+        <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <i class="fas fa-phone-alt text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
+          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Dispositivos</p>
+        </a>
+
+        <!-- Exportar Datos (placeholder) -->
+        <a href="#" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <i class="fas fa-download text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
+          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Exportar</p>
+        </a>
+
+        <!-- Historial de Lecturas -->
+        <a href="{% url 'listado_lecturas_app' alias=empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <i class="fas fa-history text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
+          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Historial</p>
+        </a>
+
+        <!-- Avisos -->
+        <a href="{% url 'avisos' slug=slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <i class="fas fa-bell text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
+          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Avisos</p>
+        </a>
+
+        <!-- FAQ -->
+        <a href="{% url 'faq_listado' slug=slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+          <i class="fas fa-question-circle text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
+          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">FAQ</p>
+        </a>
       </div>
     </div>
 
