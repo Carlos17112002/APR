@@ -771,7 +771,7 @@ def descargar_apk(request, empresa_slug):
     
     # Ruta del archivo APK (ajusta según tu estructura real)
     # Según el usuario, el archivo está en /asesora_ssr/media/apps/v1.apk
-    ruta_apk = os.path.join(settings.MEDIA_ROOT, 'apps', 'v1.apk')
+    ruta_apk = os.path.join(settings.MEDIA_ROOT, 'apps', 'app-release.apk')
     
     logger = logging.getLogger(__name__)
     logger.info(f"Intentando descargar APK desde: {ruta_apk}")
