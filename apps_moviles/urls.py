@@ -6,6 +6,8 @@ app_name = 'apps_moviles'
 urlpatterns = [
     # Panel principal
     path('', views.panel_apps_moviles, name='panel_apps_moviles'),
+
+    path('login-dispositivo/', views.login_dispositivo, name='login_dispositivo'),
     
     # Detalle de empresa
     path('empresa/<str:empresa_slug>/', views.detalle_app_empresa, name='detalle_app_empresa'),
@@ -54,4 +56,8 @@ urlpatterns = [
     path('preview/<str:empresa_slug>/', views.ver_config_app, name='preview_config'),
 
     path('descargar-apk/<slug:empresa_slug>/', views.descargar_apk, name='descargar_apk'),
+
+    
+
+
 ]

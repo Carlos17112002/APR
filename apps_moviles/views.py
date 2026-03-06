@@ -856,3 +856,56 @@ def descargar_apk(request, empresa_slug):
         filename=f'v1{empresa.slug}.apk'
     )
     return response
+
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from lecturas.models import DispositivoMovil
+
+@csrf_exempt
+def login_dispositivo(request):
+    """
+    Endpoint para que la app móvil se autentique con usuario y contraseña.
+    Devuelve un token de acceso si las credenciales son válidas.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    print("="*50)
+    print("Body recibido (raw):", request.body)
+    print("Tipo:", type(request.body))
+    print("Longitud:", len(request.body))
+    print("="*50)
+    try:
+        data = json.loads(request.body)
+        empresa_slug = data.get('empresa_slug')
+        usuario = data.get('usuario')
+        password = data.get('password')
+    except:
+        return JsonResponse({'error': 'Datos inválidos o JSON mal formado'}, status=400)
+    
+    if not empresa_slug or not usuario or not password:
+        return JsonResponse({'error': 'Faltan campos: empresa_slug, usuario, password'}, status=400)
+    
+    try:
+        dispositivo = DispositivoMovil.objects.get(
+            empresa__slug=empresa_slug,
+            usuario=usuario,
+            activo=True
+        )
+    except DispositivoMovil.DoesNotExist:
+        return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+    
+    if not dispositivo.check_password(password):
+        return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+    
+    # Renovar token (opcional, mejora seguridad)
+    nuevo_token = dispositivo.renovar_token()
+    
+    return JsonResponse({
+        'mensaje': 'Login exitoso',
+        'token': str(nuevo_token),
+        'dispositivo_id': dispositivo.id,
+        'nombre_dispositivo': dispositivo.nombre_dispositivo,
+        'empresa': empresa_slug
+    })
