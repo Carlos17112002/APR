@@ -561,6 +561,16 @@ def api_descargar_config(request, empresa_slug):
     """API para descargar configuración (endpoint del QR)"""
     empresa = get_object_or_404(Empresa, slug=empresa_slug)
     token = request.GET.get('token')
+
+    print(f"🔍 Token recibido: {token}")
+    print(f"🔍 Claves en sesión: {list(request.session.keys())}")
+    
+    session_data = request.session.get(f'empresa_token_{token}')
+    print(f"🔍 Datos de sesión para token: {session_data}")
+    
+    if not token or not session_data or session_data.get('slug') != empresa.slug:
+        return JsonResponse({'error': 'Token inválido o expirado'}, status=403)
+
     session_data = request.session.get(f'empresa_token_{token}')
     
     if not token or not session_data or session_data.get('slug') != empresa.slug:
