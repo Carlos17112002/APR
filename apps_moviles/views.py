@@ -97,7 +97,7 @@ def _crear_qr_unico(request, empresa, total_clientes):
         'total_clientes': total_clientes,
     }
     
-    url_publica = f'{base_url}/apps/api/config/{empresa.slug}/?token={token_unico}'
+    url_publica = f'{base_url}/apps_moviles/api/config/{empresa.slug}/?token={token_unico}'
     
     qr_data = {
         't': 'universal',
@@ -137,7 +137,7 @@ def _ver_qr_universal(request, empresa, total_clientes, total_sectores):
         't': 'universal',
         'e': empresa.slug,
         'tk': token_unico,
-        'u': f'{base_url}/apps/api/config/{empresa.slug}/?token={token_unico}',
+        'u': f'{base_url}/apps_moviles/api/config/{empresa.slug}/?token={token_unico}',
         'cn': str(total_clientes),
         'v': '1',
         'servidor_url': base_url,
@@ -593,7 +593,7 @@ def api_descargar_config(request, empresa_slug):
         'total_clientes': session_data.get('total_clientes', 0),
         'descarga_segmentada': False,
         'endpoints': {
-            'clientes': f'{request.scheme}://{request.get_host()}/apps/descargar-clientes/{empresa.slug}/?token={token}',
+            'clientes': f'{request.scheme}://{request.get_host()}/apps_moviles/descargar-clientes/{empresa.slug}/?token={token}',
         },
     }
     
