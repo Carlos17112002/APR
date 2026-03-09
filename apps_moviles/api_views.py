@@ -35,7 +35,7 @@ def obtener_url_base(request, for_qr=False):
 def api_config_app(request, empresa_slug):
     """
     Endpoint que devuelve la configuración EXACTA que la app móvil espera.
-    URL: /apps_moviles/api/config/<empresa_slug>/
+    URL: /apps/api/config/<empresa_slug>/
     """
     try:
         empresa = get_object_or_404(Empresa, slug=empresa_slug)
@@ -124,17 +124,17 @@ def api_config_app(request, empresa_slug):
                 'mensaje_bienvenida': f'Bienvenido a {empresa.nombre}',
             },
             
-            # Información del servidor - URLs PÚBLICAS (prefijo apps_moviles)
+            # Información del servidor - URLs PÚBLICAS
             'servidor': {
                 'url': base_url,
-                'api_base': f"{base_url}/apps_moviles/api/",
+                'api_base': f"{base_url}/apps/api/",
                 'endpoints': {
-                    'verificar': f"{base_url}/apps_moviles/api/verificar/",
-                    'registrar_dispositivo': f"{base_url}/apps_moviles/api/registrar-dispositivo/",
-                    'subir_lecturas': f"{base_url}/apps_moviles/api/subir-lecturas/",
-                    'sincronizar': f"{base_url}/apps_moviles/api/sincronizar/{empresa.slug}/",
-                    'clientes': f"{base_url}/apps_moviles/api/clientes/{empresa.slug}/",
-                    'segmentos': f"{base_url}/apps_moviles/api/segmentos/{empresa.slug}/",
+                    'verificar': f"{base_url}/apps/api/verificar/",
+                    'registrar_dispositivo': f"{base_url}/apps/api/registrar-dispositivo/",
+                    'subir_lecturas': f"{base_url}/apps/api/subir-lecturas/",
+                    'sincronizar': f"{base_url}/apps/api/sincronizar/{empresa.slug}/",
+                    'clientes': f"{base_url}/apps/api/clientes/{empresa.slug}/",
+                    'segmentos': f"{base_url}/apps/api/segmentos/{empresa.slug}/",
                 }
             },
             
@@ -148,8 +148,8 @@ def api_config_app(request, empresa_slug):
             
             # Endpoints para descargar clientes - URLs PÚBLICAS
             'endpoints': {
-                'clientes': f"{base_url}/apps_moviles/api/clientes/{empresa.slug}/",
-                'segmentos': f"{base_url}/apps_moviles/api/segmentos/{empresa.slug}/",
+                'clientes': f"{base_url}/apps/api/clientes/{empresa.slug}/",
+                'segmentos': f"{base_url}/apps/api/segmentos/{empresa.slug}/",
             },
             
             # Metadata
@@ -192,9 +192,9 @@ def verificar_conexion(request):
         'version': '1.0.0',
         'server_url': base_url,
         'endpoints': {
-            'config': f"{base_url}/apps_moviles/api/config/{{empresa_slug}}/",
-            'verify': f"{base_url}/apps_moviles/api/verificar/",
-            'clientes': f"{base_url}/apps_moviles/api/clientes/{{empresa_slug}}/",
+            'config': f"{base_url}/apps/api/config/{{empresa_slug}}/",
+            'verify': f"{base_url}/apps/api/verificar/",
+            'clientes': f"{base_url}/apps/api/clientes/{{empresa_slug}}/",
         },
         'server_info': {
             'name': 'Django SSR API',
@@ -210,7 +210,7 @@ def redirect_to_public(request, empresa_slug):
     Útil cuando el QR fue generado con localhost pero se escanea desde móvil.
     """
     RENDER_URL = "https://apr-8nm9.onrender.com"
-    public_url = f"{RENDER_URL}/apps_moviles/api/config/{empresa_slug}/"
+    public_url = f"{RENDER_URL}/apps/api/config/{empresa_slug}/"
     
     # Obtener todos los parámetros de la request original
     params = request.GET.copy()
@@ -556,19 +556,19 @@ def api_test_simple(request):
         'version': '1.0.0',
         'server': base_url,
         'endpoints_available': [
-            f'{base_url}/apps_moviles/api/config/{{empresa_slug}}/',
-            f'{base_url}/apps_moviles/api/clientes/{{empresa_slug}}/',
-            f'{base_url}/apps_moviles/api/verificar/',
-            f'{base_url}/apps_moviles/api/test/',
-            f'{base_url}/apps_moviles/api/registrar-dispositivo/',
-            f'{base_url}/apps_moviles/api/subir-lecturas/',
-            f'{base_url}/apps_moviles/api/sincronizar/{{empresa_slug}}/',
+            f'{base_url}/apps/api/config/{{empresa_slug}}/',
+            f'{base_url}/apps/api/clientes/{{empresa_slug}}/',
+            f'{base_url}/apps/api/verificar/',
+            f'{base_url}/apps/api/test/',
+            f'{base_url}/apps/api/registrar-dispositivo/',
+            f'{base_url}/apps/api/subir-lecturas/',
+            f'{base_url}/apps/api/sincronizar/{{empresa_slug}}/',
         ],
         'instructions': {
-            'config': 'GET /apps_moviles/api/config/{empresa_slug}/',
-            'clientes': 'GET /apps_moviles/api/clientes/{empresa_slug}/',
-            'register': 'POST /apps_moviles/api/registrar-dispositivo/',
-            'upload': 'POST /apps_moviles/api/subir-lecturas/',
+            'config': 'GET /apps/api/config/{empresa_slug}/',
+            'clientes': 'GET /apps/api/clientes/{empresa_slug}/',
+            'register': 'POST /apps/api/registrar-dispositivo/',
+            'upload': 'POST /apps/api/subir-lecturas/',
         }
     })
 
@@ -596,19 +596,19 @@ def debug_info(request):
             'remote_addr': request.META.get('REMOTE_ADDR', ''),
         },
         'endpoints': {
-            'config': f'{base_url}/apps_moviles/api/config/{{empresa_slug}}/',
-            'clientes': f'{base_url}/apps_moviles/api/clientes/{{empresa_slug}}/',
-            'verificar': f'{base_url}/apps_moviles/api/verificar/',
-            'test': f'{base_url}/apps_moviles/api/test/',
-            'debug': f'{base_url}/apps_moviles/api/debug/',
+            'config': f'{base_url}/apps/api/config/{{empresa_slug}}/',
+            'clientes': f'{base_url}/apps/api/clientes/{{empresa_slug}}/',
+            'verificar': f'{base_url}/apps/api/verificar/',
+            'test': f'{base_url}/apps/api/test/',
+            'debug': f'{base_url}/apps/api/debug/',
         },
         'mobile_app': {
             'compatible': True,
             'requires': ['empresa_slug', 'base_url', 'clientes_endpoint'],
             'recommended_test_order': [
-                '1. /apps_moviles/api/verificar/',
-                '2. /apps_moviles/api/config/{empresa_slug}/',
-                '3. /apps_moviles/api/clientes/{empresa_slug}/',
+                '1. /apps/api/verificar/',
+                '2. /apps/api/config/{empresa_slug}/',
+                '3. /apps/api/clientes/{empresa_slug}/',
             ]
         }
     })
@@ -624,17 +624,17 @@ def public_diagnostic(request):
         'timestamp': timezone.now().isoformat(),
         'public_url': RENDER_URL,
         'endpoints': {
-            'config': f'{RENDER_URL}/apps_moviles/api/config/{{slug}}/',
-            'verify': f'{RENDER_URL}/apps_moviles/api/verificar/',
-            'test': f'{RENDER_URL}/apps_moviles/api/test/',
-            'clientes': f'{RENDER_URL}/apps_moviles/api/clientes/{{slug}}/',
+            'config': f'{RENDER_URL}/apps/api/config/{{slug}}/',
+            'verify': f'{RENDER_URL}/apps/api/verificar/',
+            'test': f'{RENDER_URL}/apps/api/test/',
+            'clientes': f'{RENDER_URL}/apps/api/clientes/{{slug}}/',
         },
-        'instructions': 'Use /apps_moviles/api/config/{empresa_slug}/ for mobile app configuration',
+        'instructions': 'Use /apps/api/config/{empresa_slug}/ for mobile app configuration',
         'cors_enabled': True,
         'requires_auth': False,
         'example_urls': {
-            'config_vaticano': f'{RENDER_URL}/apps_moviles/api/config/vaticano-apr/',
-            'clientes_vaticano': f'{RENDER_URL}/apps_moviles/api/clientes/vaticano-apr/',
-            'verify': f'{RENDER_URL}/apps_moviles/api/verificar/',
+            'config_vaticano': f'{RENDER_URL}/apps/api/config/vaticano-apr/',
+            'clientes_vaticano': f'{RENDER_URL}/apps/api/clientes/vaticano-apr/',
+            'verify': f'{RENDER_URL}/apps/api/verificar/',
         }
     })
