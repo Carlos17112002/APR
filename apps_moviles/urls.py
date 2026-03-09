@@ -57,7 +57,7 @@ urlpatterns = [
 
     path('descargar-apk/<slug:empresa_slug>/', views.descargar_apk, name='descargar_apk'),
 
-    
+    path('health/', views.health_check, name='health_check'),
 
 
 ]

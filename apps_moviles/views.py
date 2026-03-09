@@ -798,3 +798,7 @@ def descargar_apk(request, empresa_slug):
         filename=f'ssr_app_{empresa.slug}.apk'
     )
     return response
+
+@csrf_exempt
+def health_check(request):
+    return JsonResponse({'status': 'ok', 'message': 'Servidor accesible'})
