@@ -769,16 +769,28 @@ def descargar_apk(request, empresa_slug):
     if not empresa.app_generada:
         raise Http404("La aplicación no está disponible para esta empresa.")
     
-    # Ruta del archivo APK (ajusta según tu estructura real)
-    # Según el usuario, el archivo está en /asesora_ssr/media/apps/v1.apk
-    ruta_apk = os.path.join(settings.MEDIA_ROOT, 'apps', 'app-release.apk')
+    # Posibles rutas donde puede estar el APK (ajusta según tu estructura)
+    posibles_rutas = [
+        os.path.join(settings.MEDIA_ROOT, 'apps', 'app-release.apk'),
+        os.path.join(settings.MEDIA_ROOT, 'app-release.apk'),
+        os.path.join(settings.MEDIA_ROOT, 'apps', 'v1.apk'),
+        os.path.join(settings.MEDIA_ROOT, 'v1.apk'),
+        '/asesora_ssr/media/apps/app-release.apk',  # Ruta absoluta (Windows)
+    ]
     
     logger = logging.getLogger(__name__)
-    logger.info(f"Intentando descargar APK desde: {ruta_apk}")
+    ruta_apk = None
+    for ruta in posibles_rutas:
+        logger.info(f"Probando ruta: {ruta}")
+        if os.path.exists(ruta):
+            ruta_apk = ruta
+            break
     
-    if not os.path.exists(ruta_apk):
-        logger.error(f"Archivo APK no encontrado en: {ruta_apk}")
+    if not ruta_apk:
+        logger.error("No se encontró el archivo APK en ninguna de las rutas probadas.")
         raise Http404("El archivo APK no se encuentra en el servidor.")
+    
+    logger.info(f"Archivo APK encontrado en: {ruta_apk}")
     
     response = FileResponse(
         open(ruta_apk, 'rb'),
