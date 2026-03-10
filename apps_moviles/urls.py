@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = 'apps_moviles'
@@ -6,6 +6,7 @@ app_name = 'apps_moviles'
 urlpatterns = [
     # Panel principal
     path('', views.panel_apps_moviles, name='panel_apps_moviles'),
+    path('api/', include('apps_moviles.api_urls')),
 
     path('login-dispositivo/', views.login_dispositivo, name='login_dispositivo'),
     

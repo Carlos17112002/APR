@@ -569,6 +569,7 @@ def api_descargar_config(request, empresa_slug):
     token = request.GET.get('token')
 
     print(f"🔍 Token recibido: {token}")
+    print(f"📥 empresa_slug: {empresa_slug}, token: {token}")
     
     if not token:
         return JsonResponse({'error': 'Token no proporcionado'}, status=400)
@@ -924,7 +925,7 @@ def descargar_apk(request, empresa_slug):
     response = FileResponse(
         open(ruta_apk, 'rb'),
         as_attachment=True,
-        filename=f'ssr_app_{empresa.slug}.apk'
+        filename=f'app lecturas{empresa.slug}.apk'
     )
     return response
 
