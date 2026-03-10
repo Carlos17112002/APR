@@ -20,6 +20,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from empresas.models import Empresa
 from lecturas.models import DispositivoMovil, ConfigAppMovil, LecturaMovil
+from .models import TokenQR
 
 # ============================================================================
 # FUNCIONES AUXILIARES
@@ -90,12 +91,12 @@ def _crear_qr_unico(request, empresa, total_clientes):
         f"{empresa.slug}-UNIVERSAL-{time.time()}".encode()
     ).hexdigest()[:32]
     
-    request.session[f'qr_token_{empresa.slug}'] = token_unico
-    request.session[f'empresa_token_{token_unico}'] = {
-        'slug': empresa.slug,
-        'timestamp': time.time(),
-        'total_clientes': total_clientes,
-    }
+    # ✅ Guardamos el token en la base de datos (ya no en sesión)
+    TokenQR.objects.create(
+        token=token_unico,
+        empresa=empresa,
+        total_clientes=total_clientes
+    )
     
     url_publica = f'{base_url}/apps_moviles/api/config/{empresa.slug}/?token={token_unico}'
     
@@ -119,19 +120,18 @@ def _crear_qr_unico(request, empresa, total_clientes):
     return json.dumps(qr_data, separators=(',', ':'), ensure_ascii=False)
 
 def _ver_qr_universal(request, empresa, total_clientes, total_sectores):
-    """Muestra QR usando la estrategia universal."""
+    """Muestra QR usando la estrategia universal (también guarda en BD)."""
     base_url = get_base_url(request)
     token_unico = hashlib.sha256(
         f"{empresa.slug}-UNIVERSAL-{time.time()}".encode()
     ).hexdigest()[:32]
     
-    request.session[f'qr_token_{empresa.slug}'] = token_unico
-    request.session[f'empresa_token_{token_unico}'] = {
-        'slug': empresa.slug,
-        'timestamp': time.time(),
-        'total_clientes': total_clientes,
-        'total_sectores': total_sectores,
-    }
+    # ✅ Guardamos el token en la base de datos
+    TokenQR.objects.create(
+        token=token_unico,
+        empresa=empresa,
+        total_clientes=total_clientes
+    )
     
     qr_info = {
         't': 'universal',
@@ -563,18 +563,23 @@ def api_descargar_config(request, empresa_slug):
     token = request.GET.get('token')
 
     print(f"🔍 Token recibido: {token}")
-    print(f"🔍 Claves en sesión: {list(request.session.keys())}")
     
-    session_data = request.session.get(f'empresa_token_{token}')
-    print(f"🔍 Datos de sesión para token: {session_data}")
+    if not token:
+        return JsonResponse({'error': 'Token no proporcionado'}, status=400)
     
-    if not token or not session_data or session_data.get('slug') != empresa.slug:
-        return JsonResponse({'error': 'Token inválido o expirado'}, status=403)
-
-    session_data = request.session.get(f'empresa_token_{token}')
+    # ✅ Validamos contra la base de datos, no contra la sesión
+    try:
+        token_obj = TokenQR.objects.get(token=token, empresa=empresa)
+    except TokenQR.DoesNotExist:
+        return JsonResponse({'error': 'Token inválido'}, status=403)
     
-    if not token or not session_data or session_data.get('slug') != empresa.slug:
-        return JsonResponse({'error': 'Token inválido o expirado'}, status=403)
+    # Verificar expiración (24 horas)
+    if not token_obj.is_valid():
+        return JsonResponse({'error': 'Token expirado'}, status=403)
+    
+    # (Opcional) marcar como usado para un solo uso
+    # token_obj.usado = True
+    # token_obj.save()
     
     try:
         config_app = ConfigAppMovil.objects.get(empresa=empresa)
@@ -600,7 +605,7 @@ def api_descargar_config(request, empresa_slug):
         'base_url': f'{empresa.url_servidor}/api/{empresa.slug}/',
         'api_key': empresa.api_key_app or '',
         'sectores': sectores,
-        'total_clientes': session_data.get('total_clientes', 0),
+        'total_clientes': token_obj.total_clientes,  # ← desde el token guardado
         'descarga_segmentada': False,
         'endpoints': {
             'clientes': f'{request.scheme}://{request.get_host()}/apps_moviles/descargar-clientes/{empresa.slug}/?token={token}',
@@ -619,6 +624,114 @@ def api_descargar_config(request, empresa_slug):
         })
     
     return JsonResponse(config_json)
+
+def descargar_config_grande(request, empresa_slug):
+    return api_descargar_config(request, empresa_slug)
+
+@csrf_exempt
+def descargar_clientes_completo(request, empresa_slug):
+    """API para descargar clientes completos (protegida con token)"""
+    empresa = get_object_or_404(Empresa, slug=empresa_slug)
+    token = request.GET.get('token')
+    
+    if not token:
+        return JsonResponse({'error': 'Token no proporcionado'}, status=400)
+    
+    try:
+        token_obj = TokenQR.objects.get(token=token, empresa=empresa)
+    except TokenQR.DoesNotExist:
+        return JsonResponse({'error': 'Token inválido'}, status=403)
+    
+    if not token_obj.is_valid():
+        return JsonResponse({'error': 'Token expirado'}, status=403)
+    
+    from clientes.models import Cliente
+    alias_db = f'db_{empresa.slug}'
+    clientes = []
+    try:
+        clientes_qs = Cliente.objects.using(alias_db).all()
+        for cliente in clientes_qs:
+            clientes.append({
+                'id': cliente.id,
+                'codigo': cliente.rut or f"CL-{cliente.id:04d}",
+                'nombre': cliente.nombre,
+                'direccion': cliente.direccion or '',
+                'sector': cliente.sector or 'Sin Sector',
+                'numero_medidor': cliente.medidor or f"MED-{cliente.id:05d}",
+                'latitud': cliente.latitude or 0.0,
+                'longitud': cliente.longitude or 0.0,
+                'estado': 'Activo',
+            })
+        response_data = {
+            'empresa': empresa.nombre,
+            'empresa_slug': empresa.slug,
+            'total_clientes': len(clientes),
+            'clientes': clientes,
+            'timestamp': time.time(),
+        }
+        return JsonResponse(response_data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+def descargar_clientes_segmento(request, empresa_slug):
+    """API para descargar segmentos de clientes (protegida con token)"""
+    empresa = get_object_or_404(Empresa, slug=empresa_slug)
+    token = request.GET.get('token')
+    
+    if not token:
+        return JsonResponse({'error': 'Token no proporcionado'}, status=400)
+    
+    try:
+        token_obj = TokenQR.objects.get(token=token, empresa=empresa)
+    except TokenQR.DoesNotExist:
+        return JsonResponse({'error': 'Token inválido'}, status=403)
+    
+    if not token_obj.is_valid():
+        return JsonResponse({'error': 'Token expirado'}, status=403)
+    
+    from clientes.models import Cliente
+    try:
+        offset = int(request.GET.get('offset', 0))
+        limit = int(request.GET.get('limit', 200))
+    except:
+        offset = 0
+        limit = 200
+    
+    alias_db = f'db_{empresa.slug}'
+    clientes = []
+    try:
+        total_clientes = Cliente.objects.using(alias_db).count()
+        clientes_qs = Cliente.objects.using(alias_db).all()[offset:offset + limit]
+        for cliente in clientes_qs:
+            clientes.append({
+                'id': cliente.id,
+                'codigo': cliente.rut or f"CL-{cliente.id:04d}",
+                'nombre': cliente.nombre,
+                'direccion': cliente.direccion or '',
+                'sector': cliente.sector or 'Sin Sector',
+                'numero_medidor': cliente.medidor or f"MED-{cliente.id:05d}",
+                'latitud': cliente.latitude or 0.0,
+                'longitud': cliente.longitude or 0.0,
+                'estado': 'Activo',
+            })
+        next_offset = offset + limit if offset + limit < total_clientes else None
+        response_data = {
+            'empresa': empresa.nombre,
+            'segmento': f'{offset}-{offset + limit}',
+            'total_en_segmento': len(clientes),
+            'next_offset': next_offset,
+            'has_more': next_offset is not None,
+            'clientes': clientes,
+            'total_clientes': total_clientes,
+        }
+        return JsonResponse(response_data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+def api_publica_config(request, empresa_slug):
+    return api_descargar_config(request, empresa_slug)
 
 def descargar_config_grande(request, empresa_slug):
     """Alias para mantener compatibilidad con URLs existentes"""
