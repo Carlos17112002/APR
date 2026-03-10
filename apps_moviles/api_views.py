@@ -7,7 +7,8 @@ from django.utils import timezone
 from django.conf import settings
 from empresas.models import Empresa
 from clientes.models import Cliente
-from lecturas.models import LecturaMovil
+from lecturas.models import LecturaMovil, DispositivoMovil
+from datetime import datetime
 
 def obtener_url_base(request, for_qr=False):
     """
@@ -474,38 +475,91 @@ def registrar_dispositivo(request):
 
 @csrf_exempt
 def subir_lecturas(request):
-    """Recibe lecturas desde la app móvil"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            lecturas = data.get('lecturas', [])
-            
-            print(f"📊 Recibiendo {len(lecturas)} lecturas desde app móvil")
-            
-            # Aquí procesarías y guardarías las lecturas usando LecturaMovil
-            # Por ahora solo confirmamos recepción
-            
-            return JsonResponse({
-                'success': True,
-                'message': f'✅ {len(lecturas)} lecturas recibidas correctamente',
-                'lecturas_recibidas': len(lecturas),
-                'timestamp': timezone.now().isoformat(),
-                'procesadas': 0,  # En una implementación real, contarías las procesadas
-                'rechazadas': 0,
-            })
-        except Exception as e:
-            return JsonResponse({
-                'success': True,
-                'message': '✅ Lecturas recibidas (modo simple)',
-                'timestamp': timezone.now().isoformat(),
-                'note': f'Error parseando JSON: {str(e)}'
-            })
-    
-    return JsonResponse({
-        'success': False,
-        'error': 'METHOD_NOT_ALLOWED',
-        'message': 'Usa POST para subir lecturas'
-    }, status=405)
+    # Manejar preflight OPTIONS para CORS
+    if request.method == 'OPTIONS':
+        response = JsonResponse({'message': 'OK'})
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response['Access-Control-Allow-Headers'] = 'Content-Type, X-Dispositivo-Token'
+        return response
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    # Verificar token del dispositivo
+    token = request.headers.get('X-Dispositivo-Token')
+    if not token:
+        return JsonResponse({'error': 'Token no proporcionado'}, status=401)
+
+    try:
+        dispositivo = DispositivoMovil.objects.get(token_acceso=token, activo=True)
+    except DispositivoMovil.DoesNotExist:
+        return JsonResponse({'error': 'Token inválido'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+        lecturas = data.get('lecturas', [])
+        print(f"📊 Recibiendo {len(lecturas)} lecturas de {dispositivo.usuario}")
+
+        alias_db = f'db_{dispositivo.empresa.slug}'
+
+        procesadas = 0
+        rechazadas = 0
+        errores = []
+
+        for idx, lectura_data in enumerate(lecturas):
+            try:
+                cliente_id = lectura_data.get('cliente_id')
+                lectura_actual = lectura_data.get('lectura_actual')
+                fecha_lectura_str = lectura_data.get('fecha_lectura')
+
+                if not cliente_id or lectura_actual is None or not fecha_lectura_str:
+                    raise ValueError("Faltan campos requeridos (cliente_id, lectura_actual, fecha_lectura)")
+
+                # Convertir fecha (string ISO a objeto date)
+                try:
+                    from datetime import datetime
+                    fecha_lectura = datetime.fromisoformat(fecha_lectura_str).date()
+                except:
+                    raise ValueError("Formato de fecha inválido")
+
+                # Crear objeto LecturaMovil
+                nueva_lectura = LecturaMovil(
+                    empresa=dispositivo.empresa,
+                    cliente=cliente_id,
+                    fecha_lectura=fecha_lectura,
+                    lectura_actual=lectura_actual,
+                    lectura_anterior=None,  # Se puede calcular después
+                    consumo=None,            # Se calculará posteriormente (por ejemplo, al generar boleta)
+                    foto_medidor=lectura_data.get('foto_url'),  # Nota: en el modelo es foto_medidor
+                    latitud=lectura_data.get('latitud'),
+                    longitud=lectura_data.get('longitud'),
+                    estado='pendiente',  # Estado inicial
+                    observaciones_app=lectura_data.get('observaciones', ''),
+                    usuario_app=dispositivo.usuario,
+                    empresa_slug=dispositivo.empresa.slug,
+                )
+                # Guardar en la base de datos de la empresa
+                nueva_lectura.save(using=alias_db)
+                procesadas += 1
+
+            except Exception as e:
+                rechazadas += 1
+                errores.append(f"Lectura {idx}: {str(e)}")
+
+        response = JsonResponse({
+            'success': True,
+            'message': f'✅ {procesadas} lecturas procesadas, {rechazadas} rechazadas',
+            'lecturas_recibidas': len(lecturas),
+            'procesadas': procesadas,
+            'rechazadas': rechazadas,
+            'errores': errores if errores else None,
+        })
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
 def sincronizar_datos(request, empresa_slug):
