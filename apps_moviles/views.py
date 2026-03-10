@@ -300,7 +300,13 @@ def generar_app_empresa(request, empresa_slug):
             # Actualizar configuración básica
             empresa.color_app_primario = request.POST.get('color_primario', empresa.color_app_primario)
             empresa.color_app_secundario = request.POST.get('color_secundario', empresa.color_app_secundario)
-            empresa.url_servidor = request.POST.get('url_servidor', empresa.url_servidor)
+            
+            # Manejar URL del servidor: si se envía en el POST, usarla; si no, usar la URL base del request
+            url_servidor_post = request.POST.get('url_servidor', '').strip()
+            if url_servidor_post:
+                empresa.url_servidor = url_servidor_post
+            else:
+                empresa.url_servidor = get_base_url(request)  # Función auxiliar que obtiene la URL base
             
             # Actualizar configuración de app
             config_app, _ = ConfigAppMovil.objects.get_or_create(empresa=empresa)
