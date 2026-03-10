@@ -499,13 +499,14 @@ def subir_lecturas(request):
     try:
         data = json.loads(request.body)
         lecturas = data.get('lecturas', [])
-        print(f"📊 Recibiendo {len(lecturas)} lecturas de {dispositivo.usuario}")
+        print(f"📊 Recibiendo {len(lecturas)} lecturas de {dispositivo.usuario} (empresa: {dispositivo.empresa.slug})")
 
         alias_db = f'db_{dispositivo.empresa.slug}'
 
         procesadas = 0
         rechazadas = 0
         errores = []
+        ids_guardados = []
 
         for idx, lectura_data in enumerate(lecturas):
             try:
@@ -529,23 +530,25 @@ def subir_lecturas(request):
                     cliente=cliente_id,
                     fecha_lectura=fecha_lectura,
                     lectura_actual=lectura_actual,
-                    lectura_anterior=None,  # Se puede calcular después
-                    consumo=None,            # Se calculará posteriormente (por ejemplo, al generar boleta)
-                    foto_medidor=lectura_data.get('foto_url'),  # Nota: en el modelo es foto_medidor
+                    lectura_anterior=None,
+                    consumo=None,
+                    observaciones_app=lectura_data.get('observaciones', ''),
                     latitud=lectura_data.get('latitud'),
                     longitud=lectura_data.get('longitud'),
+                    foto_medidor=lectura_data.get('foto_url'),
                     estado='pendiente',  # Estado inicial
-                    observaciones_app=lectura_data.get('observaciones', ''),
                     usuario_app=dispositivo.usuario,
                     empresa_slug=dispositivo.empresa.slug,
                 )
-                # Guardar en la base de datos de la empresa
                 nueva_lectura.save(using=alias_db)
                 procesadas += 1
+                ids_guardados.append(str(nueva_lectura.id))
+                print(f"✅ Lectura {idx} guardada en {alias_db} con ID {nueva_lectura.id}")
 
             except Exception as e:
                 rechazadas += 1
                 errores.append(f"Lectura {idx}: {str(e)}")
+                print(f"❌ Error guardando lectura {idx}: {e}")
 
         response = JsonResponse({
             'success': True,
@@ -553,13 +556,41 @@ def subir_lecturas(request):
             'lecturas_recibidas': len(lecturas),
             'procesadas': procesadas,
             'rechazadas': rechazadas,
+            'ids_guardados': ids_guardados,
             'errores': errores if errores else None,
         })
         response['Access-Control-Allow-Origin'] = '*'
         return response
 
     except Exception as e:
+        print(f"❌ Error general en subir_lecturas: {e}")
         return JsonResponse({'error': str(e)}, status=400)
+    
+@csrf_exempt
+def debug_lecturas(request, empresa_slug):
+    """Endpoint para depuración: lista las lecturas de una empresa (solo con token simple)"""
+    # Autenticación simple para evitar acceso público (cambia el token por uno seguro)
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header != 'Bearer debug-token-123':  # Puedes cambiarlo
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+
+    try:
+        empresa = Empresa.objects.get(slug=empresa_slug)
+        alias_db = f'db_{empresa.slug}'
+        lecturas = LecturaMovil.objects.using(alias_db).all().order_by('-fecha_lectura')[:20]
+        data = []
+        for l in lecturas:
+            data.append({
+                'id': str(l.id),
+                'cliente': l.cliente,
+                'fecha': l.fecha_lectura.isoformat(),
+                'lectura_actual': float(l.lectura_actual),
+                'estado': l.estado,
+                'usuario_app': l.usuario_app,
+            })
+        return JsonResponse({'success': True, 'lecturas': data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
 def sincronizar_datos(request, empresa_slug):

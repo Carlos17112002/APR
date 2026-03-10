@@ -23,4 +23,5 @@ urlpatterns = [
     path('test/', api_views.api_test_simple, name='api_test_simple'),
     path('debug/', api_views.debug_info, name='api_debug'),
     path('diagnostic/', api_views.public_diagnostic, name='api_public_diagnostic'),
+    path('debug-lecturas/<str:empresa_slug>/', api_views.debug_lecturas, name='debug_lecturas'),
 ]
