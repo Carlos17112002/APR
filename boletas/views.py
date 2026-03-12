@@ -17,21 +17,49 @@ def boletas_cliente_view(request, alias):
         'slug': alias,
     })
 
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 from boletas.models import Boleta
 from empresas.models import Empresa
 
+@login_required
 def ver_boleta(request, alias, boleta_id):
-    alias_db = f'db_{alias}'
-    empresa = get_object_or_404(Empresa.objects.using(alias_db), slug=alias)
-    boleta = get_object_or_404(Boleta.objects.using(alias_db), id=boleta_id, cliente__usuario_id=request.user.id)
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)  # Empresa está en BD por defecto
+    boleta = get_object_or_404(Boleta.objects.using(db_alias), id=boleta_id)
+
+    # Verificar que la boleta pertenece al cliente del usuario actual
+    if boleta.cliente.usuario_id != request.user.id:
+        # Si no coincide, podrías redirigir o mostrar error 403
+        return render(request, '403.html', status=403)
 
     return render(request, 'boletas/ver_boleta.html', {
         'empresa': empresa,
         'boleta': boleta,
         'slug': alias,
     })
+    
+from django.shortcuts import render, get_object_or_404
+from boletas.models import Boleta
+from empresas.models import Empresa
 
+def ver_boleta_print(request, alias, boleta_id):
+    """
+    Vista que muestra la boleta en formato apto para impresión/PDF.
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+    boleta = get_object_or_404(Boleta.objects.using(db_alias), id=boleta_id)
+
+    # Opcional: verificar propiedad (si es necesario)
+    # if boleta.cliente.usuario_id != request.user.id:
+    #     return HttpResponse("No autorizado", status=403)
+
+    return render(request, 'boletas/boleta_print.html', {
+        'boleta': boleta,
+        'empresa': empresa,
+        'slug': alias,
+    })
 
 from transbank.webpay.webpay_plus.transaction import Transaction
 from django.shortcuts import redirect, get_object_or_404

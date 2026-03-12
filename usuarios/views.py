@@ -8,12 +8,21 @@ def login_ssr(request):
     error = None
 
     if request.method == 'POST':
-        username = request.POST.get('username')  # Puede ser RUT o alias
+        username = request.POST.get('username')
         password = request.POST.get('password')
+        remember_me = request.POST.get('remember_me')  # Captura el checkbox (será 'on' si está marcado)
         user = authenticate(request, username=username, password=password)
 
         if user:
             login(request, user)
+
+            # ⏱️ Aplicar recordar sesión
+            if remember_me:
+                # Si marcó "Recordar sesión", la sesión dura 2 semanas (en segundos)
+                request.session.set_expiry(1209600)
+            else:
+                # Si no marcó, la sesión expira al cerrar el navegador
+                request.session.set_expiry(0)
 
             # 🔐 Superusuario → Panel general SSR
             if user.is_superuser:
@@ -32,10 +41,12 @@ def login_ssr(request):
                     if cliente:
                         return redirect('perfil_cliente', alias=empresa.slug)
                 except Exception:
-                    continue  # Si la base no existe o falla, seguimos
+                    continue
 
             # 🚫 Usuario válido pero sin rol asignado
             error = 'Tu cuenta no tiene acceso a ningún panel asignado.'
+            # Opcional: hacer logout automático si no tiene acceso
+            # logout(request)
         else:
             error = 'Credenciales inválidas. Intenta nuevamente.'
 

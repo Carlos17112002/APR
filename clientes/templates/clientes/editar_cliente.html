@@ -83,6 +83,8 @@
         </div>
         {% endif %}
         
+        <!-- ... (header y mensajes de error) ... -->
+
         <!-- Formulario -->
         <div class="bg-white rounded-xl card-shadow p-8">
             <form method="post">
@@ -137,24 +139,26 @@
                         {{ form.medidor }}
                     </div>
                     
-                    <!-- Sector -->
+                    <!-- Sector (ahora es un select) -->
                     <div>
                         <label for="{{ form.sector.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-map text-gray-400 mr-1.5"></i>Sector *
+                            <i class="fas fa-map text-gray-400 mr-1.5"></i>Sector
                         </label>
                         {{ form.sector }}
                     </div>
                     
-                    <!-- Observaciones -->
-                    <div class="md:col-span-2">
-                        <label for="{{ form.observaciones.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-sticky-note text-gray-400 mr-1.5"></i>Observaciones
+                    <!-- Latitud / Longitud (opcional) -->
+                    <div>
+                        <label for="{{ form.latitude.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-map-pin text-gray-400 mr-1.5"></i>Latitud
                         </label>
-                        {{ form.observaciones }}
-                        <p class="mt-1 text-xs text-gray-500">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Información adicional sobre el cliente o instalación
-                        </p>
+                        {{ form.latitude }}
+                    </div>
+                    <div>
+                        <label for="{{ form.longitude.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-map-pin text-gray-400 mr-1.5"></i>Longitud
+                        </label>
+                        {{ form.longitude }}
                     </div>
                 </div>
                 
@@ -167,7 +171,7 @@
                 
                 <div class="flex justify-between mt-8 pt-6 border-t border-gray-200">
                     <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
-                       class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                    class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
                         <i class="fas fa-times mr-2"></i> Cancelar
                     </a>
                     
@@ -185,28 +189,21 @@
                 </div>
             </form>
         </div>
-        
-        <!-- Información del cliente -->
+
+        <!-- Información adicional del cliente (sin campos inexistentes) -->
         <div class="mt-6 bg-white rounded-xl card-shadow p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Información del Cliente</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-gray-50 p-4 rounded-lg">
-                    <p class="text-xs text-gray-500">Fecha de Registro</p>
-                    <p class="font-medium text-gray-900">{{ cliente.fecha_creacion|date:"d/m/Y" }}</p>
+                    <p class="text-xs text-gray-500">RUT</p>
+                    <p class="font-medium text-gray-900">{{ cliente.rut }}</p>
                 </div>
                 <div class="bg-gray-50 p-4 rounded-lg">
-                    <p class="text-xs text-gray-500">Última Actualización</p>
-                    <p class="font-medium text-gray-900">{{ cliente.fecha_actualizacion|date:"d/m/Y"|default:"Nunca" }}</p>
-                </div>
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <p class="text-xs text-gray-500">Estado</p>
-                    <p class="font-medium text-emerald-700">
-                        <i class="fas fa-check-circle mr-1"></i> Activo
-                    </p>
+                    <p class="text-xs text-gray-500">Medidor</p>
+                    <p class="font-medium text-gray-900">{{ cliente.medidor }}</p>
                 </div>
             </div>
         </div>
-    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

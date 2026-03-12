@@ -1,0 +1,467 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boleta {{ boleta.periodo }} - {{ boleta.cliente.nombre }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .boleta {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            padding: 30px 35px;
+        }
+        /* Encabezado principal */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #0b4f6c;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header-left h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0b4f6c;
+            margin-bottom: 5px;
+            line-height: 1.2;
+        }
+        .header-left p {
+            font-size: 13px;
+            color: #2c3e50;
+            margin: 2px 0;
+        }
+        .header-right {
+            text-align: right;
+        }
+        .header-right .boleta-numero {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0b4f6c;
+        }
+        .header-right .fecha {
+            font-size: 13px;
+            color: #2c3e50;
+            margin-top: 5px;
+        }
+        .rut-empresa {
+            font-weight: 600;
+        }
+        /* Sección datos del cliente */
+        .cliente-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+        }
+        .cliente-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px 25px;
+        }
+        .cliente-item {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+        }
+        .cliente-item .label {
+            font-weight: 600;
+            color: #334e68;
+            width: 85px;
+            font-size: 13px;
+        }
+        .cliente-item .value {
+            color: #102a3c;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        /* Títulos de sección */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0b4f6c;
+            margin: 20px 0 12px 0;
+            border-left: 5px solid #0b4f6c;
+            padding-left: 12px;
+        }
+        /* Tabla de lecturas */
+        .lectura-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            border: 1px solid #d1d9e6;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .lectura-table th {
+            background: #e6edf5;
+            color: #1f3a5f;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid #bcccdb;
+        }
+        .lectura-table td {
+            padding: 12px 10px;
+            text-align: center;
+            font-size: 14px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .lectura-table tr:last-child td {
+            border-bottom: none;
+        }
+        .consumo-destacado {
+            font-weight: 700;
+            color: #0b4f6c;
+            font-size: 18px;
+        }
+        /* Tabla de montos */
+        .montos-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0 25px;
+            border: 1px solid #d1d9e6;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .montos-table th {
+            background: #e6edf5;
+            color: #1f3a5f;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        .montos-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .montos-table tr:last-child td {
+            border-bottom: none;
+        }
+        .total-row {
+            background: #f0f7fa;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .total-row td:last-child {
+            color: #0b4f6c;
+        }
+        .right {
+            text-align: right;
+        }
+        /* Información de pago */
+        .pago-info {
+            background: #f0f9f0;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin: 25px 0;
+            border: 1px solid #b8e0b8;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pago-info .banco {
+            font-weight: 700;
+            color: #1f5f1f;
+        }
+        .pago-info .cuenta {
+            font-family: monospace;
+            font-size: 16px;
+            background: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px dashed #2e7d32;
+        }
+        /* Notas y advertencias */
+        .notas {
+            background: #fff8e7;
+            border-left: 6px solid #f4b836;
+            padding: 14px 20px;
+            border-radius: 0 10px 10px 0;
+            margin: 25px 0;
+            font-size: 13px;
+            color: #5d4a1e;
+        }
+        .notas p {
+            margin: 4px 0;
+        }
+        /* Timbre y pie */
+        .timbre {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px dashed #aaa;
+            padding-top: 20px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #4a5568;
+        }
+        .timbre .sii {
+            font-weight: 600;
+        }
+        .timbre .codigo-barras {
+            font-family: monospace;
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+        .footer-contacto {
+            text-align: center;
+            margin-top: 20px;
+            color: #2d3748;
+            font-size: 13px;
+        }
+        .footer-contacto i {
+            margin: 0 5px;
+        }
+        /* Info adicional cliente */
+        .info-adicional {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            background: #f2f5f9;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        .info-adicional div span {
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-right: 5px;
+        }
+        /* Botón de impresión (solo en pantalla) */
+        .print-button {
+            text-align: center;
+            margin: 30px 0 10px;
+        }
+        .print-button button {
+            background: #0b4f6c;
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+        .print-button button:hover {
+            background: #083c52;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .boleta {
+                box-shadow: none;
+                border-radius: 0;
+                padding: 0.5in;
+            }
+            .print-button {
+                display: none;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="boleta">
+        <!-- Encabezado -->
+        <div class="header">
+            <div class="header-left">
+                <h1>{{ empresa.nombre|upper }}</h1>
+                <p>{{ empresa.direccion|default:"DIRECCIÓN NO REGISTRADA" }}</p>
+                <p>📞 {{ empresa.telefono|default:"—" }} | ✉️ {{ empresa.email|default:"—" }}</p>
+                <p class="rut-empresa">R.U.T.: {{ empresa.rut|default:"—" }}</p>
+            </div>
+            <div class="header-right">
+                <div class="boleta-numero">BOLETA ELECTRÓNICA N° {{ boleta.id }}</div>
+                <div class="fecha">Fecha emisión: {{ boleta.fecha_emision|date:"d/m/Y" }}</div>
+            </div>
+        </div>
+
+        <!-- Datos del cliente -->
+        <div class="cliente-section">
+            <div style="font-weight: 700; font-size: 15px; margin-bottom: 10px; color: #0b4f6c;">DATOS DEL CLIENTE</div>
+            <div class="cliente-grid">
+                <div class="cliente-item">
+                    <span class="label">Nombre</span>
+                    <span class="value">: {{ boleta.cliente.nombre }}</span>
+                </div>
+                <div class="cliente-item">
+                    <span class="label">R.U.T.</span>
+                    <span class="value">: {{ boleta.cliente.rut }}</span>
+                </div>
+                <div class="cliente-item">
+                    <span class="label">Dirección</span>
+                    <span class="value">: {{ boleta.cliente.direccion|default:"—" }}</span>
+                </div>
+                <div class="cliente-item">
+                    <span class="label">Sector</span>
+                    <span class="value">: {{ boleta.cliente.sector|default:"—" }}</span>
+                </div>
+                <div class="cliente-item">
+                    <span class="label">Giro</span>
+                    <span class="value">: Particular</span>  <!-- o algún campo si lo tienes -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Consumo del mes -->
+        <div class="section-title">SU CONSUMO EN m³ DEL MES</div>
+        <table class="lectura-table">
+            <thead>
+                <tr>
+                    <th>Lectura anterior</th>
+                    <th>Fecha</th>
+                    <th>Lectura actual</th>
+                    <th>Fecha</th>
+                    <th>Consumo (m³)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ boleta.lectura_anterior|floatformat:2 }}</td>
+                    <td>—</td>  <!-- Podrías agregar fecha de lectura anterior si la tienes -->
+                    <td>{{ boleta.lectura_actual|floatformat:2 }}</td>
+                    <td>—</td>
+                    <td class="consumo-destacado">{{ boleta.consumo|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Podrías agregar un gráfico de consumo si tienes datos; por ahora lo omitimos o dejamos placeholder -->
+        <!-- <div class="section-title">SU CONSUMO ÚLTIMOS 6 MESES</div>
+        <div style="height: 150px; background: #f0f0f0; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; justify-content: center;">
+            <span style="color: #777;">[Gráfico de consumo]</span>
+        </div> -->
+
+        <!-- Información de pago (Banco) -->
+        <div class="pago-info">
+            <div>
+                <span class="banco">🏦 PUEDES TRANSFERIRNOS O EN CAJA VECINA</span>
+            </div>
+            <div>
+                <span>Banco: {{ empresa.banco|default:"Banco Estado" }}</span><br>
+                <span>Tipo cuenta: {{ empresa.tipo_cuenta|default:"Cuenta Corriente" }}</span><br>
+                <span class="cuenta">N° cuenta: {{ empresa.numero_cuenta|default:"8330015917" }}</span>
+            </div>
+            <div>
+                <span>Email: {{ empresa.email|default:"chile@hotmail.com" }}</span>
+            </div>
+        </div>
+
+        <!-- Nota de corte (opcional, podrías mostrarlo según algún campo) -->
+        {% if boleta.nota_corte %}
+        <div class="notas">
+            <p><strong>CORTE EN TRÁMITE - FECHA CORTE {{ boleta.fecha_corte|date:"d/m/Y" }}</strong></p>
+            <p>{{ boleta.nota_corte }}</p>
+        </div>
+        {% else %}
+        <div class="notas">
+            <p><strong>NOTAS:</strong> Estimados socios, se informa que el día 25 de octubre se realizará una reunión online vía Zoom.</p>
+        </div>
+        {% endif %}
+
+        <!-- Tabla de montos -->
+        <table class="montos-table">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th class="right">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>NETO</td>
+                    <td class="right">$ {{ boleta.neto|default:boleta.total|floatformat:0|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td>IVA</td>
+                    <td class="right">$ {{ boleta.iva|default:"0"|floatformat:0|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td>TOTAL FACTURABLE</td>
+                    <td class="right">$ {{ boleta.total_facturable|default:boleta.total|floatformat:0|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td>TOTAL NO FACTURABLE</td>
+                    <td class="right">$ {{ boleta.total_no_facturable|default:"0"|floatformat:0|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td>SALDO ANTERIOR</td>
+                    <td class="right">$ {{ boleta.saldo_anterior|default:"0"|floatformat:0|intcomma }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>TOTAL A PAGAR</strong></td>
+                    <td class="right"><strong>$ {{ boleta.total|floatformat:0|intcomma }}</strong></td>
+                </tr>
+                <tr>
+                    <td>FECHA VENCIMIENTO</td>
+                    <td class="right"><strong>{{ boleta.fecha_vencimiento|date:"d/m/Y" }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Timbre electrónico y código de barras -->
+        <div class="timbre">
+            <div>
+                <span class="sii">TIMBRE ELECTRÓNICO SII</span><br>
+                <span>Res. 80 del 2014 Verifique documento en www.sii.cl</span>
+            </div>
+            {% if boleta.codigo_barras %}
+            <div class="codigo-barras">{{ boleta.codigo_barras }}</div>
+            {% else %}
+            <div class="codigo-barras">12345678901234567890</div>
+            {% endif %}
+        </div>
+
+        <!-- Información adicional cliente (ruta, tarifa, medidor) -->
+        <div class="info-adicional">
+            <div><span>TIPO CLIENTE:</span> {{ boleta.cliente.tipo_cliente|default:"USUARIO" }}</div>
+            <div><span>RUTA:</span> {{ boleta.cliente.ruta|default:"Alto Muro" }}</div>
+            <div><span>TARIFA:</span> {{ boleta.cliente.tarifa|default:"COMERCIAL DE 1/2" }}</div>
+            <div><span>N° de medidor:</span> {{ boleta.cliente.medidor|default:"9884" }}</div>
+        </div>
+
+        <!-- Contacto footer -->
+        <div class="footer-contacto">
+            <p>📞 HAZ TUS CONSULTAS AL {{ empresa.telefono|default:"995383215" }}  |  ✉️ {{ empresa.email|default:"contacto@aprsoftware.cl" }}</p>
+        </div>
+
+        <!-- Botón de imprimir (solo en pantalla) -->
+        <div class="print-button no-print">
+            <button onclick="window.print()">🖨️ IMPRIMIR / GUARDAR PDF</button>
+        </div>
+    </div>
+</body>
+</html>

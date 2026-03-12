@@ -88,10 +88,7 @@
             <i class="fas fa-arrow-left text-xs"></i>
             <span class="hidden sm:inline">Volver al panel</span>
           </a>
-          <a href="{% url 'logout_ssr' %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
-            <i class="fas fa-sign-out-alt text-xs"></i>
-            <span class="hidden sm:inline">Salir</span>
-          </a>
+          
         </div>
       </div>
     </div>
@@ -272,9 +269,11 @@
               <input type="text" id="tableSearch" placeholder="Buscar en tabla..." 
                      class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-64">
             </div>
-            <button onclick="exportToCSV()" class="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition-colors" title="Exportar">
+            <a href="{% url 'exportar_clientes' alias=slug %}?{{ request.GET.urlencode }}" 
+              class="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition-colors inline-flex items-center justify-center" 
+              title="Exportar">
               <i class="fas fa-download"></i>
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -345,14 +344,23 @@
                       </div>
                     {% endif %}
                   </td>
-                  <!-- Columna Boleta: icono según existencia -->
+                  <!-- Columna Boleta: icono y botón de impresión -->
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {% if cliente.boleta_mes %}
-                      <a href="{% url 'ver_boleta_cliente' alias=slug cliente_id=cliente.id %}" 
-                         class="inline-flex items-center justify-center h-8 w-8 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
-                         title="Ver boleta del mes">
-                        <i class="fas fa-file-invoice text-sm"></i>
-                      </a>
+                      <div class="flex items-center justify-center gap-1">
+                        <!-- Icono de boleta (vista normal) -->
+                        <a href="{% url 'ver_boleta_cliente' alias=slug cliente_id=cliente.id %}" 
+                          class="inline-flex items-center justify-center h-8 w-8 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Ver boleta del mes">
+                          <i class="fas fa-file-invoice text-sm"></i>
+                        </a>
+                        <!-- Botón para versión imprimible/PDF -->
+                        <a href="{% url 'ver_boleta_print' alias=slug boleta_id=cliente.boleta_id %}" 
+                          class="inline-flex items-center justify-center h-8 w-8 rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          title="Versión para imprimir" target="_blank">
+                          <i class="fas fa-print text-sm"></i>
+                        </a>
+                      </div>
                     {% else %}
                       <span class="text-gray-300" title="Sin boleta este mes">
                         <i class="fas fa-file-invoice text-sm"></i>
@@ -460,9 +468,10 @@
           <button onclick="generateReport()" class="text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
             <i class="fas fa-chart-bar"></i> Reporte
           </button>
-          <button onclick="importClients()" class="text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+          <a href="{% url 'importar_clientes' alias=slug %}" 
+            class="text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
             <i class="fas fa-file-import"></i> Importar
-          </button>
+          </a>
         </div>
       </div>
     </div>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Boleta {{ boleta.periodo }} - {{ empresa.nombre }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; padding: 2rem; }
+        .boleta { max-width: 1000px; margin: 0 auto; background: white; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 1.5rem; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .border-bottom { border-bottom: 1px solid #e5e7eb; }
+        .info-box { background: #f9fafb; border-radius: 0.5rem; padding: 1rem; }
+        .table-mini td { padding: 0.25rem 0.5rem; }
+        .table-montos { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .table-montos td, .table-montos th { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: right; }
+        .table-montos th { background: #f3f4f6; text-align: center; }
+        .total-row { font-weight: 700; background: #f9fafb; }
+    </style>
+</head>
+<body>
+    <div class="boleta p-8">
+        <!-- Encabezado -->
+        <div class="flex justify-between items-center border-bottom pb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-emerald-700">{{ empresa.nombre|upper }}</h1>
+                <p class="text-sm text-gray-600">CAPTACION, TRATAMIENTO Y DISTRIBUCIÓN DE AGUA</p>
+                <p class="text-xs text-gray-500">DIRECCIÓN: {{ empresa.direccion|default:"No especificada" }}</p>
+                <p class="text-xs text-gray-500">FONO: {{ empresa.telefono|default:"—" }} | EMAIL: {{ empresa.email|default:"—" }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-600">R.U.T.: {{ empresa.rut|default:"—" }}</p>
+                <p class="text-lg font-bold text-emerald-700">BOLETA ELECTRÓNICA</p>
+                <p class="text-sm">N° {{ boleta.id }}</p>
+                <p class="text-xs text-gray-500">Fecha emisión documento: {{ boleta.fecha_emision|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <!-- Datos del cliente -->
+        <div class="grid grid-cols-2 gap-6 mt-6">
+            <div class="info-box">
+                <h3 class="font-semibold text-gray-800 mb-2">Datos del cliente</h3>
+                <table class="w-full text-sm">
+                    <tr><td class="py-1 text-gray-600">Nombre</td><td class="font-medium">: {{ boleta.cliente.nombre }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">R.U.T.</td><td class="font-medium">: {{ boleta.cliente.rut }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">Dirección</td><td class="font-medium">: {{ boleta.cliente.direccion|default:"—" }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">Sector</td><td class="font-medium">: {{ boleta.cliente.sector|default:"—" }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">Giro</td><td class="font-medium">: Particular</td></tr>
+                </table>
+            </div>
+            <div class="info-box">
+                <h3 class="font-semibold text-gray-800 mb-2">Su consumo en m³ del mes</h3>
+                <table class="w-full text-sm">
+                    <tr><td class="py-1 text-gray-600">Lectura anterior</td><td class="font-medium">: {{ boleta.lectura_anterior|floatformat:2 }} (fecha toma {{ boleta.fecha_lectura_anterior|date:"d/m/Y"|default:"—" }})</td></tr>
+                    <tr><td class="py-1 text-gray-600">Lectura actual</td><td class="font-medium">: {{ boleta.lectura_actual|floatformat:2 }} (fecha toma {{ boleta.fecha_lectura|date:"d/m/Y" }})</td></tr>
+                    <tr><td class="py-1 text-gray-600 font-semibold">Consumo (m³)</td><td class="font-semibold">: {{ boleta.consumo|floatformat:2 }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Gráfico de últimos 6 meses (simulado) -->
+        <div class="mt-8">
+            <h3 class="font-semibold text-gray-800 mb-2">SU CONSUMO ÚLTIMOS 6 MESES</h3>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <canvas id="consumoChart" height="150"></canvas>
+                <p class="text-xs text-center text-gray-500 mt-2">MAY. JUL. SEP. NOV. ENE. MAR.</p>
+            </div>
+        </div>
+
+        <!-- Datos bancarios -->
+        <div class="grid grid-cols-2 gap-6 mt-8">
+            <div class="info-box">
+                <h3 class="font-semibold text-gray-800 mb-2">PUEDES TRANSFERIRNOS O EN CAJA VECINA</h3>
+                <table class="w-full text-sm">
+                    <tr><td class="py-1 text-gray-600">Nombre</td><td class="font-medium">: {{ empresa.nombre }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">Rut</td><td class="font-medium">: {{ empresa.rut }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">Banco</td><td class="font-medium">: {{ empresa.banco|default:"Banco Estado" }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">Tipo cuenta</td><td class="font-medium">: {{ empresa.tipo_cuenta|default:"Cuenta corriente" }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">N° cuenta</td><td class="font-medium">: {{ empresa.numero_cuenta|default:"8330015917" }}</td></tr>
+                    <tr><td class="py-1 text-gray-600">E-Mail</td><td class="font-medium">: {{ empresa.email|default:"chile@hotmail.com" }}</td></tr>
+                </table>
+            </div>
+            <div class="info-box">
+                <h3 class="font-semibold text-gray-800 mb-2 text-red-600">CORTE EN TRÁMITE - FECHA CORTE {{ boleta.fecha_corte|date:"d/m/Y"|default:"03/08/2021" }}</h3>
+                <p class="text-sm text-gray-600">NOTAS: {{ boleta.observaciones|default:"Estimados socios, se informa que el día 25 de octubre, se realizará una reunión on line vía Zoom." }}</p>
+            </div>
+        </div>
+
+        <!-- Tabla de montos -->
+        <div class="mt-8">
+            <table class="table-montos">
+                <thead>
+                    <tr>
+                        <th>EXENTO</th><th>NETO</th><th>IVA</th><th>TOTAL FACTURABLE</th><th>TOTAL NO FACTURABLE</th><th>SALDO ANTERIOR</th><th>TOTAL A PAGAR</th><th>FECHA VENCIMIENTO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>$ 0</td>
+                        <td>$ {{ boleta.monto_consumo|add:boleta.cargo_fijo|floatformat:0|intcomma }}</td>
+                        <td>$ {{ boleta.iva|default:boleta.monto_consumo|multiply:0.19|floatformat:0|intcomma }}</td>
+                        <td>$ {{ boleta.total|floatformat:0|intcomma }}</td>
+                        <td>$ {{ boleta.total_no_facturable|default:"12.941"|intcomma }}</td>
+                        <td>$ {{ boleta.saldo_anterior|default:"24.936"|intcomma }}</td>
+                        <td class="font-bold text-emerald-700">$ {{ boleta.total|add:boleta.saldo_anterior|default:boleta.total|floatformat:0|intcomma }}</td>
+                        <td>{{ boleta.fecha_vencimiento|date:"d/m/Y" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pie con timbre y datos adicionales -->
+        <div class="mt-6 flex justify-between items-center border-t pt-4 text-xs text-gray-500">
+            <div>
+                <p>TIMBRE ELECTRÓNICO SII</p>
+                <p>Res. 80 del 2014 Verifique documento en <a href="http://www.sii.cl" class="text-emerald-600">www.sii.cl</a></p>
+            </div>
+            <div class="text-right">
+                <p>TIPO CLIENTE: {{ boleta.cliente.tipo|default:"USUARIO" }} | RUTA: {{ boleta.cliente.ruta|default:"Alto Muro" }} | TARIFA: {{ boleta.cliente.tarifa|default:"COMERCIAL DE 1/2" }} | N° de medidor: {{ boleta.cliente.medidor }}</p>
+                <p class="mt-1">HAZ TUS CONSULTAS AL {{ empresa.telefono|default:"995383215" }}</p>
+                <p>ESCRIBENOS {{ empresa.email|default:"contacto@aprsoftware.cl"|upper }}</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gráfico de consumo (datos de ejemplo, puedes usar datos reales desde el contexto)
+        const ctx = document.getElementById('consumoChart').getContext('2d');
+        const consumoData = {{ consumos_ultimos_6_meses|safe|default:"[20, 25, 22, 28, 24, 30]" }};
+        const meses = ['MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC', 'ENE', 'FEB', 'MAR', 'ABR'];
+        // Tomar los últimos 6 meses según la fecha actual (o puedes pasar desde la vista)
+        const hoy = new Date();
+        let labels = [];
+        for (let i = 5; i >= 0; i--) {
+            let d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+            labels.push(meses[d.getMonth()]);
+        }
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Consumo (m³)',
+                    data: consumoData,
+                    backgroundColor: '#10b981',
+                    borderColor: '#059669',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    </script>
+</body>
+</html>

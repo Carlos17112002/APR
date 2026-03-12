@@ -87,6 +87,16 @@
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        /* Toast animation */
+        .toast-animation {
+            animation: slideIn 0.2s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -250,7 +260,7 @@
                                     <p class="text-xs text-gray-500">Última Lectura</p>
                                     {% if lecturas.0 %}
                                     <p class="font-bold text-gray-900 text-lg">
-                                        {{ lecturas.0.consumo|default:"0" }} m³
+                                        {{ lecturas.0.consumo|floatformat:2 }} m³
                                     </p>
                                     {% else %}
                                     <p class="font-bold text-gray-900 text-lg">Sin datos</p>
@@ -284,11 +294,11 @@
                         </div>
                     </div>
                     
-                    <!-- Acciones Rápidas -->
+                    <!-- Acciones Rápidas (con modal funcional) -->
                     <div class="bg-white rounded-xl card-shadow p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
                         <div class="space-y-3">
-                            <button onclick="alert('Funcionalidad en desarrollo')" 
+                            <button onclick="abrirModalLectura()" 
                                     class="w-full flex items-center justify-between p-3 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">
                                 <div class="flex items-center">
                                     <i class="fas fa-tachometer-alt mr-3"></i>
@@ -341,16 +351,16 @@
             </div>
         </div>
         
-        <!-- Pestaña: Lecturas -->
+        <!-- Pestaña: Lecturas (con botón funcional) -->
         <div id="contentLecturas" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200">
                     <div class="flex justify-between items-center">
                         <div>
                             <h2 class="text-xl font-semibold text-gray-900">Historial de Lecturas</h2>
-                            <p class="text-gray-500 text-sm mt-1">{{ lecturas|length }} lectura{{ lecturas|length|pluralize }} registrada{{ lecturas|length|pluralize }}</p>
+                            <p class="text-gray-500 text-sm mt-1" id="contadorLecturas">{{ lecturas|length }} lectura{{ lecturas|length|pluralize }} registrada{{ lecturas|length|pluralize }}</p>
                         </div>
-                        <button onclick="alert('Funcionalidad en desarrollo')" 
+                        <button onclick="abrirModalLectura()" 
                                 class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
                             <i class="fas fa-plus mr-2"></i> Nueva Lectura
                         </button>
@@ -370,38 +380,42 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Observaciones</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
+                        <tbody id="tablaLecturasBody" class="divide-y divide-gray-200">
                             {% for lectura in lecturas %}
-                            <tr class="table-row-hover">
+                            <tr class="table-row-hover" data-lectura-id="{{ lectura.id }}">
                                 <td class="px-6 py-4">
-                                    {{ lectura.fecha|date:"d/m/Y" }}
+                                    {{ lectura.fecha_lectura|date:"d/m/Y" }}
                                 </td>
                                 <td class="px-6 py-4 font-mono">
-                                    {{ lectura.lectura_anterior|default:"-" }}
+                                    {{ lectura.lectura_anterior|floatformat:3|default:"-" }}
                                 </td>
                                 <td class="px-6 py-4 font-mono font-bold">
-                                    {{ lectura.lectura_actual }}
+                                    {{ lectura.lectura_actual|floatformat:3 }}
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="font-bold text-blue-700">{{ lectura.consumo|default:"0" }} m³</span>
+                                    <span class="font-bold text-blue-700">{{ lectura.consumo|floatformat:3|default:"0" }} m³</span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    {% if lectura.estado == 'normal' %}
+                                    {% if lectura.estado == 'cargada' %}
                                     <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
-                                        Normal
+                                        <i class="fas fa-check-circle mr-1"></i> Normal
                                     </span>
-                                    {% elif lectura.estado == 'irregular' %}
+                                    {% elif lectura.estado == 'procesada' %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                        <i class="fas fa-file-invoice mr-1"></i> Procesada
+                                    </span>
+                                    {% elif lectura.estado == 'pendiente' %}
                                     <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
-                                        Irregular
+                                        <i class="fas fa-clock mr-1"></i> Pendiente
                                     </span>
                                     {% else %}
                                     <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
-                                        Pendiente
+                                        {{ lectura.estado|capfirst }}
                                     </span>
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-500">
-                                    {{ lectura.observaciones|truncatechars:30|default:"-" }}
+                                    {{ lectura.observaciones_app|truncatechars:30|default:"-" }}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -409,11 +423,11 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="text-center py-12">
+                <div id="sinLecturasPlaceholder" class="text-center py-12">
                     <i class="fas fa-tachometer-alt text-4xl text-gray-300 mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-700 mb-2">No hay lecturas registradas</h3>
                     <p class="text-gray-500 mb-6">Este cliente no tiene lecturas registradas.</p>
-                    <button onclick="alert('Funcionalidad en desarrollo')" 
+                    <button onclick="abrirModalLectura()" 
                             class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
                         <i class="fas fa-plus mr-2"></i> Registrar Primera Lectura
                     </button>
@@ -422,7 +436,7 @@
             </div>
         </div>
         
-        <!-- Pestaña: Pagos -->
+        <!-- Pestaña: Pagos (igual que original) -->
         <div id="contentPagos" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200">
@@ -501,7 +515,7 @@
             </div>
         </div>
         
-        <!-- Pestaña: Historial Completo (solo enlace) -->
+        <!-- Pestaña: Historial Completo -->
         <div id="contentHistorial" class="tab-content hidden">
             <div class="text-center py-12">
                 <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
@@ -511,6 +525,62 @@
                    class="bg-purple-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-purple-700 transition-colors inline-flex items-center">
                     <i class="fas fa-external-link-alt mr-2"></i> Ver Historial Completo
                 </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de registro de lectura -->
+    <div id="modalRegistrarLectura" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Registrar Lectura</h3>
+                    <button onclick="cerrarModalLectura()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form id="formRegistrarLectura">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt text-gray-400 mr-1"></i> Fecha de lectura
+                        </label>
+                        <input type="date" name="fecha" value="{% now 'Y-m-d' %}" 
+                               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tachometer-alt text-gray-400 mr-1"></i> Lectura actual (m³)
+                        </label>
+                        <input type="number" step="0.001" name="lectura_actual" 
+                               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus" 
+                               placeholder="0.000" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-sticky-note text-gray-400 mr-1"></i> Observaciones
+                        </label>
+                        <textarea name="observaciones" rows="3" 
+                                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus resize-none"
+                                  placeholder="Opcional"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalLectura()" 
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center">
+                            <i class="fas fa-save mr-2"></i> Guardar Lectura
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -552,23 +622,16 @@
     </div>
 
     <script>
-        // Sistema de pestañas
+        // ----- Sistema de pestañas -----
         function switchTab(tabName) {
-            // Ocultar todos los contenidos
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
             });
-            
-            // Remover clase activa de todas las pestañas
             document.querySelectorAll('[id^="tab"]').forEach(tab => {
                 tab.classList.remove('tab-active');
                 tab.classList.add('text-gray-600');
             });
-            
-            // Mostrar contenido seleccionado
             document.getElementById('content' + capitalizeFirst(tabName)).classList.remove('hidden');
-            
-            // Activar pestaña seleccionada
             document.getElementById('tab' + capitalizeFirst(tabName)).classList.add('tab-active');
             document.getElementById('tab' + capitalizeFirst(tabName)).classList.remove('text-gray-600');
         }
@@ -577,10 +640,10 @@
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
         
-        // Gráfico de consumo
+        // ----- Gráfico de consumo (ejemplo) -----
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('consumoChart').getContext('2d');
-            const consumoChart = new Chart(ctx, {
+            new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
@@ -597,29 +660,16 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                drawBorder: false
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
+                        y: { beginAtZero: true, grid: { drawBorder: false } },
+                        x: { grid: { display: false } }
                     }
                 }
             });
         });
         
-        // Modal de eliminación
+        // ----- Modal de eliminación -----
         function openDeleteModal(clientId, clientName) {
             document.getElementById('deleteClientId').value = clientId;
             document.getElementById('deleteClientName').textContent = clientName;
@@ -633,18 +683,13 @@
             document.body.style.overflow = 'auto';
         }
         
-        // Eliminación con AJAX
         document.getElementById('deleteForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
             const clientId = formData.get('cliente_id');
-            
             fetch(this.action, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
                 body: formData
             })
             .then(response => response.json())
@@ -663,12 +708,131 @@
             });
         });
         
-        // Cerrar modal haciendo clic fuera
         window.onclick = function(event) {
             const modal = document.getElementById('deleteModal');
-            if (event.target === modal) {
-                closeDeleteModal();
+            if (event.target === modal) closeDeleteModal();
+            const modalLectura = document.getElementById('modalRegistrarLectura');
+            if (event.target === modalLectura) cerrarModalLectura();
+        };
+        
+        // ----- Modal de registro de lectura -----
+        function abrirModalLectura() {
+            document.getElementById('modalRegistrarLectura').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function cerrarModalLectura() {
+            document.getElementById('modalRegistrarLectura').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formRegistrarLectura').reset();
+        }
+        
+        // Envío AJAX del formulario
+        document.getElementById('formRegistrarLectura').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const url = "{% url 'registrar_lectura_ajax' alias=slug cliente_id=cliente.id %}";
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalLectura();
+                    mostrarToast('Lectura registrada correctamente', 'success');
+                    agregarFilaLectura(data.lectura);
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                mostrarToast('Error de conexión', 'error');
+                console.error(error);
+            });
+        });
+        
+        // Función para agregar una nueva fila a la tabla de lecturas
+        function agregarFilaLectura(lectura) {
+            const tbody = document.getElementById('tablaLecturasBody');
+            const placeholder = document.getElementById('sinLecturasPlaceholder');
+            
+            // Si no hay tabla (estaba vacío), recargamos la página (o reconstruimos la tabla)
+            if (!tbody) {
+                location.reload();
+                return;
             }
+            
+            // Si el placeholder existe, significa que no había lecturas; lo eliminamos
+            if (placeholder) {
+                const contenedor = placeholder.closest('.bg-white');
+                const tabla = contenedor.querySelector('table');
+                if (tabla) {
+                    tabla.classList.remove('hidden');
+                }
+                placeholder.remove();
+            }
+            
+            // Crear nueva fila
+            const fila = document.createElement('tr');
+            fila.className = 'table-row-hover';
+            fila.setAttribute('data-lectura-id', lectura.id);
+            
+            // Determinar badge de estado
+            let badgeHtml = '';
+            if (lectura.estado === 'cargada') {
+                badgeHtml = '<span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800"><i class="fas fa-check-circle mr-1"></i> Normal</span>';
+            } else if (lectura.estado === 'procesada') {
+                badgeHtml = '<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800"><i class="fas fa-file-invoice mr-1"></i> Procesada</span>';
+            } else if (lectura.estado === 'pendiente') {
+                badgeHtml = '<span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800"><i class="fas fa-clock mr-1"></i> Pendiente</span>';
+            } else {
+                badgeHtml = `<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">${lectura.estado}</span>`;
+            }
+            
+            fila.innerHTML = `
+                <td class="px-6 py-4">${lectura.fecha}</td>
+                <td class="px-6 py-4 font-mono">${lectura.lectura_anterior !== null ? lectura.lectura_anterior : '-'}</td>
+                <td class="px-6 py-4 font-mono font-bold">${lectura.lectura_actual}</td>
+                <td class="px-6 py-4"><span class="font-bold text-blue-700">${lectura.consumo} m³</span></td>
+                <td class="px-6 py-4">${badgeHtml}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${lectura.observaciones || '-'}</td>
+            `;
+            
+            tbody.insertBefore(fila, tbody.firstChild);
+            
+            // Actualizar contador
+            const contador = document.getElementById('contadorLecturas');
+            if (contador) {
+                let texto = contador.textContent;
+                let match = texto.match(/(\d+)/);
+                if (match) {
+                    let total = parseInt(match[0]) + 1;
+                    contador.textContent = total + ' lectura' + (total !== 1 ? 's' : '') + ' registrada' + (total !== 1 ? 's' : '');
+                }
+            }
+            
+            // Actualizar "Última Lectura" en la información general
+            const ultimaLecturaSpan = document.querySelector('.bg-gray-50 p.text-lg');
+            if (ultimaLecturaSpan && ultimaLecturaSpan.textContent.includes('Sin datos')) {
+                ultimaLecturaSpan.textContent = lectura.consumo + ' m³';
+            }
+        }
+        
+        // Función para mostrar notificaciones toast
+        function mostrarToast(mensaje, tipo) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${tipo === 'success' ? 'bg-emerald-600' : 'bg-red-600'} toast-animation z-50`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                    <span>${mensaje}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
     </script>
 </body>

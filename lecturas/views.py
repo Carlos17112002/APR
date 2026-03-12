@@ -28,14 +28,23 @@ logger = logging.getLogger(__name__)
 
 # ========== VISTAS PARA WEB ==========
 
+from django.db.models import Q
+from django.db.models.functions import ExtractYear
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from empresas.models import Empresa
+from lecturas.models import LecturaMovil
+from clientes.models import Cliente
+
 @login_required
 def listado_lecturas_app(request, alias):
     """
     Vista para listar lecturas de la app móvil
     """
-    empresa = get_object_or_404(Empresa, slug=alias)
+    empresa_obj = get_object_or_404(Empresa, slug=alias)
     
-    # Verificar que el usuario tiene acceso a esta empresa
+    # Verificar que el usuario tiene acceso a esta empresa (implementar según tu lógica)
 
     filtros = {
         'mes': request.GET.get('mes', 'all'),
@@ -44,8 +53,8 @@ def listado_lecturas_app(request, alias):
         'usuario': request.GET.get('usuario', ''),
     }
     
-    # Construir query
-    query = Q(empresa=empresa)
+    # Construir query usando empresa_slug en lugar de empresa
+    query = Q(empresa_slug=alias)
     
     if filtros['mes'] != 'all':
         try:
@@ -75,45 +84,37 @@ def listado_lecturas_app(request, alias):
     inicio_mes = hoy.replace(day=1)
     
     lecturas_hoy = LecturaMovil.objects.filter(
-        empresa=empresa,
+        empresa_slug=alias,
         fecha_sincronizacion__date=hoy
     ).count()
     
     lecturas_mes = LecturaMovil.objects.filter(
-        empresa=empresa,
+        empresa_slug=alias,
         fecha_sincronizacion__date__gte=inicio_mes
     ).count()
     
     # Obtener usuarios únicos
     usuarios = LecturaMovil.objects.filter(
-        empresa=empresa
+        empresa_slug=alias
     ).values_list('usuario_app', flat=True).distinct()
     
     # Obtener estados únicos para filtro
     estados_filtro = LecturaMovil.objects.filter(
-        empresa=empresa
+        empresa_slug=alias
     ).values_list('estado', flat=True).distinct()
     
-    # Obtener información de clientes desde la BD específica
+    # Obtener información de clientes desde la BD específica usando el ORM
     cliente_info = {}
     try:
-        alias_db = f'db_{alias}'
-        
-        if alias_db in connection.settings_dict['DATABASES']:
-            with connection.cursor() as cursor:
-                cursor.execute(f"""
-                    SELECT id, nombre, rut, medidor
-                    FROM clientes_cliente 
-                    WHERE empresa_slug = %s
-                """, [alias])
-                
-                for row in cursor.fetchall():
-                    cliente_id, nombre, rut, medidor = row
-                    cliente_info[str(cliente_id)] = {
-                        'nombre': nombre or f"Cliente {cliente_id}",
-                        'rut': rut or "No especificado",
-                        'medidor': medidor or "No especificado"
-                    }
+        db_alias = f'db_{alias}'
+        clientes = Cliente.objects.using(db_alias).filter(empresa_slug=alias).values('id', 'nombre', 'rut', 'medidor')
+        for c in clientes:
+            cliente_id = str(c['id'])
+            cliente_info[cliente_id] = {
+                'nombre': c['nombre'] or f"Cliente {c['id']}",
+                'rut': c['rut'] or "No especificado",
+                'medidor': c['medidor'] or "No especificado"
+            }
     except Exception as e:
         print(f"Error obteniendo info de clientes: {e}")
         cliente_info = {}
@@ -144,28 +145,25 @@ def listado_lecturas_app(request, alias):
         (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
     ]
     
-    # Obtener años disponibles - FORMA CORREGIDA
+    # Obtener años disponibles
     try:
-        # Opción 1: Usar annotate y values
         anios = LecturaMovil.objects.filter(
-            empresa=empresa
+            empresa_slug=alias
         ).annotate(
             year=ExtractYear('fecha_lectura')
         ).values_list('year', flat=True).distinct().order_by('-year')
         
         anios = list(anios)
         
-        # Si no hay años, usar el año actual
         if not anios:
             anios = [timezone.now().year]
     except Exception as e:
         print(f"Error obteniendo años: {e}")
-        # Fallback: últimos 5 años
         current_year = timezone.now().year
         anios = list(range(current_year - 4, current_year + 1))
     
     context = {
-        'empresa': empresa,
+        'empresa': empresa_obj,  # pasamos el objeto para usar en template
         'slug': alias,
         'lecturas_con_info': lecturas_con_info,
         'lecturas_hoy': lecturas_hoy,
@@ -183,7 +181,7 @@ def listado_lecturas_app(request, alias):
 @login_required
 def generar_boletas_lote(request, alias):
     """
-    Vista para generar boletas en lote a partir de lecturas - CORREGIDO: acepta 'alias'
+    Vista para generar boletas en lote a partir de lecturas
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
@@ -201,7 +199,7 @@ def generar_boletas_lote(request, alias):
         boletas_existentes = Boleta.objects.using(alias_db).filter(
             mes=mes,
             anio=anio,
-            empresa=empresa
+            empresa=empresa  # Boleta tiene FK a Empresa
         ).count()
         
         if boletas_existentes > 0:
@@ -211,9 +209,11 @@ def generar_boletas_lote(request, alias):
             })
         
         # Obtener lecturas completadas para el período
-        query = Q(empresa=empresa, mes=mes, anio=anio, estado='completada')
+        # CORRECCIÓN: usar empresa_id en lugar de empresa
+        query = Q(empresa_id=empresa.id, mes=mes, anio=anio, estado='completada')
         if sector and sector != 'all':
-            query &= Q(cliente__sector__nombre=sector)
+            # sector en Cliente es CharField, no relación
+            query &= Q(cliente__sector=sector)
         
         lecturas = LecturaMovil.objects.using(alias_db).filter(query).select_related('cliente')
         
@@ -285,7 +285,6 @@ def generar_boletas_lote(request, alias):
                         'error': str(e)
                     })
         
-        # Registrar en log de la empresa
         logger.info(f"Generadas {boletas_generadas} boletas para empresa {empresa.nombre} ({mes}/{anio})")
         
         return JsonResponse({
@@ -309,14 +308,14 @@ def generar_boletas_lote(request, alias):
 @login_required
 def listado_boletas(request, alias):
     """
-    Vista para listar boletas generadas - CORREGIDO: acepta 'alias'
+    Vista para listar boletas generadas
     """
     empresa = get_object_or_404(Empresa, slug=alias)
     alias_db = f'db_{alias}'
     
     # Obtener boletas
     boletas = Boleta.objects.using(alias_db).select_related(
-        'cliente', 'lectura', 'cliente__sector'
+        'cliente', 'lectura'
     ).filter(empresa=empresa).order_by('-fecha_emision')
     
     # Aplicar filtros
@@ -333,7 +332,8 @@ def listado_boletas(request, alias):
     if anio and anio != 'all':
         boletas = boletas.filter(anio=anio)
     if sector and sector != 'all':
-        boletas = boletas.filter(cliente__sector__nombre=sector)
+        # sector en Cliente es CharField, no relación
+        boletas = boletas.filter(cliente__sector=sector)
     if cliente:
         boletas = boletas.filter(Q(cliente__nombre__icontains=cliente) | Q(cliente__rut__icontains=cliente))
     
@@ -358,11 +358,14 @@ def listado_boletas(request, alias):
         'monto_pagado': float(boletas_mes.filter(estado='pagada').aggregate(Sum('monto_total'))['monto_total__sum'] or 0),
     }
     
-    # Obtener sectores disponibles
-    sectores = Cliente.objects.using(alias_db).filter(
-        empresa=empresa,
-        activo=True
-    ).values_list('sector__nombre', flat=True).distinct().order_by('sector__nombre')
+    # Obtener sectores disponibles desde Cliente en la BD de la empresa
+    sectores = []
+    try:
+        sectores = Cliente.objects.using(alias_db).filter(
+            empresa_slug=alias  # si Cliente tiene este campo
+        ).values_list('sector', flat=True).distinct().order_by('sector')
+    except Exception as e:
+        logger.error(f"Error obteniendo sectores: {e}")
     
     # Obtener años disponibles
     anios_disponibles = Boleta.objects.using(alias_db).filter(
@@ -371,7 +374,7 @@ def listado_boletas(request, alias):
     
     context = {
         'empresa': empresa,
-        'slug': alias,  # Cambiado de empresa_slug a alias
+        'slug': alias,
         'page_obj': page_obj,
         'boletas': page_obj.object_list,
         'estados': Boleta.ESTADOS_BOLETA,
@@ -398,21 +401,21 @@ def listado_boletas(request, alias):
 @login_required
 def detalle_lectura(request, alias, lectura_id):
     """
-    Vista para ver el detalle de una lectura específica - CORREGIDO: acepta 'alias'
+    Vista para ver el detalle de una lectura específica
     """
     empresa = get_object_or_404(Empresa, slug=alias)
     alias_db = f'db_{alias}'
     
-    # NOTA: El modelo LecturaMovil está en la BD principal, no en la específica
+    # Lectura está en BD principal
     lectura = get_object_or_404(LecturaMovil.objects.select_related(
-        'empresa'
-    ), id=lectura_id, empresa=empresa)
+        'empresa'  # esto asume que LecturaMovil tiene FK 'empresa' al modelo Empresa
+    ), id=lectura_id, empresa_id=empresa.id)  # filtrar por empresa_id
     
     # Obtener información del cliente desde la BD específica
     cliente_info = None
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(f"""
+        with connection.cursor(using=alias_db) as cursor:
+            cursor.execute("""
                 SELECT nombre, rut, direccion, medidor 
                 FROM clientes_cliente 
                 WHERE id = %s AND empresa_slug = %s
@@ -427,18 +430,18 @@ def detalle_lectura(request, alias, lectura_id):
                     'medidor': row[3] or "No especificado"
                 }
     except Exception as e:
-        print(f"Error obteniendo info del cliente: {e}")
+        logger.error(f"Error obteniendo info del cliente: {e}")
     
     # Obtener lecturas anteriores del mismo cliente (desde BD principal)
     lecturas_anteriores = LecturaMovil.objects.filter(
-        empresa=empresa,
+        empresa_id=empresa.id,  # usar empresa_id
         cliente=lectura.cliente
     ).exclude(id=lectura_id).order_by('-fecha_lectura')[:5]
     
     # Obtener boleta relacionada si existe
     boleta_relacionada = None
     try:
-        boleta_relacionada = Boleta.objects.filter(
+        boleta_relacionada = Boleta.objects.using(alias_db).filter(
             lectura=lectura
         ).first()
     except:
@@ -458,16 +461,15 @@ def detalle_lectura(request, alias, lectura_id):
 @login_required
 def estadisticas_lecturas(request, alias):
     """
-    Vista para mostrar estadísticas de lecturas - CORREGIDO: acepta 'alias'
+    Vista para mostrar estadísticas de lecturas
     """
     empresa = get_object_or_404(Empresa, slug=alias)
     
     # Parámetros de tiempo
     mes = request.GET.get('mes', timezone.now().month)
     anio = request.GET.get('anio', timezone.now().year)
-    periodo = request.GET.get('periodo', 'mensual')  # mensual, trimestral, anual
+    periodo = request.GET.get('periodo', 'mensual')
     
-    # Obtener datos según período
     hoy = timezone.now().date()
     
     if periodo == 'mensual':
@@ -487,53 +489,49 @@ def estadisticas_lecturas(request, alias):
     
     # Consultar datos (desde BD principal)
     lecturas_periodo = LecturaMovil.objects.filter(
-        empresa=empresa,
+        empresa_id=empresa.id,  # usar empresa_id
         fecha_lectura__date__range=[fecha_inicio, fecha_fin],
-        estado='cargada'  # NOTA: Cambiado de 'completada' a 'cargada'
+        estado='cargada'
     )
     
-    # Estadísticas generales
     total_lecturas = lecturas_periodo.count()
     lecturas_por_usuario = lecturas_periodo.values('usuario_app').annotate(
         total=Count('id')
     ).order_by('-total')
     
-    # Obtener información de clientes por sector
+    # Obtener información de clientes por sector (desde BD de empresa)
     lecturas_por_sector = []
+    alias_db = f'db_{alias}'
     try:
-        alias_db = f'db_{alias}'
-        if alias_db in connection.settings_dict['DATABASES']:
-            with connection.cursor() as cursor:
-                # Obtener clientes con lecturas en el período
-                cursor.execute(f"""
-                    SELECT cc.sector, COUNT(lm.id) as total
-                    FROM lecturas_lecturamovil lm
-                    INNER JOIN clientes_cliente cc ON lm.cliente = cc.id
-                    WHERE lm.empresa_slug = %s 
-                    AND lm.fecha_lectura BETWEEN %s AND %s
-                    AND lm.estado = 'cargada'
-                    GROUP BY cc.sector
-                    ORDER BY total DESC
-                """, [alias, fecha_inicio, fecha_fin])
-                
-                for row in cursor.fetchall():
-                    lecturas_por_sector.append({
-                        'sector': row[0] or 'Sin sector',
-                        'total': row[1],
-                        'porcentaje': (row[1] * 100.0 / total_lecturas) if total_lecturas > 0 else 0
-                    })
+        with connection.cursor(using=alias_db) as cursor:
+            cursor.execute("""
+                SELECT cc.sector, COUNT(lm.id) as total
+                FROM lecturas_lecturamovil lm
+                INNER JOIN clientes_cliente cc ON lm.cliente = cc.id
+                WHERE lm.empresa_slug = %s 
+                AND lm.fecha_lectura BETWEEN %s AND %s
+                AND lm.estado = 'cargada'
+                GROUP BY cc.sector
+                ORDER BY total DESC
+            """, [alias, fecha_inicio, fecha_fin])
+            
+            for row in cursor.fetchall():
+                lecturas_por_sector.append({
+                    'sector': row[0] or 'Sin sector',
+                    'total': row[1],
+                    'porcentaje': (row[1] * 100.0 / total_lecturas) if total_lecturas > 0 else 0
+                })
     except Exception as e:
-        print(f"Error obteniendo lecturas por sector: {e}")
+        logger.error(f"Error obteniendo lecturas por sector: {e}")
     
     lecturas_por_dia = lecturas_periodo.values('fecha_lectura__date').annotate(
         total=Count('id')
     ).order_by('fecha_lectura__date')
     
-    # Promedios
     promedio_diario = total_lecturas / ((fecha_fin - fecha_inicio).days + 1) if (fecha_fin - fecha_inicio).days > 0 else 0
     promedio_por_usuario = total_lecturas / lecturas_por_usuario.count() if lecturas_por_usuario.count() > 0 else 0
     
-    # Obtener datos para gráficos
+    # Datos para gráficos
     dias = []
     lecturas_por_dia_list = []
     for item in lecturas_por_dia:
@@ -590,21 +588,22 @@ def estadisticas_lecturas(request, alias):
     
     return render(request, 'lecturas/estadisticas_lecturas.html', context)
 
+from django.conf import settings
+
 @login_required
 def mapa_lecturas(request, alias):
     """
-    Vista para mostrar lecturas en un mapa - CORREGIDO: acepta 'alias'
+    Vista para mostrar lecturas en un mapa
     """
     empresa = get_object_or_404(Empresa, slug=alias)
     
-    # Obtener parámetros
     mes = request.GET.get('mes', timezone.now().month)
     anio = request.GET.get('anio', timezone.now().year)
     estado = request.GET.get('estado', 'cargada')
     
     # Obtener lecturas con coordenadas (desde BD principal)
     lecturas = LecturaMovil.objects.filter(
-        empresa=empresa,
+        empresa_id=empresa.id,  # usar empresa_id
         fecha_lectura__month=mes,
         fecha_lectura__year=anio,
         estado=estado,
@@ -612,51 +611,59 @@ def mapa_lecturas(request, alias):
         longitud__isnull=False
     )
     
-    # Preparar datos para el mapa
     puntos_mapa = []
     for lectura in lecturas:
-        if lectura.latitud and lectura.longitud:
-            puntos_mapa.append({
-                'id': lectura.id,
-                'nombre': f"Cliente {lectura.cliente}",
-                'lat': float(lectura.latitud),
-                'lng': float(lectura.longitud),
-                'lectura': float(lectura.lectura_actual),
-                'fecha': lectura.fecha_lectura.strftime('%d/%m/%Y'),
-                'usuario': lectura.usuario_app,
-                'estado': lectura.estado,
-                'color': {
-                    'cargada': 'green',
-                    'pendiente': 'orange',
-                    'procesada': 'blue'
-                }.get(lectura.estado, 'gray')
-            })
+        puntos_mapa.append({
+            'id': lectura.id,
+            'nombre': f"Cliente {lectura.cliente}",
+            'lat': float(lectura.latitud),
+            'lng': float(lectura.longitud),
+            'lectura': float(lectura.lectura_actual),
+            'fecha': lectura.fecha_lectura.strftime('%d/%m/%Y'),
+            'usuario': lectura.usuario_app,
+            'estado': lectura.estado,
+            'color': {
+                'cargada': 'green',
+                'pendiente': 'orange',
+                'procesada': 'blue'
+            }.get(lectura.estado, 'gray')
+        })
     
-    # Obtener información de sectores
+    # Obtener información de sectores (desde BD de empresa)
     lecturas_por_sector = []
-    try:
-        alias_db = f'db_{alias}'
-        if alias_db in connection.settings_dict['DATABASES']:
-            with connection.cursor() as cursor:
-                cursor.execute(f"""
+    alias_db = f'db_{alias}'
+    if alias_db in settings.DATABASES:
+        try:
+            with connection.cursor(using=alias_db) as cursor:
+                cursor.execute("""
                     SELECT cc.sector, COUNT(lm.id) as total
                     FROM lecturas_lecturamovil lm
                     INNER JOIN clientes_cliente cc ON lm.cliente = cc.id
                     WHERE lm.empresa_slug = %s 
-                    AND MONTH(lm.fecha_lectura) = %s 
-                    AND YEAR(lm.fecha_lectura) = %s
+                    AND strftime('%%m', lm.fecha_lectura) = %s
+                    AND strftime('%%Y', lm.fecha_lectura) = %s
                     AND lm.estado = %s
                     GROUP BY cc.sector
                     ORDER BY total DESC
-                """, [alias, mes, anio, estado])
+                """, [alias, f"{mes:02d}", str(anio), estado])
                 
                 for row in cursor.fetchall():
                     lecturas_por_sector.append({
                         'sector': row[0] or 'Sin sector',
                         'total': row[1]
                     })
-    except Exception as e:
-        print(f"Error obteniendo lecturas por sector: {e}")
+        except Exception as e:
+            logger.error(f"Error obteniendo lecturas por sector: {e}")
+    
+    if not lecturas_por_sector:
+        lecturas_por_sector = [{'sector': 'Sin datos', 'total': 0}]
+    
+    if puntos_mapa:
+        center_lat = puntos_mapa[0]['lat']
+        center_lng = puntos_mapa[0]['lng']
+    else:
+        center_lat = -33.4489
+        center_lng = -70.6693
     
     context = {
         'empresa': empresa,
@@ -676,8 +683,8 @@ def mapa_lecturas(request, alias):
         ],
         'anios': range(timezone.now().year - 5, timezone.now().year + 1),
         'estados': ['cargada', 'pendiente', 'procesada'],
-        'center_lat': -33.4489 if not puntos_mapa else puntos_mapa[0]['lat'] if puntos_mapa else -33.4489,
-        'center_lng': -70.6693 if not puntos_mapa else puntos_mapa[0]['lng'] if puntos_mapa else -70.6693,
+        'center_lat': center_lat,
+        'center_lng': center_lng,
     }
     
     return render(request, 'lecturas/mapa_lecturas.html', context)
@@ -1709,3 +1716,80 @@ def api_descargar_config_app(request, alias):
             'success': False,
             'error': str(e)
         }, status=500)
+    
+from django.views.decorators.http import require_http_methods, require_POST, require_GET
+        
+@login_required
+@require_POST
+def registrar_lectura_ajax(request, alias, cliente_id):
+    try:
+        # Obtener empresa (objeto completo, no solo slug)
+        empresa_obj = get_object_or_404(Empresa, slug=alias)
+        db_alias = f'db_{alias}'
+        cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+        # Obtener datos del POST
+        fecha_str = request.POST.get('fecha')
+        lectura_actual = request.POST.get('lectura_actual')
+        observaciones = request.POST.get('observaciones', '')
+
+        # Validar lectura
+        if not lectura_actual:
+            return JsonResponse({'success': False, 'error': 'El valor de lectura es obligatorio.'})
+        try:
+            lectura_actual = Decimal(lectura_actual)
+        except:
+            return JsonResponse({'success': False, 'error': 'Valor de lectura inválido.'})
+
+        # Procesar fecha
+        from datetime import datetime
+        try:
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except:
+            fecha = timezone.now().date()
+
+        # Obtener última lectura (usando el ID del cliente)
+        ultima_lectura = LecturaMovil.objects.using(db_alias).filter(
+            cliente=cliente.id
+        ).order_by('-fecha_lectura').first()
+
+        lectura_anterior = ultima_lectura.lectura_actual if ultima_lectura else Decimal('0')
+        consumo = lectura_actual - lectura_anterior
+        if consumo < 0:
+            consumo = Decimal('0')
+            estado = 'pendiente'   # Ajusta según tus choices
+        else:
+            estado = 'cargada'
+
+        # Crear la lectura
+        nueva_lectura = LecturaMovil.objects.using(db_alias).create(
+            empresa_id=empresa_obj.id,
+            cliente=cliente.id,
+            fecha_lectura=fecha,
+            lectura_actual=lectura_actual,
+            lectura_anterior=lectura_anterior,
+            consumo=consumo,
+            estado=estado,
+            observaciones_app=observaciones,
+            usuario_app=request.user.username,
+            empresa_slug=alias,
+        )
+
+        # Respuesta JSON
+        data = {
+            'id': str(nueva_lectura.id),
+            'fecha': nueva_lectura.fecha_lectura.strftime('%d/%m/%Y'),
+            'lectura_anterior': str(nueva_lectura.lectura_anterior),
+            'lectura_actual': str(nueva_lectura.lectura_actual),
+            'consumo': str(nueva_lectura.consumo),
+            'estado': nueva_lectura.estado,
+            'observaciones': nueva_lectura.observaciones_app,
+        }
+        return JsonResponse({'success': True, 'lectura': data})
+
+    except Exception as e:
+        # Log del error
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error en registrar_lectura_ajax: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)})

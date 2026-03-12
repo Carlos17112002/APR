@@ -508,6 +508,9 @@ def subir_lecturas(request):
         errores = []
         ids_guardados = []
 
+        # Importar aquí para evitar dependencia circular
+        from clientes.models import Cliente
+
         for idx, lectura_data in enumerate(lecturas):
             try:
                 cliente_id = lectura_data.get('cliente_id')
@@ -517,6 +520,12 @@ def subir_lecturas(request):
                 if not cliente_id or lectura_actual is None or not fecha_lectura_str:
                     raise ValueError("Faltan campos requeridos (cliente_id, lectura_actual, fecha_lectura)")
 
+                # Verificar que el cliente existe en la BD de la empresa
+                try:
+                    cliente = Cliente.objects.using(alias_db).get(id=cliente_id)
+                except Cliente.DoesNotExist:
+                    raise ValueError(f"El cliente con ID {cliente_id} no existe en la base de datos de la empresa")
+
                 # Convertir fecha (string ISO a objeto date)
                 try:
                     from datetime import datetime
@@ -524,9 +533,9 @@ def subir_lecturas(request):
                 except:
                     raise ValueError("Formato de fecha inválido")
 
-                # Crear objeto LecturaMovil
+                # Crear objeto LecturaMovil usando empresa_id (IntegerField)
                 nueva_lectura = LecturaMovil(
-                    empresa=dispositivo.empresa,
+                    empresa_id=dispositivo.empresa.id,  # ← ¡CORREGIDO!
                     cliente=cliente_id,
                     fecha_lectura=fecha_lectura,
                     lectura_actual=lectura_actual,

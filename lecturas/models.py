@@ -1,6 +1,6 @@
 # lecturas/models.py
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password, check_password
 import uuid
 from empresas.models import Empresa
 
@@ -12,7 +12,8 @@ class LecturaMovil(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    # Cambiamos de ForeignKey a IntegerField para evitar restricciones en bases de datos de empresas
+    empresa_id = models.IntegerField()
     cliente = models.IntegerField()
     fecha_lectura = models.DateField()
     lectura_actual = models.DecimalField(max_digits=10, decimal_places=2)
@@ -29,7 +30,8 @@ class LecturaMovil(models.Model):
     
     # Campos para generación de boleta
     usada_para_boleta = models.BooleanField(default=False)
-    boleta_generada = models.ForeignKey('boletas.Boleta', on_delete=models.SET_NULL, null=True, blank=True, related_name='lecturas_asociadas')
+    # Cambiamos a IntegerField (o BigIntegerField) para evitar FK en BD de empresa
+    boleta_generada_id = models.BigIntegerField(null=True, blank=True)
     
     class Meta:
         ordering = ['-fecha_lectura', '-fecha_sincronizacion']
@@ -47,8 +49,37 @@ class LecturaMovil(models.Model):
             self.save()
         return self.consumo
 
-from django.db import models
-from empresas.models import Empresa
+    # Propiedades para mantener compatibilidad con código existente
+    @property
+    def empresa(self):
+        from empresas.models import Empresa
+        try:
+            return Empresa.objects.get(id=self.empresa_id)
+        except Empresa.DoesNotExist:
+            return None
+
+    @empresa.setter
+    def empresa(self, value):
+        if value is not None:
+            self.empresa_id = value.id
+
+    @property
+    def boleta_generada(self):
+        from boletas.models import Boleta
+        if self.boleta_generada_id:
+            try:
+                return Boleta.objects.get(id=self.boleta_generada_id)
+            except Boleta.DoesNotExist:
+                return None
+        return None
+
+    @boleta_generada.setter
+    def boleta_generada(self, value):
+        if value is not None:
+            self.boleta_generada_id = value.id
+        else:
+            self.boleta_generada_id = None
+
 
 class ConfigAppMovil(models.Model):
     """Configuración específica para la app móvil de cada empresa"""
@@ -76,7 +107,6 @@ class ConfigAppMovil(models.Model):
     
     # Métodos auxiliares para los templates
     def get_active_features_count(self):
-        """Retorna el número de características activas"""
         features = [
             self.habilitar_mapa,
             self.habilitar_offline,
@@ -87,11 +117,9 @@ class ConfigAppMovil(models.Model):
         return sum(1 for feature in features if feature)
     
     def get_total_features(self):
-        """Retorna el número total de características disponibles"""
         return 5  # mapa, offline, gps, auto-sync, logo
     
     def get_features_list(self):
-        """Retorna una lista de características con su estado"""
         return [
             {'nombre': 'Mapa', 'activo': self.habilitar_mapa, 'icono': 'bi-map'},
             {'nombre': 'Modo Offline', 'activo': self.habilitar_offline, 'icono': 'bi-wifi-off'},
@@ -101,7 +129,6 @@ class ConfigAppMovil(models.Model):
         ]
     
     def get_sync_interval_display(self):
-        """Retorna el intervalo de sincronización formateado"""
         if self.intervalo_sincronizacion < 60:
             return f"{self.intervalo_sincronizacion} minutos"
         else:
@@ -122,20 +149,14 @@ class ConfigAppMovil(models.Model):
             self.max_lecturas_pendientes = 1000
             
         super().save(*args, **kwargs)
-# lecturas/models.py
-import uuid
-from django.db import models
-from django.contrib.auth.hashers import make_password, check_password
-from empresas.models import Empresa
+
 
 class DispositivoMovil(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='dispositivos')
     
-    # Nuevos campos para autenticación con usuario/contraseña
     usuario = models.CharField(max_length=50, help_text="Nombre de usuario para el dispositivo")
     password = models.CharField(max_length=128, help_text="Contraseña hasheada")
     
-    # Campos existentes (algunos ahora opcionales)
     identificador = models.CharField(max_length=255, blank=True, null=True, unique=True,
                                      help_text="Identificador interno (opcional, se autogenera si no se provee)")
     nombre_dispositivo = models.CharField(max_length=100, default='Dispositivo Móvil')
@@ -147,10 +168,10 @@ class DispositivoMovil(models.Model):
     modelo = models.CharField(max_length=100, blank=True)
     sistema_operativo = models.CharField(max_length=50, blank=True)
     version_app = models.CharField(max_length=20, default='1.0.0')
-    usuario_asignado = models.CharField(max_length=100, blank=True)  # campo redundante? puedes eliminarlo si no se usa
+    usuario_asignado = models.CharField(max_length=100, blank=True)
 
     class Meta:
-        unique_together = ('empresa', 'usuario')  # usuario único por empresa
+        unique_together = ('empresa', 'usuario')
         verbose_name = "Dispositivo Móvil"
         verbose_name_plural = "Dispositivos Móviles"
 
@@ -166,7 +187,6 @@ class DispositivoMovil(models.Model):
         return self.token_acceso
 
     def save(self, *args, **kwargs):
-        # Autogenerar identificador si no se proporciona
         if not self.identificador:
             self.identificador = f"dev_{self.empresa.slug}_{self.usuario}_{uuid.uuid4().hex[:8]}"
         super().save(*args, **kwargs)

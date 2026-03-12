@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Importar clientes · {{ empresa.nombre }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+  <!-- Navbar (copiado del listado) -->
+  <header class="bg-emerald-700 text-white sticky top-0 z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 bg-white/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-users text-white text-sm"></i>
+          </div>
+          <div>
+            <h1 class="font-semibold text-base">{{ empresa.nombre|truncatechars:25 }}</h1>
+            <p class="text-xs text-emerald-100">Importar clientes</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="{% url 'listado_clientes' alias=slug %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fas fa-arrow-left text-xs"></i>
+            <span>Volver al listado</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-2xl mx-auto py-8 px-4">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">Importar clientes desde CSV</h2>
+      <p class="text-sm text-gray-600 mb-4">
+        El archivo CSV debe tener los siguientes campos en este orden (la primera fila debe ser el encabezado y será ignorada):
+      </p>
+      <ul class="text-xs text-gray-500 mb-4 list-disc pl-5">
+        <li><strong>RUT</strong> (obligatorio)</li>
+        <li><strong>Nombre</strong> (obligatorio)</li>
+        <li><strong>Email</strong></li>
+        <li><strong>Teléfono</strong></li>
+        <li><strong>Dirección</strong></li>
+        <li><strong>Medidor</strong></li>
+        <li><strong>Sector</strong></li>
+        <li><strong>Latitud</strong></li>
+        <li><strong>Longitud</strong></li>
+      </ul>
+      <p class="text-xs text-amber-600 mb-4">Si el RUT ya existe, se actualizarán los datos del cliente.</p>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Archivo CSV</label>
+          <input type="file" name="csv_file" accept=".csv" required class="block w-full text-sm border border-gray-200 rounded-lg p-2">
+        </div>
+        <div class="flex items-center gap-3">
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+            <i class="fas fa-upload"></i> Importar
+          </button>
+          <a href="{% url 'listado_clientes' alias=slug %}" class="text-gray-600 hover:text-gray-800 text-sm">Cancelar</a>
+        </div>
+      </form>
+
+      <!-- Mensajes flash -->
+      {% if messages %}
+        <div class="mt-6">
+          {% for message in messages %}
+            <div class="{% if message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-700{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-700{% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-700{% endif %} border px-4 py-3 rounded-lg flex items-start gap-3">
+              <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}exclamation-triangle{% endif %} mt-0.5"></i>
+              <p class="text-sm">{{ message }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

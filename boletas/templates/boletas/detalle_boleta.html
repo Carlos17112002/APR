@@ -1,0 +1,175 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boleta {{ boleta.periodo }} - {{ boleta.cliente.nombre }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        /* Estilo para la tabla de detalles */
+        .detalle-table th, .detalle-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .detalle-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            color: #4b5563;
+        }
+        .total-row {
+            background-color: #f3f4f6;
+            font-weight: 700;
+        }
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Cabecera con acciones -->
+    <div class="flex justify-between items-center mb-6 no-print">
+        <a href="{% url 'listado_clientes' alias=slug %}" class="text-gray-600 hover:text-gray-900 flex items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Volver al listado
+        </a>
+        <div class="flex gap-3">
+            <a href="{% url 'ver_boleta_print' alias=slug boleta_id=boleta.id %}" target="_blank"
+               class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-print"></i> Versión imprimible
+            </a>
+            {% if boleta.estado != 'pagada' %}
+            <a href="{% url 'pagar_boleta' alias=slug boleta_id=boleta.id %}"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-credit-card"></i> Pagar ahora
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tarjeta de la boleta -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Encabezado con gradiente -->
+        <div class="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 text-white">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold">{{ empresa.nombre }}</h1>
+                    <p class="text-sm opacity-90">RUT: {{ empresa.rut|default:"—" }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm">Boleta N°</p>
+                    <p class="text-2xl font-bold">{{ boleta.id }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cuerpo -->
+        <div class="p-6">
+            <!-- Información del cliente y período -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cliente</h3>
+                    <p class="text-lg font-bold text-gray-900">{{ boleta.cliente.nombre }}</p>
+                    <p class="text-sm text-gray-600">RUT: {{ boleta.cliente.rut }}</p>
+                    <p class="text-sm text-gray-600">Dirección: {{ boleta.cliente.direccion|default:"—" }}</p>
+                    <p class="text-sm text-gray-600">Medidor: {{ boleta.cliente.medidor|default:"—" }}</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Detalles de la boleta</h3>
+                    <p class="text-sm"><span class="font-medium">Período:</span> {{ boleta.periodo }}</p>
+                    <p class="text-sm"><span class="font-medium">Emisión:</span> {{ boleta.fecha_emision|date:"d/m/Y" }}</p>
+                    <p class="text-sm"><span class="font-medium">Vencimiento:</span> {{ boleta.fecha_vencimiento|date:"d/m/Y" }}</p>
+                    <p class="text-sm"><span class="font-medium">Estado:</span> 
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if boleta.estado == 'pagada' %}bg-green-100 text-green-800
+                            {% elif boleta.estado == 'vencida' %}bg-red-100 text-red-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ boleta.get_estado_display }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tabla de consumo -->
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">Consumo</h2>
+            <table class="w-full detalle-table mb-8">
+                <thead>
+                    <tr>
+                        <th>Lectura anterior</th>
+                        <th>Lectura actual</th>
+                        <th>Consumo (m³)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ boleta.lectura_anterior|floatformat:2 }}</td>
+                        <td>{{ boleta.lectura_actual|floatformat:2 }}</td>
+                        <td class="font-bold">{{ boleta.consumo|floatformat:2 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Tabla de cargos -->
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">Cargos</h2>
+            <table class="w-full detalle-table">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th class="text-right">Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Cargo fijo</td>
+                        <td class="text-right">$ {{ boleta.cargo_fijo|floatformat:0|intcomma }}</td>
+                    </tr>
+                    <tr>
+                        <td>Consumo ({{ boleta.consumo|floatformat:2 }} m³)</td>
+                        <td class="text-right">$ {{ boleta.monto_consumo|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% if boleta.otros_cargos != 0 %}
+                    <tr>
+                        <td>Otros cargos</td>
+                        <td class="text-right">$ {{ boleta.otros_cargos|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="total-row">
+                        <td class="font-bold">TOTAL</td>
+                        <td class="text-right font-bold text-lg">$ {{ boleta.total|floatformat:0|intcomma }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Código de barras (si existe) -->
+            {% if boleta.codigo_barras %}
+            <div class="mt-8 text-center">
+                <p class="text-sm text-gray-500 mb-2">Código de barras</p>
+                <div class="font-mono text-2xl tracking-widest">{{ boleta.codigo_barras }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Pie de página -->
+            <div class="mt-8 text-center text-xs text-gray-500 border-t pt-4">
+                <p>Esta boleta es un documento oficial de {{ empresa.nombre }}.</p>
+                <p>Ante cualquier consulta, contacte a servicio al cliente.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nota para el usuario (solo en pantalla) -->
+    <div class="mt-6 text-center text-xs text-gray-500 no-print">
+        <i class="fas fa-info-circle mr-1"></i>
+        Para guardar como PDF, use la "Versión imprimible" y luego seleccione "Imprimir > Guardar como PDF".
+    </div>
+</div>
+
+</body>
+</html>

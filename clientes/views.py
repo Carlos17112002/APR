@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.db.models import Sum, Avg
 from datetime import date
 from decimal import Decimal
+from django.core.exceptions import FieldError
 
 from clientes.models import Cliente
 from empresas.models import Empresa
@@ -75,16 +76,16 @@ from boletas.models import Boleta
 
 def listado_clientes(request, alias):
     slug = alias
-    alias_db = f'db_{slug}'
+    db_alias = f'db_{slug}'                     # Base de datos de la empresa
     empresa = get_object_or_404(Empresa, slug=slug)
 
-    # Obtener sectores (suponiendo que empresa.sectores() es un método que devuelve lista)
+    # Obtener sectores (método de Empresa)
     sectores = empresa.sectores()  # Asegúrate de que este método existe
 
-    # Obtener clientes desde la base de datos de la empresa
-    clientes = Cliente.objects.using(alias_db).all()
+    # Obtener clientes desde la BD de la empresa
+    clientes = Cliente.objects.using(db_alias).all()
 
-    # Filtros
+    # Filtros (aplicados en la BD de la empresa)
     sector = request.GET.get('sector')
     rut = request.GET.get('rut')
     nombre = request.GET.get('nombre')
@@ -97,112 +98,122 @@ def listado_clientes(request, alias):
 
     clientes = clientes.order_by('nombre')
 
-    # Obtener mes y año actual
+    # Período actual en formato YYYY-MM
     hoy = timezone.now()
-    mes_actual = hoy.month
-    año_actual = hoy.year
+    periodo_actual = f"{hoy.year}-{hoy.month:02d}"
 
-    # Obtener IDs de clientes que tienen boleta en el mes actual (en la base por defecto)
-    boletas_del_mes = Boleta.objects.filter(
+    # Obtener boletas del mes en la BD de la empresa
+    boletas_del_mes = Boleta.objects.using(db_alias).filter(
         empresa_slug=empresa.slug,
-        fecha_emision__year=año_actual,
-        fecha_emision__month=mes_actual
-    ).values_list('cliente_id', flat=True)
+        periodo=periodo_actual
+    ).values('cliente_id', 'id')   # Obtenemos tanto el ID del cliente como el de la boleta
 
-    # Convertir a set para búsqueda eficiente
-    clientes_con_boleta = set(boletas_del_mes)
+    # Crear diccionarios para acceso rápido
+    clientes_con_boleta = {b['cliente_id']: b['id'] for b in boletas_del_mes}
 
-    # Añadir atributo a cada cliente
+    # Asignar atributos a cada cliente
     for cliente in clientes:
-        cliente.boleta_mes = cliente.id in clientes_con_boleta
+        if cliente.id in clientes_con_boleta:
+            cliente.boleta_mes = True
+            cliente.boleta_id = clientes_con_boleta[cliente.id]
+        else:
+            cliente.boleta_mes = False
+            cliente.boleta_id = None
+
+    # Calcular cantidad de clientes con email (estadística opcional)
+    clientes_con_email = clientes.exclude(email='').count()
 
     context = {
         'empresa': empresa,
         'slug': slug,
         'clientes': clientes,
         'sectores': sectores,
+        'clientes_con_email': clientes_con_email,  # para la tarjeta de estadísticas
     }
     return render(request, 'listado_clientes.html', context)
 
-
 def detalle_cliente(request, alias, cliente_id):
-    """
-    Muestra el detalle completo de un cliente, incluyendo contratos,
-    lecturas y pagos (si existen los modelos).
-    """
     db_alias = f'db_{alias}'
-    empresa = Empresa.objects.get(slug=alias)          # desde base default
+    empresa = get_object_or_404(Empresa, slug=alias)
     cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
-
-    # Importaciones condicionales para evitar errores si las apps no están instaladas
-    try:
-        from contratos.models import Contrato
-        contratos = Contrato.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_inicio')
-    except ImportError:
-        contratos = []
-
-    try:
-        from lecturas.models import Lectura
-        lecturas = Lectura.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')[:10]
-    except ImportError:
-        lecturas = []
-
+    
+    # Obtener lecturas del cliente desde LecturaMovil (base principal)
+    lecturas = LecturaMovil.objects.filter(
+        empresa_id=empresa.id,
+        cliente=cliente_id
+    ).order_by('-fecha_lectura')
+    
+    # Obtener pagos (si existen) desde la BD de la empresa (asumiendo modelo Pago)
     try:
         from pagos.models import Pago
-        pagos = Pago.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')[:10]
-    except ImportError:
+        pagos = Pago.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
+    except:
         pagos = []
-
-    # Estadísticas básicas
-    consumo_promedio = 0
-    total_pagado = 0
-    if lecturas:
-        consumo_promedio = lecturas.aggregate(Avg('consumo'))['consumo__avg'] or 0
-    if pagos:
-        total_pagado = pagos.aggregate(Sum('monto'))['monto__sum'] or 0
-
-    # Deuda actual (si existe)
-    deuda_actual = Decimal('0.00')
-
+    
+    # Calcular estadísticas (consumo promedio, total pagado, deuda)
+    consumo_promedio = lecturas.aggregate(Avg('consumo'))['consumo__avg'] or 0
+    total_pagado = sum(p.monto for p in pagos) if pagos else 0
+    deuda_actual = 0  # calcular según tu lógica
+    
     context = {
         'empresa': empresa,
         'slug': alias,
         'cliente': cliente,
-        'contratos': contratos,
         'lecturas': lecturas,
         'pagos': pagos,
         'consumo_promedio': consumo_promedio,
         'total_pagado': total_pagado,
         'deuda_actual': deuda_actual,
-        'hoy': date.today(),
     }
-
     return render(request, 'clientes/detalle_cliente.html', context)
 
 
 def editar_cliente(request, alias, cliente_id):
-    """
-    Edita los datos de un cliente existente.
-    (Requiere un formulario, aquí se muestra la estructura básica)
-    """
     db_alias = f'db_{alias}'
-    empresa = Empresa.objects.get(slug=alias)          # desde base default
+    empresa = get_object_or_404(Empresa, slug=alias)
     cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
 
-    # Si tienes un formulario definido (ej. ClienteForm), úsalo así:
+    # Obtener sectores disponibles (método que ya tienes en Empresa)
+    sectores = empresa.sectores()  # Devuelve lista de strings
+
+    # Definir el formulario dentro de la vista para poder pasarle los sectores
     from django import forms
+
     class ClienteForm(forms.ModelForm):
+        # Convertir sector en un campo de selección
+        sector = forms.ChoiceField(
+            choices=[('', 'Seleccione un sector')] + [(s, s) for s in sectores],
+            required=False,
+            widget=forms.Select(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'})
+        )
+
         class Meta:
             model = Cliente
             fields = ['nombre', 'rut', 'direccion', 'telefono', 'email',
                       'medidor', 'sector', 'latitude', 'longitude']
+            widgets = {
+                'nombre': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus', 'placeholder': 'Nombre completo'}),
+                'rut': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus', 'placeholder': '12.345.678-9'}),
+                'direccion': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'}),
+                'telefono': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'}),
+                'email': forms.EmailInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'}),
+                'medidor': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'}),
+                'latitude': forms.NumberInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus', 'step': 'any'}),
+                'longitude': forms.NumberInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus', 'step': 'any'}),
+            }
 
     if request.method == 'POST':
         form = ClienteForm(request.POST, instance=cliente)
         if form.is_valid():
-            form.save(using=db_alias)
-            messages.success(request, f'Cliente {cliente.nombre} actualizado.')
+            cliente_actualizado = form.save(commit=False)  # No guarda aún
+            # Si quieres asegurar el slug de la empresa (opcional)
+            cliente_actualizado.empresa_slug = alias
+            cliente_actualizado.save(using=db_alias)       # Guarda en la BD correcta
+            messages.success(request, f'Cliente {cliente.nombre} actualizado correctamente.')
             return redirect('detalle_cliente', alias=alias, cliente_id=cliente.id)
+        else:
+            # Si hay errores, mostrar mensaje
+            messages.error(request, 'Por favor corrige los errores del formulario.')
     else:
         form = ClienteForm(instance=cliente)
 
@@ -219,41 +230,61 @@ def editar_cliente(request, alias, cliente_id):
 def historial_cliente(request, alias, cliente_id):
     """
     Muestra el historial completo del cliente: todas las lecturas,
-    pagos, contratos y avisos.
+    pagos, contratos y avisos (avisos generales de la empresa).
     """
     db_alias = f'db_{alias}'
-    empresa = Empresa.objects.get(slug=alias)          # desde base default
+    empresa = get_object_or_404(Empresa, slug=alias)          # desde base default
     cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
 
-    # Importaciones condicionales
+    # Importaciones condicionales con manejo de errores
+    lecturas_completas = []
+    pagos_completos = []
+    contratos_completos = []
+    avisos = []
+
     try:
         from lecturas.models import Lectura
         lecturas_completas = Lectura.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
-    except ImportError:
-        lecturas_completas = []
+    except (ImportError, FieldError, Exception) as e:
+        # Si no existe el modelo o el campo, dejar lista vacía
+        logger.warning(f"Error al obtener lecturas: {e}")
 
     try:
         from pagos.models import Pago
         pagos_completos = Pago.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
-    except ImportError:
-        pagos_completos = []
+    except (ImportError, FieldError, Exception) as e:
+        logger.warning(f"Error al obtener pagos: {e}")
 
     try:
         from contratos.models import Contrato
         contratos_completos = Contrato.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_inicio')
-    except ImportError:
-        contratos_completos = []
+    except (ImportError, FieldError, Exception) as e:
+        logger.warning(f"Error al obtener contratos: {e}")
 
     try:
         from avisos.models import Aviso
-        avisos = Aviso.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_creacion')
-    except ImportError:
-        avisos = []
+        # Suponiendo que Aviso tiene un campo 'empresa' (ForeignKey a Empresa)
+        # y queremos mostrar avisos de la empresa (no específicos del cliente)
+        avisos = Aviso.objects.using(db_alias).filter(empresa=empresa).order_by('-fecha_creacion')
+    except (ImportError, FieldError, Exception) as e:
+        logger.warning(f"Error al obtener avisos: {e}")
+        # Si el campo es otro, intentar con 'empresa_id' o similar
+        try:
+            avisos = Aviso.objects.using(db_alias).filter(empresa_id=empresa.id).order_by('-fecha_creacion')
+        except:
+            avisos = []
 
-    # Estadísticas
-    consumo_total = lecturas_completas.aggregate(Sum('consumo'))['consumo__sum'] or 0
-    pago_total = pagos_completos.aggregate(Sum('monto'))['monto__sum'] or 0
-    consumo_promedio = lecturas_completas.aggregate(Avg('consumo'))['consumo__avg'] or 0
+    # Estadísticas (calcular solo si hay datos)
+    consumo_total = 0
+    pago_total = 0
+    consumo_promedio = 0
+    if lecturas_completas:
+        consumo_total = lecturas_completas.aggregate(Sum('consumo'))['consumo__sum'] or 0
+        consumo_promedio = lecturas_completas.aggregate(Avg('consumo'))['consumo__avg'] or 0
+    if pagos_completos:
+        pago_total = pagos_completos.aggregate(Sum('monto'))['monto__sum'] or 0
+
+    total_registros = len(lecturas_completas) + len(pagos_completos) + len(contratos_completos) + len(avisos)
 
     context = {
         'empresa': empresa,
@@ -266,7 +297,7 @@ def historial_cliente(request, alias, cliente_id):
         'consumo_total': consumo_total,
         'pago_total': pago_total,
         'consumo_promedio': consumo_promedio,
-        'total_registros': len(lecturas_completas) + len(pagos_completos) + len(contratos_completos),
+        'total_registros': total_registros,
     }
 
     return render(request, 'clientes/historial_cliente.html', context)
@@ -317,19 +348,28 @@ from boletas.models import Boleta
 from empresas.models import Empresa
 
 def ver_boleta_cliente(request, alias, cliente_id):
+    # Obtener empresa desde la base por defecto (Empresa está en BD principal)
     empresa = get_object_or_404(Empresa, slug=alias)
+    
+    # Determinar el alias de la base de datos de la empresa
+    db_alias = f'db_{alias}'
+    
+    # Obtener el período actual (YYYY-MM)
     hoy = timezone.now()
+    periodo_actual = f"{hoy.year}-{hoy.month:02d}"
+    
+    # Buscar la boleta en la base de datos de la empresa
     boleta = get_object_or_404(
-        Boleta,
+        Boleta.objects.using(db_alias),
         empresa_slug=empresa.slug,
         cliente_id=cliente_id,
-        fecha_emision__year=hoy.year,
-        fecha_emision__month=hoy.month
+        periodo=periodo_actual
     )
-    # Aquí renderizas el template de la boleta (debes crearlo)
+    
     return render(request, 'boletas/detalle_boleta.html', {
         'boleta': boleta,
-        'empresa': empresa
+        'empresa': empresa,
+        'slug': alias,  # opcional, para usar en templates
     })
 
 from django.shortcuts import get_object_or_404, redirect
@@ -423,3 +463,147 @@ def generar_boleta_individual(request, empresa_slug, cliente_id, lectura_id=None
     
     messages.success(request, f"Boleta generada para {cliente.nombre} por ${total}.")
     return redirect('ver_boleta', boleta_id=boleta.id)
+
+import csv
+import logging
+from datetime import date
+from django.http import HttpResponse, HttpResponseServerError
+from django.shortcuts import get_object_or_404
+from empresas.models import Empresa
+from clientes.models import Cliente
+
+logger = logging.getLogger(__name__)
+
+def exportar_clientes_csv(request, alias):
+    try:
+        db_alias = f'db_{alias}'
+        empresa = get_object_or_404(Empresa, slug=alias)
+
+        # Obtener clientes con los mismos filtros que en el listado
+        clientes = Cliente.objects.using(db_alias).all()
+
+        sector = request.GET.get('sector')
+        rut = request.GET.get('rut')
+        nombre = request.GET.get('nombre')
+        if sector:
+            clientes = clientes.filter(sector=sector)
+        if rut:
+            clientes = clientes.filter(rut__icontains=rut)
+        if nombre:
+            clientes = clientes.filter(nombre__icontains=nombre)
+
+        clientes = clientes.order_by('nombre')
+
+        # Crear respuesta CSV
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="clientes_{alias}_{date.today()}.csv"'
+
+        writer = csv.writer(response)
+        # Encabezados (sin fecha_creacion)
+        writer.writerow(['ID', 'RUT', 'Nombre', 'Email', 'Teléfono', 'Dirección', 'Medidor', 'Sector', 'Latitud', 'Longitud'])
+
+        for cliente in clientes:
+            writer.writerow([
+                cliente.id,
+                cliente.rut or '',
+                cliente.nombre or '',
+                cliente.email or '',
+                cliente.telefono or '',
+                cliente.direccion or '',
+                cliente.medidor or '',
+                cliente.sector or '',
+                cliente.latitude or '',
+                cliente.longitude or '',
+            ])
+
+        return response
+    except Exception as e:
+        logger.error(f"Error exportando clientes para {alias}: {e}", exc_info=True)
+        return HttpResponseServerError(f"Error interno: {e}")
+
+
+def importar_clientes(request, alias):
+    """
+    Permite subir un archivo CSV para crear o actualizar clientes.
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    if request.method == 'POST':
+        csv_file = request.FILES.get('csv_file')
+        if not csv_file:
+            messages.error(request, 'Debe seleccionar un archivo CSV.')
+            return redirect('importar_clientes', alias=alias)
+
+        if not csv_file.name.endswith('.csv'):
+            messages.error(request, 'El archivo debe ser CSV.')
+            return redirect('importar_clientes', alias=alias)
+
+        try:
+            # Leer y decodificar el archivo
+            data = csv_file.read().decode('utf-8')
+            import io
+            io_string = io.StringIO(data)
+            reader = csv.reader(io_string, delimiter=',')
+            next(reader)  # Saltar la fila de encabezados
+
+            creados = 0
+            actualizados = 0
+            errores = []
+
+            for fila_num, row in enumerate(reader, start=2):  # empezamos en línea 2 (después del header)
+                # Esperamos el orden: RUT, Nombre, Email, Teléfono, Dirección, Medidor, Sector, Latitud, Longitud
+                if len(row) < 3:  # Mínimo: RUT y Nombre
+                    errores.append(f"Fila {fila_num}: datos insuficientes")
+                    continue
+
+                rut = row[0].strip()
+                nombre = row[1].strip()
+                email = row[2].strip() if len(row) > 2 else ''
+                telefono = row[3].strip() if len(row) > 3 else ''
+                direccion = row[4].strip() if len(row) > 4 else ''
+                medidor = row[5].strip() if len(row) > 5 else ''
+                sector = row[6].strip() if len(row) > 6 else ''
+                latitud = row[7].strip() if len(row) > 7 else None
+                longitud = row[8].strip() if len(row) > 8 else None
+
+                if not rut:
+                    errores.append(f"Fila {fila_num}: RUT vacío")
+                    continue
+
+                # Buscar o crear cliente
+                cliente, created = Cliente.objects.using(db_alias).update_or_create(
+                    rut=rut,
+                    defaults={
+                        'nombre': nombre,
+                        'email': email,
+                        'telefono': telefono,
+                        'direccion': direccion,
+                        'medidor': medidor,
+                        'sector': sector,
+                        'latitude': latitud if latitud else None,
+                        'longitude': longitud if longitud else None,
+                        'empresa_slug': alias,  # Importante para multiempresa
+                    }
+                )
+                if created:
+                    creados += 1
+                else:
+                    actualizados += 1
+
+            # Mensajes de resultado
+            messages.success(request, f'Importación completada: {creados} creados, {actualizados} actualizados.')
+            if errores:
+                messages.warning(request, f'Se encontraron {len(errores)} errores. Los primeros: {", ".join(errores[:3])}')
+
+            return redirect('listado_clientes', alias=alias)
+
+        except Exception as e:
+            messages.error(request, f'Error al procesar el archivo: {str(e)}')
+            return redirect('importar_clientes', alias=alias)
+
+    # GET: mostrar formulario
+    return render(request, 'importar_clientes.html', {
+        'empresa': empresa,
+        'slug': alias,
+    })
