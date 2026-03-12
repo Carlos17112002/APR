@@ -251,12 +251,12 @@ def detalle_app_empresa(request, empresa_slug):
     dispositivos = empresa.dispositivos.all().order_by('-ultima_conexion')
     
     lecturas_hoy = LecturaMovil.objects.filter(
-        empresa=empresa,
+        empresa_slug=empresa.slug,
         fecha_sincronizacion__date=timezone.now().date()
     ).count()
     
     lecturas_mes = LecturaMovil.objects.filter(
-        empresa=empresa,
+        empresa_slug=empresa.slug,
         fecha_sincronizacion__month=timezone.now().month,
         fecha_sincronizacion__year=timezone.now().year
     ).count()
