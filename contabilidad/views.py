@@ -1952,15 +1952,12 @@ def obtener_comunas_por_codigo_region(request, codigo_region):
     
 @login_required
 def editar_trabajador(request, alias, trabajador_id):
-    """
-    Vista para editar un trabajador existente
-    """
     empresa = get_object_or_404(Empresa, slug=alias)
     trabajador = get_object_or_404(Trabajador, id=trabajador_id, empresa=empresa)
     
-    # Asegurar que existan datos básicos
+    # Asegurar que existan datos básicos (regiones, comunas, AFP, Isapres)
     cargar_datos_predeterminados()
-    
+
     if request.method == 'POST':
         try:
             data = request.POST
@@ -2000,8 +1997,8 @@ def editar_trabajador(request, alias, trabajador_id):
             trabajador.centro_costo_codigo = data.get('centro_costo_codigo', '')
             trabajador.centro_costo_nombre = data.get('centro_costo_nombre', '')
             
-            # Sueldo
-            sueldo = data.get('sueldo_mensual', '0')
+            # Sueldo (convertir a Decimal, reemplazar coma por punto)
+            sueldo = data.get('sueldo_mensual', '0').replace(',', '.')
             try:
                 trabajador.sueldo_mensual = Decimal(sueldo) if sueldo else Decimal('0')
             except:
@@ -2026,24 +2023,24 @@ def editar_trabajador(request, alias, trabajador_id):
                 except:
                     trabajador.fecha_termino_contrato = None
             
-            # Tipo de contrato y jornada
+            # Tipo de jornada
             trabajador.tipo_jornada = data.get('tipo_jornada', 'completa')
             
             # Beneficios
-            colacion = data.get('colacion_mensual', '0')
+            colacion = data.get('colacion_mensual', '0').replace(',', '.')
             try:
                 trabajador.colacion_mensual = Decimal(colacion) if colacion else Decimal('0')
             except:
                 trabajador.colacion_mensual = Decimal('0')
             
-            movilizacion = data.get('movilizacion_mensual', '0')
+            movilizacion = data.get('movilizacion_mensual', '0').replace(',', '.')
             try:
                 trabajador.movilizacion_mensual = Decimal(movilizacion) if movilizacion else Decimal('0')
             except:
                 trabajador.movilizacion_mensual = Decimal('0')
             
             # Horas trabajadas
-            horas = data.get('horas_trabajadas', '45')
+            horas = data.get('horas_trabajadas', '45').replace(',', '.')
             try:
                 trabajador.horas_trabajadas = Decimal(horas) if horas else Decimal('45')
             except:
@@ -2062,7 +2059,6 @@ def editar_trabajador(request, alias, trabajador_id):
             # Usuario de modificación
             trabajador.usuario_modificacion = request.user
             
-            # Guardar cambios
             trabajador.save()
             
             return JsonResponse({
@@ -2077,30 +2073,16 @@ def editar_trabajador(request, alias, trabajador_id):
                 'message': f'Error al actualizar: {str(e)}'
             }, status=500)
     
-    # Para GET: preparar el formulario con los datos del trabajador
-    
-    # Obtener regiones activas
+    # GET: mostrar formulario
     regiones = Region.objects.filter(activa=True).order_by('orden')
+    afps_disponibles = AFP.objects.filter(activa=True).order_by('codigo')
+    isapres_disponibles = Isapre.objects.filter(estado='ACTIVA').order_by('codigo')
     
-    # Obtener AFPs disponibles
-    afps_disponibles = ['AFP Modelo', 'AFP Habitat', 'AFP Capital', 'AFP Cuprum', 'AFP Provida']
-    
-    # Obtener Isapres disponibles
-    isapres_disponibles = ['Banmédica', 'Colmena', 'Consalud', 'Cruz Blanca', 'Nueva Masvida', 'Vida Tres']
-    
-    # Obtener comunas de la región del trabajador
-    comunas_region = []
-    region_actual = None
-    
-    if trabajador.region:
-        try:
-            region_actual = Region.objects.filter(nombre=trabajador.region).first()
-            if region_actual:
-                comunas_region = region_actual.comunas.filter(activa=True).order_by('nombre')
-        except:
-            pass
-    
-    # Preparar datos de regiones para el template
+    # Centros de costo reales
+    from .models import CentroCosto
+    centros_costo = CentroCosto.objects.filter(empresa=empresa, activo=True).order_by('codigo')
+
+    # Preparar datos para el mapa de regiones (JS) - con comunas activas
     regiones_data = []
     for region in regiones:
         comunas = region.comunas.filter(activa=True).order_by('nombre')
@@ -2108,47 +2090,32 @@ def editar_trabajador(request, alias, trabajador_id):
             'id': region.id,
             'codigo': region.codigo,
             'nombre': region.nombre,
-            'comunas': [
-                {'id': comuna.id, 'nombre': comuna.nombre}
-                for comuna in comunas
-            ]
+            'comunas': [{'id': c.id, 'nombre': c.nombre} for c in comunas]
         })
-    
-    # Opciones para selects
-    centros_costo = [
-        {'codigo': 'CC001', 'nombre': 'ADMINISTRACION'},
-        {'codigo': 'CC002', 'nombre': 'PRODUCCION'},
-        {'codigo': 'CC003', 'nombre': 'VENTAS'},
-        {'codigo': 'CC004', 'nombre': 'OPERACIONES'},
-    ]
-    
-    opciones_bancos = [
-        'Banco de Chile', 'Banco Estado', 'Santander', 'BCI', 
-        'Scotiabank', 'ITAU', 'Banco Falabella', 'Banco Ripley'
-    ]
-    
+
+    # Obtener comunas de la región actual del trabajador (para el select inicial)
+    comunas_region = []
+    region_actual = None
+    if trabajador.region:
+        region_actual = regiones.filter(nombre=trabajador.region).first()
+        if region_actual:
+            comunas_region = region_actual.comunas.filter(activa=True).order_by('nombre')
+
     context = {
         'alias': alias,
         'empresa': empresa,
         'trabajador': trabajador,
         'hoy': datetime.now().strftime('%Y-%m-%d'),
-        
-        # Datos dinámicos
         'regiones_json': json.dumps(regiones_data),
         'regiones': regiones,
         'region_actual': region_actual,
         'comunas_region': comunas_region,
-        
-        # Opciones
         'opciones_afp': afps_disponibles,
         'opciones_isapre': isapres_disponibles,
         'centros_costo': centros_costo,
-        'opciones_bancos': opciones_bancos,
-        
-        # Filtros (para mantener consistencia con el template de lista)
+        'opciones_bancos': ['Banco de Chile', 'Banco Estado', 'Santander', 'BCI', 'Scotiabank'],
         'filtros': {},
     }
-    
     return render(request, 'contabilidad/editar_trabajador.html', context)
 
 from django.shortcuts import render, get_object_or_404

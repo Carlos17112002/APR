@@ -608,18 +608,14 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center justify-center gap-1">
+                                        <!-- Botón "Ver detalles" ahora redirige a edición (porque no hay vista de detalle) -->
                                         <button class="action-btn text-green-600 hover:text-green-800" 
-                                                onclick="verDetalle('{{ trabajador.rut }}')"
-                                                title="Ver detalles">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-btn text-blue-600 hover:text-blue-800" 
                                                 onclick="editarTrabajador('{{ trabajador.id }}')"
                                                 title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="action-btn text-red-600 hover:text-red-800" 
-                                                onclick="eliminarTrabajador('{{ trabajador.rut }}')"
+                                                onclick="eliminarTrabajador('{{ trabajador.id }}')"
                                                 title="Eliminar">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -682,23 +678,18 @@
         }
         
         // Funciones para acciones de trabajadores
-        function verDetalle(rut) {
-            mostrarCarga();
-            // Redirigir a la página de detalle
-            window.location.href = `/contabilidad/{{ alias }}/trabajadores/detalle/${rut}/`;
-        }
-        
         function editarTrabajador(id) {
             mostrarCarga();
             window.location.href = `/contabilidad/{{ alias }}/trabajadores/editar/${id}/`;
         }
         
-        function eliminarTrabajador(rut) {
+        function eliminarTrabajador(id) {
             if (confirm('¿Está seguro de eliminar este trabajador?\n\nEsta acción no se puede deshacer.')) {
                 mostrarCarga();
-                // Aquí iría la lógica de eliminación
+                // Aquí puedes implementar la eliminación real (AJAX o redirección)
+                // Ejemplo: fetch(`/contabilidad/{{ alias }}/trabajadores/eliminar/${id}/`, { method: 'POST' })
                 setTimeout(() => {
-                    alert(`Trabajador ${rut} eliminado`);
+                    alert(`Trabajador eliminado`);
                     ocultarCarga();
                     location.reload();
                 }, 500);
