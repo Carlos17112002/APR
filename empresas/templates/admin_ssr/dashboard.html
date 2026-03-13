@@ -366,12 +366,12 @@
           <div class="p-6 space-y-3">
             <div class="grid grid-cols-2 gap-3">
               <a href="{% url 'panel_empresa' empresa.slug %}" class="btn-primary text-white py-2.5 rounded-lg font-medium flex items-center justify-center">
-                <i class="fas fa-tachometer-alt mr-2"></i> Panel
+                <i class="fas fa-tachometer-alt mr-2"></i>Ir a Panel
               </a>
               
               {% if empresa.app_generada %}
               <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-2.5 rounded-lg font-medium flex items-center justify-center">
-                <i class="fas fa-mobile-alt mr-2"></i> App
+                <i class="fas fa-mobile-alt mr-2"></i> App Lecturas
               </a>
               {% else %}
               <a href="{% url 'apps_moviles:generar_app_empresa' empresa.slug %}" class="bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-white py-2.5 rounded-lg font-medium flex items-center justify-center">
@@ -382,11 +382,11 @@
             
             <div class="grid grid-cols-2 gap-3">
               <a href="{% url 'crear_admin_empresa' empresa.slug %}" class="bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center">
-                <i class="fas fa-user-plus mr-2"></i> Admin
+                <i class="fas fa-user-plus mr-2"></i>Crear Admin
               </a>
               
               <a href="{% url 'panel_libro_sii' alias=empresa.slug %}" class="btn-warning text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center">
-                <i class="fas fa-calculator mr-2"></i> Contabilidad
+                <i class="fas fa-calculator mr-2"></i>Ir a Contabilidad
               </a>
             </div>
             

@@ -11,4 +11,5 @@ urlpatterns = [
     path('<int:cliente_id>/boleta/', views.ver_boleta_cliente, name='ver_boleta_cliente'),
     path('exportar/', views.exportar_clientes_csv, name='exportar_clientes'),
     path('importar/', views.importar_clientes, name='importar_clientes'),
+    path('mapa-clientes/', views.mapa_clientes, name='mapa_clientes'),
 ]

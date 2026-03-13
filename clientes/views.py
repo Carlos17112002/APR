@@ -132,29 +132,101 @@ def listado_clientes(request, alias):
     }
     return render(request, 'listado_clientes.html', context)
 
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Avg, Sum
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
+from datetime import timedelta
+from decimal import Decimal
+import json
+
+from empresas.models import Empresa
+from clientes.models import Cliente
+from lecturas.models import LecturaMovil
+
 def detalle_cliente(request, alias, cliente_id):
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
     cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
-    
-    # Obtener lecturas del cliente desde LecturaMovil (base principal)
+
+    # Obtener lecturas del cliente desde la base de datos por defecto
     lecturas = LecturaMovil.objects.filter(
-        empresa_id=empresa.id,
+        empresa_slug=alias,
         cliente=cliente_id
     ).order_by('-fecha_lectura')
-    
-    # Obtener pagos (si existen) desde la BD de la empresa (asumiendo modelo Pago)
+
+    # Obtener pagos (si existen)
     try:
         from pagos.models import Pago
         pagos = Pago.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
-    except:
+    except ImportError:
         pagos = []
-    
-    # Calcular estadísticas (consumo promedio, total pagado, deuda)
+
+    # Estadísticas básicas
     consumo_promedio = lecturas.aggregate(Avg('consumo'))['consumo__avg'] or 0
-    total_pagado = sum(p.monto for p in pagos) if pagos else 0
-    deuda_actual = 0  # calcular según tu lógica
-    
+    total_pagado = pagos.aggregate(Sum('monto'))['monto__sum'] or 0 if pagos else 0
+    deuda_actual = 0  # Calcular según tu lógica
+
+    # --- Datos para el gráfico de consumo ---
+    rango = request.GET.get('rango', '6m')  # 6m, 1y, all
+    hoy = timezone.now()
+
+    # Determinar fecha de inicio según el rango
+    if rango == '6m':
+        fecha_inicio = hoy - timedelta(days=180)
+    elif rango == '1y':
+        fecha_inicio = hoy - timedelta(days=365)
+    else:  # 'all' o cualquier otro
+        fecha_inicio = None  # sin límite
+
+    # Consulta base para el consumo agrupado por mes
+    lecturas_historico = LecturaMovil.objects.filter(
+        empresa_slug=alias,
+        cliente=cliente_id,
+        consumo__isnull=False
+    )
+    if fecha_inicio:
+        lecturas_historico = lecturas_historico.filter(fecha_lectura__gte=fecha_inicio)
+
+    # Agrupar por mes
+    consumo_por_mes = lecturas_historico.annotate(
+        mes=TruncMonth('fecha_lectura')
+    ).values('mes').annotate(
+        total_consumo=Sum('consumo')
+    ).order_by('mes')
+
+    # Construir listas para el gráfico
+    meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    fechas_grafico = []
+    consumos_grafico = []
+
+    # Crear un diccionario con los consumos por mes (clave: 'YYYY-MM')
+    consumo_dict = {}
+    for item in consumo_por_mes:
+        if item['mes']:
+            key = item['mes'].strftime('%Y-%m')
+            consumo_dict[key] = float(item['total_consumo'] or 0)
+
+    # Determinar el rango de meses a mostrar
+    if rango == 'all':
+        # Si es 'all', usar todos los meses disponibles en consumo_dict, ordenados
+        claves_ordenadas = sorted(consumo_dict.keys())
+        fechas_grafico = [f"{meses_espanol[int(k[5:7])-1]} '{k[2:4]}" for k in claves_ordenadas]
+        consumos_grafico = [consumo_dict[k] for k in claves_ordenadas]
+    else:
+        # Para rango '6m' o '1y', generamos los últimos N meses
+        num_meses = 6 if rango == '6m' else 12
+        for i in range(num_meses - 1, -1, -1):
+            fecha = hoy - timedelta(days=30 * i)
+            mes_num = fecha.month
+            anio_num = fecha.year
+            mes_nombre = meses_espanol[mes_num - 1]
+            anio_corto = str(anio_num)[2:]
+            fechas_grafico.append(f"{mes_nombre} '{anio_corto}")
+            key = f"{anio_num}-{mes_num:02d}"
+            consumos_grafico.append(consumo_dict.get(key, 0.0))
+
     context = {
         'empresa': empresa,
         'slug': alias,
@@ -164,6 +236,10 @@ def detalle_cliente(request, alias, cliente_id):
         'consumo_promedio': consumo_promedio,
         'total_pagado': total_pagado,
         'deuda_actual': deuda_actual,
+        # Para el gráfico
+        'fechas_grafico': json.dumps(fechas_grafico),
+        'consumos_grafico': json.dumps(consumos_grafico),
+        'rango_seleccionado': rango,
     }
     return render(request, 'clientes/detalle_cliente.html', context)
 
@@ -607,3 +683,42 @@ def importar_clientes(request, alias):
         'empresa': empresa,
         'slug': alias,
     })
+
+from django.db import connections
+from django.contrib.auth.decorators import login_required
+import json
+
+@login_required
+def mapa_clientes(request, alias):
+    """
+    Muestra un mapa con la ubicación de todos los clientes de la empresa.
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+    
+    # Obtener clientes con coordenadas válidas
+    clientes = Cliente.objects.using(db_alias).filter(
+        latitude__isnull=False,
+        longitude__isnull=False
+    ).exclude(latitude=0, longitude=0)
+    
+    # Preparar datos para el mapa
+    puntos = []
+    for c in clientes:
+        puntos.append({
+            'id': c.id,
+            'nombre': c.nombre,
+            'rut': c.rut,
+            'medidor': c.medidor,
+            'direccion': c.direccion,
+            'lat': float(c.latitude),
+            'lng': float(c.longitude),
+        })
+    
+    context = {
+        'empresa': empresa,
+        'slug': alias,
+        'puntos': json.dumps(puntos),
+        'total_clientes': len(puntos),
+    }
+    return render(request, 'clientes/mapa_clientes.html', context)

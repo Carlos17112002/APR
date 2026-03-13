@@ -548,74 +548,76 @@
     });
 
     // =========== MODAL DE ELIMINACIÓN ===========
-    let deleteUrlBase = '/{{ slug }}/clientes/';
+  // Generamos la URL base hasta antes del ID, eliminando el '/0/eliminar/' final
+  const baseDeleteUrl = "{% url 'eliminar_cliente' alias=slug cliente_id=0 %}".replace(/0\/eliminar\/$/, '');
 
-    function openDeleteModal(clientId, clientName) {
+  function openDeleteModal(clientId, clientName) {
       document.getElementById('deleteClientId').value = clientId;
       document.getElementById('deleteClientName').textContent = clientName;
-      document.getElementById('deleteForm').action = deleteUrlBase + clientId + '/eliminar/';
+      // Construimos la URL completa: base + clientId + '/eliminar/'
+      document.getElementById('deleteForm').action = baseDeleteUrl + clientId + '/eliminar/';
       document.getElementById('deleteModal').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
-    }
+  }
 
-    function closeDeleteModal() {
+  function closeDeleteModal() {
       document.getElementById('deleteModal').classList.add('hidden');
       document.body.style.overflow = 'auto';
-    }
+  }
 
-    // =========== ELIMINACIÓN CON AJAX ===========
-    document.getElementById('deleteForm').addEventListener('submit', function(e) {
+  // =========== ELIMINACIÓN CON AJAX ===========
+  document.getElementById('deleteForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
       const formData = new FormData(this);
       const clientId = formData.get('cliente_id');
       
       fetch(this.action, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
-        body: formData
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+          body: formData
       })
       .then(response => response.json())
       .then(data => {
-        closeDeleteModal();
-        
-        if (data.success) {
-          // Mostrar toast
-          document.getElementById('successToast').classList.remove('hidden');
+          closeDeleteModal();
           
-          // Eliminar fila con animación
-          const row = document.querySelector(`tr[data-client-id="${clientId}"]`);
-          if (row) {
-            row.style.opacity = '0';
-            row.style.transform = 'translateX(-20px)';
-            row.style.transition = 'all 0.3s ease';
-            setTimeout(() => row.remove(), 300);
+          if (data.success) {
+              // Mostrar toast
+              document.getElementById('successToast').classList.remove('hidden');
+              
+              // Eliminar fila con animación
+              const row = document.querySelector(`tr[data-client-id="${clientId}"]`);
+              if (row) {
+                  row.style.opacity = '0';
+                  row.style.transform = 'translateX(-20px)';
+                  row.style.transition = 'all 0.3s ease';
+                  setTimeout(() => row.remove(), 300);
+              }
+              
+              // Ocultar toast después de 3 segundos
+              setTimeout(() => closeToast(), 3000);
+          } else {
+              alert('Error: ' + (data.error || 'No se pudo eliminar el cliente'));
           }
-          
-          // Ocultar toast
-          setTimeout(() => closeToast(), 3000);
-        } else {
-          alert('Error: ' + (data.error || 'No se pudo eliminar el cliente'));
-        }
       })
       .catch(error => {
-        closeDeleteModal();
-        alert('Error de conexión');
-        console.error(error);
+          closeDeleteModal();
+          alert('Error de conexión');
+          console.error(error);
       });
-    });
+  });
 
-    function closeToast() {
+  function closeToast() {
       document.getElementById('successToast').classList.add('hidden');
-    }
+  }
 
-    // =========== CIERRE DE MODAL AL HACER CLIC FUERA ===========
-    window.onclick = function(event) {
+  // =========== CIERRE DE MODAL AL HACER CLIC FUERA ===========
+  window.onclick = function(event) {
       const modal = document.getElementById('deleteModal');
       if (event.target === modal) {
-        closeDeleteModal();
+          closeDeleteModal();
       }
-    }
+  }
 
     // =========== FUNCIONES DE ACCIONES (SIMULADAS) ===========
     function exportToCSV() {

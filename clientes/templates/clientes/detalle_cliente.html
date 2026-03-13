@@ -21,10 +21,6 @@
             background: linear-gradient(135deg, #059669 0%, #047857 100%);
         }
         
-        .gradient-secondary {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        }
-        
         .card-shadow {
             box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
         }
@@ -38,22 +34,6 @@
             height: 100%;
         }
         
-        .stats-card.green::before {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-        
-        .stats-card.blue::before {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        }
-        
-        .stats-card.purple::before {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-        }
-        
-        .stats-card.amber::before {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        }
-        
         .table-row-hover:hover {
             background-color: #f8fafc;
         }
@@ -64,7 +44,6 @@
             font-weight: 600;
         }
         
-        /* Modal overlay */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -88,7 +67,6 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        /* Toast animation */
         .toast-animation {
             animation: slideIn 0.2s ease forwards;
         }
@@ -120,10 +98,6 @@
                 </div>
                 
                 <div class="flex items-center space-x-4">
-                    <button onclick="window.print()" 
-                           class="bg-white/20 hover:bg-white/30 text-white px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
-                        <i class="fas fa-print mr-2"></i> Imprimir
-                    </button>
                     <a href="{% url 'editar_cliente' alias=slug cliente_id=cliente.id %}" 
                        class="bg-white text-emerald-700 hover:bg-gray-100 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
                         <i class="fas fa-edit mr-2"></i> Editar
@@ -260,7 +234,7 @@
                                     <p class="text-xs text-gray-500">Última Lectura</p>
                                     {% if lecturas.0 %}
                                     <p class="font-bold text-gray-900 text-lg">
-                                        {{ lecturas.0.consumo|floatformat:2 }} m³
+                                        {{ lecturas.0.lectura_actual|floatformat:2 }} m³
                                     </p>
                                     {% else %}
                                     <p class="font-bold text-gray-900 text-lg">Sin datos</p>
@@ -294,7 +268,7 @@
                         </div>
                     </div>
                     
-                    <!-- Acciones Rápidas (con modal funcional) -->
+                    <!-- Acciones Rápidas -->
                     <div class="bg-white rounded-xl card-shadow p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
                         <div class="space-y-3">
@@ -303,14 +277,6 @@
                                 <div class="flex items-center">
                                     <i class="fas fa-tachometer-alt mr-3"></i>
                                     <span>Registrar Lectura</span>
-                                </div>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            <button onclick="alert('Funcionalidad en desarrollo')" 
-                                    class="w-full flex items-center justify-between p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
-                                <div class="flex items-center">
-                                    <i class="fas fa-credit-card mr-3"></i>
-                                    <span>Registrar Pago</span>
                                 </div>
                                 <i class="fas fa-arrow-right"></i>
                             </button>
@@ -335,23 +301,26 @@
                 </div>
             </div>
             
-            <!-- Gráfico de Consumo -->
+            <!-- Gráfico de Consumo (ahora con datos reales) -->
             <div class="bg-white rounded-xl card-shadow p-6 mb-8">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-semibold text-gray-900">Historial de Consumo</h2>
-                    <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                        <option>Últimos 6 meses</option>
-                        <option>Último año</option>
-                        <option>Todo el historial</option>
+                    <select name="rango" onchange="cambiarRango(this.value)" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="6m" {% if rango_seleccionado == '6m' %}selected{% endif %}>Últimos 6 meses</option>
+                        <option value="1y" {% if rango_seleccionado == '1y' %}selected{% endif %}>Último año</option>
+                        <option value="all" {% if rango_seleccionado == 'all' %}selected{% endif %}>Todo el historial</option>
                     </select>
                 </div>
                 <div class="h-64">
                     <canvas id="consumoChart"></canvas>
                 </div>
+                {% if not fechas_grafico %}
+                <p class="text-center text-gray-500 mt-4">No hay datos de consumo para mostrar</p>
+                {% endif %}
             </div>
         </div>
         
-        <!-- Pestaña: Lecturas (con botón funcional) -->
+        <!-- Pestaña: Lecturas -->
         <div id="contentLecturas" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200">
@@ -383,18 +352,10 @@
                         <tbody id="tablaLecturasBody" class="divide-y divide-gray-200">
                             {% for lectura in lecturas %}
                             <tr class="table-row-hover" data-lectura-id="{{ lectura.id }}">
-                                <td class="px-6 py-4">
-                                    {{ lectura.fecha_lectura|date:"d/m/Y" }}
-                                </td>
-                                <td class="px-6 py-4 font-mono">
-                                    {{ lectura.lectura_anterior|floatformat:3|default:"-" }}
-                                </td>
-                                <td class="px-6 py-4 font-mono font-bold">
-                                    {{ lectura.lectura_actual|floatformat:3 }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="font-bold text-blue-700">{{ lectura.consumo|floatformat:3|default:"0" }} m³</span>
-                                </td>
+                                <td class="px-6 py-4">{{ lectura.fecha_lectura|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4 font-mono">{{ lectura.lectura_anterior|floatformat:3|default:"-" }}</td>
+                                <td class="px-6 py-4 font-mono font-bold">{{ lectura.lectura_actual|floatformat:3 }}</td>
+                                <td class="px-6 py-4"><span class="font-bold text-blue-700">{{ lectura.consumo|floatformat:3|default:"0" }} m³</span></td>
                                 <td class="px-6 py-4">
                                     {% if lectura.estado == 'cargada' %}
                                     <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
@@ -409,14 +370,10 @@
                                         <i class="fas fa-clock mr-1"></i> Pendiente
                                     </span>
                                     {% else %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
-                                        {{ lectura.estado|capfirst }}
-                                    </span>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">{{ lectura.estado|capfirst }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-500">
-                                    {{ lectura.observaciones_app|truncatechars:30|default:"-" }}
-                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">{{ lectura.observaciones_app|truncatechars:30|default:"-" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -436,19 +393,13 @@
             </div>
         </div>
         
-        <!-- Pestaña: Pagos (igual que original) -->
+        <!-- Pestaña: Pagos -->
         <div id="contentPagos" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-900">Historial de Pagos</h2>
-                            <p class="text-gray-500 text-sm mt-1">Total pagado: ${{ total_pagado|floatformat:0|intcomma }}</p>
-                        </div>
-                        <button onclick="alert('Funcionalidad en desarrollo')" 
-                                class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
-                            <i class="fas fa-plus mr-2"></i> Nuevo Pago
-                        </button>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Historial de Pagos</h2>
+                        <p class="text-gray-500 text-sm mt-1">Total pagado: ${{ total_pagado|floatformat:0|intcomma }}</p>
                     </div>
                 </div>
                 
@@ -468,23 +419,11 @@
                         <tbody class="divide-y divide-gray-200">
                             {% for pago in pagos %}
                             <tr class="table-row-hover">
-                                <td class="px-6 py-4">
-                                    {{ pago.fecha|date:"d/m/Y" }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="font-bold text-emerald-700">${{ pago.monto|floatformat:0|intcomma }}</span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                                        {{ pago.metodo_pago }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 font-mono text-sm">
-                                    {{ pago.referencia|default:"-" }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    {{ pago.periodo|date:"m/Y"|default:"-" }}
-                                </td>
+                                <td class="px-6 py-4">{{ pago.fecha|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4"><span class="font-bold text-emerald-700">${{ pago.monto|floatformat:0|intcomma }}</span></td>
+                                <td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">{{ pago.metodo_pago }}</span></td>
+                                <td class="px-6 py-4 font-mono text-sm">{{ pago.referencia|default:"-" }}</td>
+                                <td class="px-6 py-4">{{ pago.periodo|date:"m/Y"|default:"-" }}</td>
                                 <td class="px-6 py-4">
                                     {% if pago.estado == 'confirmado' %}
                                     <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
@@ -506,10 +445,6 @@
                     <i class="fas fa-credit-card text-4xl text-gray-300 mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-700 mb-2">No hay pagos registrados</h3>
                     <p class="text-gray-500 mb-6">Este cliente no tiene pagos registrados.</p>
-                    <button onclick="alert('Funcionalidad en desarrollo')" 
-                            class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Registrar Primer Pago
-                    </button>
                 </div>
                 {% endif %}
             </div>
@@ -575,7 +510,7 @@
                                 class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                             Cancelar
                         </button>
-                        <button type="submit" 
+                        <button type="submit" id="btnGuardarLectura"
                                 class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center">
                             <i class="fas fa-save mr-2"></i> Guardar Lectura
                         </button>
@@ -585,7 +520,7 @@
         </div>
     </div>
 
-    <!-- Modal de eliminación -->
+    <!-- Modal de eliminación de cliente -->
     <div id="deleteModal" class="modal-overlay hidden">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
             <div class="p-5">
@@ -622,6 +557,10 @@
     </div>
 
     <script>
+        // ----- Datos del gráfico desde Django -----
+        const fechas = {{ fechas_grafico|safe|default:"[]" }};
+        const consumos = {{ consumos_grafico|safe|default:"[]" }};
+
         // ----- Sistema de pestañas -----
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -640,36 +579,48 @@
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
         
-        // ----- Gráfico de consumo (ejemplo) -----
+        // ----- Gráfico de consumo (real) -----
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('consumoChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
-                    datasets: [{
-                        label: 'Consumo (m³)',
-                        data: [12, 19, 15, 25, 22, 18, 24, 20, 17, 22, 19, 23],
-                        borderColor: '#059669',
-                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { drawBorder: false } },
-                        x: { grid: { display: false } }
+            if (fechas.length > 0) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: fechas,
+                        datasets: [{
+                            label: 'Consumo (m³)',
+                            data: consumos,
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { drawBorder: false } },
+                            x: { grid: { display: false } }
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                ctx.font = "14px Inter";
+                ctx.fillStyle = "#9ca3af";
+                ctx.textAlign = "center";
+                ctx.fillText("Sin datos de consumo", ctx.canvas.width/2, ctx.canvas.height/2);
+            }
         });
         
-        // ----- Modal de eliminación -----
+        // ----- Cambiar rango del gráfico -----
+        function cambiarRango(rango) {
+            window.location.href = window.location.pathname + '?rango=' + rango;
+        }
+        
+        // ----- Modal de eliminación de cliente -----
         function openDeleteModal(clientId, clientName) {
             document.getElementById('deleteClientId').value = clientId;
             document.getElementById('deleteClientName').textContent = clientName;
@@ -715,7 +666,9 @@
             if (event.target === modalLectura) cerrarModalLectura();
         };
         
-        // ----- Modal de registro de lectura -----
+        // ----- Modal de registro de lectura (con prevención de doble clic) -----
+        let enviando = false;
+
         function abrirModalLectura() {
             document.getElementById('modalRegistrarLectura').style.display = 'flex';
             document.body.style.overflow = 'hidden';
@@ -727,9 +680,15 @@
             document.getElementById('formRegistrarLectura').reset();
         }
         
-        // Envío AJAX del formulario
         document.getElementById('formRegistrarLectura').addEventListener('submit', function(e) {
             e.preventDefault();
+            if (enviando) return;
+            enviando = true;
+
+            const btn = document.getElementById('btnGuardarLectura');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+
             const formData = new FormData(this);
             const url = "{% url 'registrar_lectura_ajax' alias=slug cliente_id=cliente.id %}";
             
@@ -751,6 +710,11 @@
             .catch(error => {
                 mostrarToast('Error de conexión', 'error');
                 console.error(error);
+            })
+            .finally(() => {
+                enviando = false;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save mr-2"></i> Guardar Lectura';
             });
         });
         
@@ -759,13 +723,11 @@
             const tbody = document.getElementById('tablaLecturasBody');
             const placeholder = document.getElementById('sinLecturasPlaceholder');
             
-            // Si no hay tabla (estaba vacío), recargamos la página (o reconstruimos la tabla)
             if (!tbody) {
                 location.reload();
                 return;
             }
             
-            // Si el placeholder existe, significa que no había lecturas; lo eliminamos
             if (placeholder) {
                 const contenedor = placeholder.closest('.bg-white');
                 const tabla = contenedor.querySelector('table');
@@ -775,12 +737,10 @@
                 placeholder.remove();
             }
             
-            // Crear nueva fila
             const fila = document.createElement('tr');
             fila.className = 'table-row-hover';
             fila.setAttribute('data-lectura-id', lectura.id);
             
-            // Determinar badge de estado
             let badgeHtml = '';
             if (lectura.estado === 'cargada') {
                 badgeHtml = '<span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800"><i class="fas fa-check-circle mr-1"></i> Normal</span>';
@@ -803,7 +763,6 @@
             
             tbody.insertBefore(fila, tbody.firstChild);
             
-            // Actualizar contador
             const contador = document.getElementById('contadorLecturas');
             if (contador) {
                 let texto = contador.textContent;
@@ -814,10 +773,9 @@
                 }
             }
             
-            // Actualizar "Última Lectura" en la información general
             const ultimaLecturaSpan = document.querySelector('.bg-gray-50 p.text-lg');
             if (ultimaLecturaSpan && ultimaLecturaSpan.textContent.includes('Sin datos')) {
-                ultimaLecturaSpan.textContent = lectura.consumo + ' m³';
+                ultimaLecturaSpan.textContent = lectura.lectura_actual + ' m³';
             }
         }
         

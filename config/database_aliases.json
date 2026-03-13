@@ -1,25 +1,22 @@
 {
   "apr-requinoa": {
     "alias": "db_apr-requinoa",
-    "nombre": "APR REQUINOA",
-    "rut": "12.343.324-4",
+    "nombre": "APR-REQUINOA",
+    "rut": "43.313.123-2",
     "direccion": "COMUNA REQUINOA",
-    "telefono": "72323342",
-    "celular": "996578664",
+    "telefono": "7431321",
+    "celular": "936776785",
     "centros_costo": [
-      "VILLA JARDIN",
-      "COMERCIO",
-      "MURIALDO",
-      "EL ABRA"
+      "EJEMPO"
     ],
     "sectores": [
-      "VILLA JARDIN",
-      "COMERCIO",
-      "MURIALDO",
-      "EL ABRA"
+      "Comercio",
+      "Pablo Rubio",
+      "Villa Jardin",
+      "Murialdo"
     ],
     "db_path": "C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-requinoa.sqlite3",
-    "fecha_creacion": "2026-02-12T15:55:25.654687+00:00"
+    "fecha_creacion": "2026-03-12T22:00:52.127520+00:00"
   },
   "apr-vaticano": {
     "alias": "db_apr-vaticano",

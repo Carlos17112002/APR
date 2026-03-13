@@ -32,4 +32,5 @@ urlpatterns = [
     path('api/movil/lecturas-pendientes/<uuid:token>/', views_api.api_obtener_lecturas_pendientes, name='api_obtener_lecturas_pendientes'),
     path('clientes/<uuid:cliente_uuid>/', views_api.api_obtener_cliente_por_uuid, name='obtener-cliente-uuid'),
     path('cliente/<uuid:cliente_uuid>/', views_api.api_obtener_cliente_por_uuid, name='obtener-cliente-uuid-alt'),
+    path('<slug:alias>/lecturas/<uuid:lectura_id>/eliminar/', views.eliminar_lectura_ajax, name='eliminar_lectura_ajax'),
 ]

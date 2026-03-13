@@ -1,0 +1,41 @@
+=== ELIMINACIÓN EMPRESA: APR VATICANO (apr-vaticano) ===
+Iniciada por: carlos
+Fecha: 2026-03-12 18:50:50
+==================================================
+
+[1] Removiendo configuración...
+  ✓ Removido de settings.DATABASES
+  ✓ Removido de empresas_alias.json
+
+[2] Eliminando base de datos...
+  ✗ db_apr-vaticano.sqlite3: No se pudo eliminar ni renombrar: [WinError 32] El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso: 'C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-vaticano.sqlite3' -> 'C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-vaticano.sqlite3.eliminado_20260312_185052'
+  ℹ️  db_apr-vaticano.sqlite3-wal no existe
+  ℹ️  db_apr-vaticano.sqlite3-shm no existe
+  ℹ️  db_apr-vaticano.db no existe
+  Resumen: 0/4 archivos eliminados
+
+[3] Eliminando directorios...
+  ℹ️  app_movil: No existe
+  ℹ️  media: No existe
+  ℹ️  logos: No existe
+  Resumen: 0/3 directorios eliminados
+
+[4] Eliminando archivos de log...
+  ℹ️  apr-vaticano_log.txt no existe
+  ℹ️  apr-vaticano.log no existe
+
+[5] Registrando auditoría...
+  ⚠️  Error creando auditoría: Cannot assign "'carlos'": "EliminacionEmpresa.ejecutado_por" must be a "User" instance.
+
+[6] Eliminando registro de empresa...
+  ✓ Empresa eliminada de la base de datos
+  Información eliminada: {"nombre": "APR VATICANO", "slug": "apr-vaticano", "ruc": null, "direccion": "SECTOR EL VATICANO N1", "telefono": "72323342", "email": null, "fecha_creacion": "2026-02-12T16:19:17.934099+00:00"}
+
+==================================================
+✅ ELIMINACIÓN COMPLETADA EXITOSAMENTE
+Resumen final:
+  • Archivos BD: 0/4
+  • Directorios: 0/3
+  • Logs: 0/2
+  • Empresa: APR VATICANO
+==================================================

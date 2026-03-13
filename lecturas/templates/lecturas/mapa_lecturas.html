@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Mapa de Lecturas - {{ empresa.nombre }}</title>
+  <title>Mapa de Clientes - {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -10,6 +10,7 @@
   <style>
     #map {
       height: 600px;
+      width: 100%;
     }
     .leaflet-popup-content {
       width: 250px;
@@ -35,47 +36,78 @@
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
-  
 
   <div class="max-w-6xl mx-auto py-8 px-4">
     <h1 class="text-3xl font-bold text-green-700 mb-4">📍 Mapa de Clientes - {{ empresa.nombre }}</h1>
-    <div id="map" class="rounded shadow border border-gray-300"></div>
+    
+    {% if clientes %}
+      <div id="map" class="rounded shadow border border-gray-300"></div>
+    {% else %}
+      <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-4">
+        No hay clientes con coordenadas para mostrar en el mapa.
+      </div>
+    {% endif %}
+    
     <div class="mt-6 text-right">
       <a href="{% url 'listado_lecturas_app' alias=slug %}" class="text-blue-600 hover:underline">⬅️ Volver</a>
     </div>
   </div>
-  </div>
-  
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const map = L.map('map').setView([-33.7, -70.7], 11);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
+      {% if clientes %}
+        // Inicializar mapa
+        const map = L.map('map').setView([-33.7, -70.7], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
 
-      {% for cliente in clientes %}
-        L.marker([{{ cliente.latitude }}, {{ cliente.longitude }}])
-          .addTo(map)
-          .bindPopup(`
-            <strong>{{ cliente.nombre }}</strong><br>
-            Medidor: {{ cliente.medidor }}<br><br>
-            <form method="post" action="{% url 'crear_lectura' alias=slug %}" class="popup-form">
-              {% csrf_token %}
-              <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
-              <label>Fecha:</label>
-              <input type="date" name="fecha" required>
-              <label>Valor (m³):</label>
-              <input type="number" step="0.01" name="valor" required>
-              <label>Obs:</label>
-              <textarea name="observacion" rows="2"></textarea>
-              <button type="submit">Guardar</button>
-            </form>
-          `);
-      {% endfor %}
+        // Array para guardar los marcadores y ajustar el zoom después
+        const markers = [];
+
+        {% for cliente in clientes %}
+          {% if cliente.latitude and cliente.longitude %}
+            (function() {
+              const lat = {{ cliente.latitude|safe }};
+              const lng = {{ cliente.longitude|safe }};
+              
+              // Validar que sean números
+              if (!isNaN(lat) && !isNaN(lng)) {
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup(`
+                  <strong>{{ cliente.nombre }}</strong><br>
+                  Medidor: {{ cliente.medidor }}<br>
+                  Dirección: {{ cliente.direccion|default:"—" }}<br>
+                  <hr class="my-2">
+                  <form method="post" action="{% url 'crear_lectura' alias=slug %}" class="popup-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <label class="block text-xs font-bold">Fecha:</label>
+                    <input type="date" name="fecha" required>
+                    <label class="block text-xs font-bold">Valor (m³):</label>
+                    <input type="number" step="0.01" name="valor" required>
+                    <label class="block text-xs font-bold">Observación:</label>
+                    <textarea name="observacion" rows="2"></textarea>
+                    <button type="submit" class="w-full mt-2">Guardar Lectura</button>
+                  </form>
+                `);
+                markers.push(marker);
+              }
+            })();
+          {% endif %}
+        {% endfor %}
+
+        // Ajustar el mapa para que muestre todos los marcadores
+        if (markers.length > 0) {
+          const group = L.featureGroup(markers);
+          map.fitBounds(group.getBounds().pad(0.1));
+        } else {
+          // Si no hay marcadores válidos, mostrar mensaje en consola
+          console.log("No se encontraron marcadores con coordenadas válidas.");
+        }
+      {% endif %}
     });
   </script>
 
 </body>
 </html>
-

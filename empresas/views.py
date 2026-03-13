@@ -35,11 +35,11 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from empresas.models import Empresa
 from django.utils import timezone
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 import os
 import json
 from django.conf import settings
-from django.db.models import Sum, Avg, Count, Q
+from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth
 import calendar
 from decimal import Decimal
@@ -68,7 +68,7 @@ def panel_empresa(request, slug):
             messages.error(request, f'No se puede conectar a la base de datos: {str(e)}')
             return redirect('dashboard_admin_ssr')
 
-        # 4. Importar modelos DINÁMICAMENTE para la base de datos de la empresa
+        # 4. Importar modelos
         from clientes.models import Cliente
         from lecturas.models import LecturaMovil
         from avisos.models import Aviso
@@ -83,8 +83,8 @@ def panel_empresa(request, slug):
         anio_actual = ahora.year
         hoy = ahora.date()
 
-        # Lecturas del mes actual
-        lecturas_mes = LecturaMovil.objects.using(alias).filter(
+        # Lecturas del mes actual (BD principal)
+        lecturas_mes = LecturaMovil.objects.filter(
             fecha_lectura__month=mes_actual,
             fecha_lectura__year=anio_actual,
             empresa_slug=slug
@@ -98,7 +98,7 @@ def panel_empresa(request, slug):
 
         # ========== CONSUMO TOTAL MES ==========
         try:
-            consumo_total_mes_result = LecturaMovil.objects.using(alias).filter(
+            consumo_total_mes_result = LecturaMovil.objects.filter(
                 fecha_lectura__month=mes_actual,
                 fecha_lectura__year=anio_actual,
                 empresa_slug=slug,
@@ -118,7 +118,7 @@ def panel_empresa(request, slug):
                 mes_anterior = mes_actual - 1
                 anio_anterior = anio_actual
 
-            consumo_mes_anterior_result = LecturaMovil.objects.using(alias).filter(
+            consumo_mes_anterior_result = LecturaMovil.objects.filter(
                 fecha_lectura__month=mes_anterior,
                 fecha_lectura__year=anio_anterior,
                 empresa_slug=slug,
@@ -136,14 +136,14 @@ def panel_empresa(request, slug):
 
         # ========== ESTADO DE LECTURAS ==========
         try:
-            lecturas_completadas = LecturaMovil.objects.using(alias).filter(
+            lecturas_completadas = LecturaMovil.objects.filter(
                 fecha_lectura__month=mes_actual,
                 fecha_lectura__year=anio_actual,
                 empresa_slug=slug,
                 estado__in=['cargada', 'procesada']
             ).count()
 
-            lecturas_pendientes = LecturaMovil.objects.using(alias).filter(
+            lecturas_pendientes = LecturaMovil.objects.filter(
                 fecha_lectura__month=mes_actual,
                 fecha_lectura__year=anio_actual,
                 empresa_slug=slug,
@@ -161,12 +161,9 @@ def panel_empresa(request, slug):
             lecturas_pendientes = 0
             porcentaje_lecturas_completadas = 0
 
-        # ========== HORA PICO (simulado) ==========
-        hora_pico_consumo = "10:00"  # Puedes calcularlo si tienes datos horarios
-
         # ========== TOP 10 CONSUMIDORES ==========
         try:
-            top_consumidores_data = LecturaMovil.objects.using(alias).filter(
+            top_consumidores_data = LecturaMovil.objects.filter(
                 fecha_lectura__month=mes_actual,
                 fecha_lectura__year=anio_actual,
                 empresa_slug=slug,
@@ -196,28 +193,25 @@ def panel_empresa(request, slug):
         # ========== CONSUMO HISTÓRICO (últimos 12 meses) ==========
         try:
             fecha_inicio = ahora - timedelta(days=365)
-
-            # Corregido: uso de strftime con formato correcto para SQLite
-            consumo_historico = LecturaMovil.objects.using(alias).filter(
+            consumo_por_mes = LecturaMovil.objects.filter(
                 fecha_lectura__gte=fecha_inicio,
                 empresa_slug=slug,
                 consumo__isnull=False
-            ).extra({
-                'month': "strftime('%%m', fecha_lectura)",  # Doble % para escapar
-                'year': "strftime('%%Y', fecha_lectura)"
-            }).values('year', 'month').annotate(
+            ).annotate(
+                mes=TruncMonth('fecha_lectura')
+            ).values('mes').annotate(
                 total_consumo=Sum('consumo')
-            ).order_by('year', 'month')
+            ).order_by('mes')
+
+            consumo_dict = {}
+            for item in consumo_por_mes:
+                key = item['mes'].strftime('%Y-%m')
+                consumo_dict[key] = float(item['total_consumo'] or 0)
 
             meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
                              'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
             meses_grafico = []
             consumo_mensual = []
-
-            consumo_dict = {}
-            for item in consumo_historico:
-                key = f"{item['year']}-{int(item['month']):02d}"
-                consumo_dict[key] = float(item['total_consumo'] or 0)
 
             for i in range(11, -1, -1):
                 fecha = ahora - timedelta(days=30 * i)
@@ -226,10 +220,8 @@ def panel_empresa(request, slug):
                 mes_nombre = meses_espanol[mes_num - 1]
                 anio_corto = str(anio_num)[2:]
                 meses_grafico.append(f"{mes_nombre} '{anio_corto}")
-
                 key = f"{anio_num}-{mes_num:02d}"
-                consumo_mes = consumo_dict.get(key, 0.0)
-                consumo_mensual.append(consumo_mes)
+                consumo_mensual.append(consumo_dict.get(key, 0.0))
         except Exception as e:
             print(f"Error histórico consumo: {e}")
             meses_grafico = []
@@ -237,9 +229,7 @@ def panel_empresa(request, slug):
 
         # ========== DISTRIBUCIÓN POR SECTOR ==========
         try:
-            sectores_empresa = empresa.sectores()  # viene del modelo
-
-            # CORRECCIÓN: Reemplazar sector__ne por exclude
+            sectores_empresa = empresa.sectores()
             clientes_por_sector = Cliente.objects.using(alias).filter(
                 sector__isnull=False
             ).exclude(sector='').values('sector').annotate(
@@ -269,7 +259,6 @@ def panel_empresa(request, slug):
                         'porcentaje': round(porcentaje, 1)
                     })
 
-            # Limitar a top 5 y agrupar "Otros"
             if len(distribucion_sectores) > 5:
                 top_5 = distribucion_sectores[:5]
                 otros_total = sum(item['total'] for item in distribucion_sectores[5:])
@@ -281,19 +270,17 @@ def panel_empresa(request, slug):
                 }]
         except Exception as e:
             print(f"Error distribución sectores: {e}")
-            distribucion_sectores = []  # Vacío, sin datos falsos
+            distribucion_sectores = []
 
-        # ========== TENDENCIA ANUAL (consumo vs lecturas) ==========
+        # ========== TENDENCIA ANUAL ==========
         try:
             tendencia_consumo = consumo_mensual[-12:] if consumo_mensual else []
-
-            # Calcular tendencia de lecturas completadas por mes
             tendencia_lecturas = []
             for i in range(11, -1, -1):
                 fecha = ahora - timedelta(days=30 * i)
                 mes_num = fecha.month
                 anio_num = fecha.year
-                lecturas_mes_historico = LecturaMovil.objects.using(alias).filter(
+                lecturas_mes_historico = LecturaMovil.objects.filter(
                     fecha_lectura__month=mes_num,
                     fecha_lectura__year=anio_num,
                     empresa_slug=slug,
@@ -314,12 +301,32 @@ def panel_empresa(request, slug):
         except:
             consumo_promedio = 0
 
-        # ========== RENDIMIENTO DEL MES (días transcurridos) ==========
+        # ========== RENDIMIENTO DEL MES ==========
         dia_actual = hoy.day
         dias_en_mes = calendar.monthrange(anio_actual, mes_actual)[1]
         rendimiento_mes = (dia_actual / dias_en_mes) * 100
 
-        # ========== HELPERS (con manejo de errores individual) ==========
+        # ========== CLIENTES CON COORDENADAS PARA EL MAPA ==========
+        puntos_clientes = []
+        try:
+            clientes_con_ubicacion = Cliente.objects.using(alias).filter(
+                latitude__isnull=False,
+                longitude__isnull=False
+            ).exclude(latitude=0, longitude=0)
+            for c in clientes_con_ubicacion:
+                puntos_clientes.append({
+                    'id': c.id,
+                    'nombre': c.nombre,
+                    'lat': float(c.latitude),
+                    'lng': float(c.longitude),
+                    'medidor': c.medidor,
+                    'direccion': c.direccion,
+                })
+        except Exception as e:
+            print(f"Error obteniendo clientes con coordenadas: {e}")
+            puntos_clientes = []
+
+        # ========== HELPERS (AJUSTADOS PARA USAR BD PRINCIPAL EN LECTURAS) ==========
         from .helpers import (
             obtener_certificado_firma,
             obtener_estado_folios,
@@ -331,9 +338,7 @@ def panel_empresa(request, slug):
             obtener_puntos_lectura
         )
 
-        # Cada helper se llama dentro de su propio try/except
         try:
-            # CORRECCIÓN: obtener_certificado_firma no recibe argumento
             firma = obtener_certificado_firma()
         except Exception as e:
             print(f"Error helper firma: {e}")
@@ -369,6 +374,9 @@ def panel_empresa(request, slug):
             print(f"Error helper recaudación: {e}")
             pagos = []
 
+        # ⚠️ Estos dos helpers (producción/consumo y puntos_lectura) deben estar actualizados
+        # para usar la BD principal (sin using) y filtrar por empresa_slug.
+        # Si no, podrían no mostrar datos correctos.
         try:
             meses, produccion, consumo = obtener_produccion_consumo(alias)
         except Exception as e:
@@ -381,7 +389,7 @@ def panel_empresa(request, slug):
             print(f"Error helper puntos lectura: {e}")
             puntos_lectura = []
 
-        # ========== PREPARAR TOP CONSUMIDORES PARA TEMPLATE ==========
+        # ========== PREPARAR TOP CONSUMIDORES ==========
         top_consumidores_template = []
         for idx, item in enumerate(top_consumidores[:10], 1):
             cliente = item['cliente']
@@ -426,16 +434,15 @@ def panel_empresa(request, slug):
             'meses': meses,
             'produccion': produccion,
             'consumo': consumo,
-            'puntos_lectura': puntos_lectura,
+            'puntos_lectura': puntos_lectura,          # Podrías eliminarlo si no lo usas
             'db_existe': os.path.exists(db_path),
 
-            # Variables para gráficos (siempre listas, nunca datos falsos)
             'consumo_total_mes': float(consumo_total_mes),
             'variacion_consumo': round(variacion_consumo, 1),
             'porcentaje_lecturas_completadas': round(porcentaje_lecturas_completadas, 0),
             'lecturas_completadas': lecturas_completadas,
             'lecturas_pendientes': lecturas_pendientes,
-            'hora_pico_consumo': hora_pico_consumo,
+            'hora_pico_consumo': "10:00",              # Simulado, puedes ajustar
             'consumo_top10': float(consumo_top10),
             'top_consumidores': top_consumidores_template,
             'meses_grafico': json.dumps(meses_grafico),
@@ -450,6 +457,10 @@ def panel_empresa(request, slug):
             'dia_actual': dia_actual,
             'dias_en_mes': dias_en_mes,
             'sectores_empresa': empresa.sectores(),
+
+            # Nuevo: puntos de clientes para el mapa
+            'puntos_clientes': json.dumps(puntos_clientes),
+            'total_clientes_mapa': len(puntos_clientes),
         }
 
         return render(request, 'admin_ssr/panel_empresa.html', context)

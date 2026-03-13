@@ -593,28 +593,42 @@ from django.conf import settings
 @login_required
 def mapa_lecturas(request, alias):
     """
-    Vista para mostrar lecturas en un mapa
+    Vista para mostrar en un mapa las lecturas de la app móvil,
+    filtradas por mes, año y estado.
     """
     empresa = get_object_or_404(Empresa, slug=alias)
-    
+
+    # Obtener filtros de la request
     mes = request.GET.get('mes', timezone.now().month)
     anio = request.GET.get('anio', timezone.now().year)
     estado = request.GET.get('estado', 'cargada')
-    
-    # Obtener lecturas con coordenadas (desde BD principal)
-    lecturas = LecturaMovil.objects.filter(
-        empresa_id=empresa.id,  # usar empresa_id
+
+    # Convertir a enteros si es posible
+    try:
+        mes = int(mes)
+    except:
+        mes = timezone.now().month
+    try:
+        anio = int(anio)
+    except:
+        anio = timezone.now().year
+
+    # Consulta base de lecturas con coordenadas
+    lecturas_qs = LecturaMovil.objects.filter(
+        empresa_id=empresa.id,
         fecha_lectura__month=mes,
         fecha_lectura__year=anio,
-        estado=estado,
         latitud__isnull=False,
         longitud__isnull=False
     )
-    
+    if estado and estado != 'all':
+        lecturas_qs = lecturas_qs.filter(estado=estado)
+
+    # Construir lista de puntos para el mapa
     puntos_mapa = []
-    for lectura in lecturas:
+    for lectura in lecturas_qs:
         puntos_mapa.append({
-            'id': lectura.id,
+            'id': str(lectura.id),
             'nombre': f"Cliente {lectura.cliente}",
             'lat': float(lectura.latitud),
             'lng': float(lectura.longitud),
@@ -628,21 +642,21 @@ def mapa_lecturas(request, alias):
                 'procesada': 'blue'
             }.get(lectura.estado, 'gray')
         })
-    
-    # Obtener información de sectores (desde BD de empresa)
+
+    # Obtener estadísticas por sector (usando la BD de la empresa)
     lecturas_por_sector = []
     alias_db = f'db_{alias}'
     if alias_db in settings.DATABASES:
         try:
-            with connection.cursor(using=alias_db) as cursor:
+            with connections[alias_db].cursor() as cursor:
                 cursor.execute("""
                     SELECT cc.sector, COUNT(lm.id) as total
                     FROM lecturas_lecturamovil lm
                     INNER JOIN clientes_cliente cc ON lm.cliente = cc.id
                     WHERE lm.empresa_slug = %s 
-                    AND strftime('%%m', lm.fecha_lectura) = %s
-                    AND strftime('%%Y', lm.fecha_lectura) = %s
-                    AND lm.estado = %s
+                      AND strftime('%%m', lm.fecha_lectura) = %s
+                      AND strftime('%%Y', lm.fecha_lectura) = %s
+                      AND lm.estado = %s
                     GROUP BY cc.sector
                     ORDER BY total DESC
                 """, [alias, f"{mes:02d}", str(anio), estado])
@@ -654,17 +668,30 @@ def mapa_lecturas(request, alias):
                     })
         except Exception as e:
             logger.error(f"Error obteniendo lecturas por sector: {e}")
-    
+    else:
+        logger.warning(f"Base de datos {alias_db} no encontrada en settings")
+
+    # Si no hay datos, mostrar un placeholder
     if not lecturas_por_sector:
         lecturas_por_sector = [{'sector': 'Sin datos', 'total': 0}]
-    
+
+    # Centro del mapa (primer punto o coordenadas por defecto)
     if puntos_mapa:
         center_lat = puntos_mapa[0]['lat']
         center_lng = puntos_mapa[0]['lng']
     else:
         center_lat = -33.4489
         center_lng = -70.6693
-    
+
+    # Opciones para los filtros
+    meses_opciones = [
+        (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
+        (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
+        (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
+    ]
+    anios_opciones = range(timezone.now().year - 5, timezone.now().year + 1)
+    estados_opciones = ['cargada', 'pendiente', 'procesada']
+
     context = {
         'empresa': empresa,
         'slug': alias,
@@ -676,18 +703,16 @@ def mapa_lecturas(request, alias):
             'anio': anio,
             'estado': estado,
         },
-        'meses': [
-            (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
-            (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
-            (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
-        ],
-        'anios': range(timezone.now().year - 5, timezone.now().year + 1),
-        'estados': ['cargada', 'pendiente', 'procesada'],
+        'meses': meses_opciones,
+        'anios': anios_opciones,
+        'estados': estados_opciones,
         'center_lat': center_lat,
         'center_lng': center_lng,
     }
-    
     return render(request, 'lecturas/mapa_lecturas.html', context)
+
+
+
 
 # ========== API PARA APP MÓVIL ==========
 
@@ -1762,18 +1787,18 @@ def registrar_lectura_ajax(request, alias, cliente_id):
             estado = 'cargada'
 
         # Crear la lectura
-        nueva_lectura = LecturaMovil.objects.using(db_alias).create(
-            empresa_id=empresa_obj.id,
-            cliente=cliente.id,
-            fecha_lectura=fecha,
-            lectura_actual=lectura_actual,
-            lectura_anterior=lectura_anterior,
-            consumo=consumo,
-            estado=estado,
-            observaciones_app=observaciones,
-            usuario_app=request.user.username,
-            empresa_slug=alias,
-        )
+        nueva_lectura = LecturaMovil.objects.create(  # sin using
+        empresa_id=empresa_obj.id,
+        cliente=cliente.id,
+        fecha_lectura=fecha,
+        lectura_actual=lectura_actual,
+        lectura_anterior=lectura_anterior,
+        consumo=consumo,
+        estado=estado,
+        observaciones_app=observaciones,
+        usuario_app=request.user.username,
+        empresa_slug=alias,
+    )
 
         # Respuesta JSON
         data = {
@@ -1792,4 +1817,24 @@ def registrar_lectura_ajax(request, alias, cliente_id):
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error en registrar_lectura_ajax: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)})
+    
+    
+@login_required
+@require_POST
+def eliminar_lectura_ajax(request, alias, lectura_id):
+    """
+    Elimina una lectura (solo si no está asociada a una boleta).
+    """
+    try:
+        db_alias = f'db_{alias}'
+        lectura = get_object_or_404(LecturaMovil.objects.using(db_alias), id=lectura_id)
+        
+        # Opcional: evitar eliminar si ya tiene boleta asociada
+        if lectura.usada_para_boleta:
+            return JsonResponse({'success': False, 'error': 'No se puede eliminar una lectura ya usada en boleta.'})
+        
+        lectura.delete()
+        return JsonResponse({'success': True, 'message': 'Lectura eliminada correctamente.'})
+    except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})

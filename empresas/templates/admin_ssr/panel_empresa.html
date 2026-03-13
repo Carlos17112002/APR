@@ -281,17 +281,24 @@
                 <a href="{% url 'informe_contabilidad' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
                   <i class="fas fa-balance-scale w-5 text-emerald-600"></i> Contabilidad
                 </a>
-                <!-- ... resto de informes (igual que antes) ... -->
+                <!-- ... resto de informes ... -->
               </div>
             </div>
           </div>
         </div>
 
         <!-- Cerrar sesión con efecto -->
-        <a href="{% url 'logout_ssr' %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-all duration-300 flex items-center gap-1.5 group">
-          <i class="fas fa-sign-out-alt text-xs group-hover:scale-110 transition-transform"></i>
-          <span class="hidden sm:inline">Salir</span>
-        </a>
+        {% if request.user.is_superuser %}
+          <a href="{% url 'dashboard_admin_ssr' %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-all duration-300 flex items-center gap-1.5 group">
+            <i class="fas fa-tachometer-alt text-xs group-hover:scale-110 transition-transform"></i>
+            <span class="hidden sm:inline">Dashboard</span>
+          </a>
+        {% else %}
+          <a href="{% url 'logout_ssr' %}" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-all duration-300 flex items-center gap-1.5 group">
+            <i class="fas fa-sign-out-alt text-xs group-hover:scale-110 transition-transform"></i>
+            <span class="hidden sm:inline">Salir</span>
+          </a>
+        {% endif %}
       </div>
     </div>
   </header>
@@ -561,23 +568,26 @@
       </div>
     </div>
 
-    <!-- SECCIÓN: MAPA Y TOP CONSUMIDORES -->
+    <!-- SECCIÓN: MAPA DE CLIENTES Y TOP CONSUMIDORES -->
     <div class="grid lg:grid-cols-3 gap-6">
-      <!-- Mapa de lecturas -->
+      <!-- Mapa de Clientes (usando puntos_clientes) -->
       <div class="lg:col-span-2 stats-card bg-white rounded-xl p-5 animate-fade-in-up" style="animation-delay: 0.8s;">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="font-semibold text-gray-900">Mapa de Lecturas</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Ubicación y estado por cliente</p>
+            <h3 class="font-semibold text-gray-900">Mapa de Clientes</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Ubicación de clientes con coordenadas</p>
           </div>
-          <button onclick="mostrarMapaLecturas()" class="btn-3d text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-1.5">
+          <button onclick="mostrarMapaClientes()" class="btn-3d text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-1.5">
             <i class="fas fa-expand-alt"></i> Ver mapa completo
           </button>
         </div>
-        <div id="mapaMiniatura" class="h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 cursor-pointer" onclick="mostrarMapaLecturas()">
+        <div id="mapaMiniatura" class="h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 cursor-pointer" onclick="mostrarMapaClientes()">
           <div class="text-center">
             <i class="fas fa-map-marked-alt text-4xl mb-2 text-emerald-400"></i>
             <p class="text-sm">Haz clic para ver el mapa interactivo</p>
+            {% if total_clientes_mapa == 0 %}
+              <p class="text-xs text-gray-400 mt-2">No hay clientes con coordenadas</p>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -693,25 +703,20 @@
     </footer>
   </main>
 
-  <!-- MODAL: Mapa completo de lecturas (mejorado) -->
-  <div id="modalLecturas" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all duration-300">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-95 opacity-0" id="modalLecturasContent">
+  <!-- MODAL: Mapa completo de clientes -->
+  <div id="modalMapaClientes" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-95 opacity-0" id="modalMapaClientesContent">
       <div class="flex items-center justify-between p-5 border-b border-gray-100">
         <div>
-          <h3 class="font-semibold text-gray-900">Mapa de Lecturas</h3>
-          <p class="text-xs text-gray-500 mt-0.5">Visualización geográfica del estado por cliente</p>
+          <h3 class="font-semibold text-gray-900">Mapa de Clientes</h3>
+          <p class="text-xs text-gray-500 mt-0.5">{{ total_clientes_mapa }} cliente(s) con ubicación</p>
         </div>
-        <button onclick="cerrarMapaLecturas()" class="h-8 w-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors">
+        <button onclick="cerrarMapaClientes()" class="h-8 w-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors">
           <i class="fas fa-times"></i>
         </button>
       </div>
       <div class="p-5 flex-1">
-        <div class="flex flex-wrap gap-3 mb-4 text-xs">
-          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-emerald-500"></span> Completadas ({{ lecturas_completadas|default:"0" }})</span>
-          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-500"></span> Pendientes ({{ lecturas_pendientes|default:"0" }})</span>
-          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-blue-500"></span> Procesadas ({{ lecturas_mes|default:"0" }})</span>
-        </div>
-        <div id="mapLecturas" class="h-[400px] w-full rounded-lg border border-gray-200"></div>
+        <div id="mapaClientes" class="h-[400px] w-full rounded-lg border border-gray-200"></div>
       </div>
     </div>
   </div>
@@ -792,13 +797,10 @@
       }
     } catch (e) { console.error('Error distribución:', e); }
 
-    const puntosLecturaData = [
-      {% for punto in puntos_lectura %}
-      { lat: {{ punto.latitud|default:"-34.3" }}, lng: {{ punto.longitud|default:"-70.9" }}, nombre: "{{ punto.nombre_cliente|escapejs }}", estado: "{{ punto.estado|default:'normal' }}" },
-      {% endfor %}
-    ];
+    // Puntos de clientes para el mapa
+    const puntosClientes = {{ puntos_clientes|safe }};
 
-    let mapaLecturas = null, capaPuntos = null, graficoConsumo, graficoDistribucion, progressInterval = null;
+    let mapaClientes = null, capaClientes = null, graficoConsumo, graficoDistribucion, progressInterval = null;
 
     // =========== INICIALIZACIÓN ===========
     document.addEventListener('DOMContentLoaded', function() {
@@ -906,10 +908,10 @@
       // Aquí podrías recargar los datos con fetch y actualizar los gráficos
     }
 
-    // =========== MAPA ===========
-    function mostrarMapaLecturas() {
-      const modal = document.getElementById('modalLecturas');
-      const content = document.getElementById('modalLecturasContent');
+    // =========== MAPA DE CLIENTES ===========
+    function mostrarMapaClientes() {
+      const modal = document.getElementById('modalMapaClientes');
+      const content = document.getElementById('modalMapaClientesContent');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.style.overflow = 'hidden';
@@ -920,30 +922,40 @@
       }, 10);
       
       setTimeout(() => {
-        if (!mapaLecturas) {
-          mapaLecturas = L.map('mapLecturas').setView([-34.3, -70.9], 13);
+        if (!mapaClientes) {
+          mapaClientes = L.map('mapaClientes').setView([-34.3, -70.9], 11);
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
-          }).addTo(mapaLecturas);
-          capaPuntos = L.layerGroup().addTo(mapaLecturas);
+          }).addTo(mapaClientes);
+          capaClientes = L.layerGroup().addTo(mapaClientes);
         }
-        mapaLecturas.invalidateSize();
+        mapaClientes.invalidateSize();
         
-        if (capaPuntos) {
-          capaPuntos.clearLayers();
-          puntosLecturaData.forEach(p => {
-            const color = p.estado === 'normal' ? '#10b981' : p.estado === 'medio' ? '#f59e0b' : '#ef4444';
-            L.circleMarker([p.lat, p.lng], { radius: 6, color, fillColor: color, weight: 1, fillOpacity: 0.8 })
-              .bindPopup(`<b>${p.nombre}</b>`)
-              .addTo(capaPuntos);
+        if (capaClientes) {
+          capaClientes.clearLayers();
+          puntosClientes.forEach(p => {
+            const marker = L.marker([p.lat, p.lng]).addTo(capaClientes);
+            const popupContent = `
+              <div style="font-family: Arial, sans-serif;">
+                <strong>${p.nombre}</strong><br>
+                Medidor: ${p.medidor || '—'}<br>
+                Dirección: ${p.direccion || '—'}<br>
+                <hr class="my-2">
+                <a href="/empresa/{{ slug }}/clientes/${p.id}/" 
+                   style="display: inline-block; background-color: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.9rem;">
+                  Ver detalle
+                </a>
+              </div>
+            `;
+            marker.bindPopup(popupContent);
           });
         }
       }, 100);
     }
 
-    function cerrarMapaLecturas() {
-      const modal = document.getElementById('modalLecturas');
-      const content = document.getElementById('modalLecturasContent');
+    function cerrarMapaClientes() {
+      const modal = document.getElementById('modalMapaClientes');
+      const content = document.getElementById('modalMapaClientesContent');
       content.classList.remove('scale-100', 'opacity-100');
       content.classList.add('scale-95', 'opacity-0');
       setTimeout(() => {
