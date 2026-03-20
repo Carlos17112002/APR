@@ -58,9 +58,9 @@
 </head>
 <body class="bg-gray-50">
 
-    <!-- Navbar -->
+    <!-- Navbar (sin límite de ancho) -->
     <header class="bg-emerald-700 text-white sticky top-0 z-20 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
                     <div class="h-9 w-9 bg-white/20 rounded-lg flex items-center justify-center">
@@ -80,19 +80,18 @@
                         <i class="fas fa-map text-xs"></i>
                         <span class="hidden sm:inline">Mapa</span>
                     </a>
-
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Contenido principal -->
-    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Contenido principal (ancho completo) -->
+    <div class="w-full py-8 px-4 sm:px-6 lg:px-8">
         
         <!-- Header de página -->
         <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div>
-                <h2 class="text-2xl font-semibold text-gray-900">Lecturas Móviles</h2>
+                <h2 class="text-2xl font-semibold text-gray-900">Lecturas</h2>
                 <p class="text-sm text-gray-500 mt-1">Gestiona las lecturas sincronizadas desde la app móvil SSR</p>
             </div>
             <div class="flex items-center gap-2">
@@ -200,7 +199,7 @@
                             <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lecturas</th>
                             <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                             <th class="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                        </tr>
+                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for dispositivo in empresa.dispositivos.all %}
@@ -215,16 +214,16 @@
                                         <div class="text-xs text-gray-500 font-mono">{{ dispositivo.identificador|truncatechars:16 }}</div>
                                     </div>
                                 </div>
-                            </td>
+                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ dispositivo.ultima_conexion|date:"d/m/Y" }}</div>
                                 <div class="text-xs text-gray-500">{{ dispositivo.ultima_conexion|date:"H:i" }}</div>
-                            </td>
+                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <span class="status-badge bg-blue-50 text-blue-700 text-xs">
                                     {{ dispositivo.lecturas.count }}
                                 </span>
-                            </td>
+                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 {% if dispositivo.activo %}
                                 <span class="status-badge bg-green-50 text-green-700 text-xs">
@@ -237,7 +236,7 @@
                                     Inactivo
                                 </span>
                                 {% endif %}
-                            </td>
+                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-right">
                                 <div class="flex items-center justify-end gap-1">
                                     <button onclick="verDispositivo('{{ dispositivo.id }}')" 
@@ -251,8 +250,8 @@
                                         <i class="fas fa-ban text-xs"></i>
                                     </button>
                                 </div>
-                            </td>
-                        </tr>
+                             </td>
+                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -369,7 +368,7 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                        </tr>
+                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for item in lecturas_con_info %}
@@ -394,7 +393,7 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                            </td>
+                             </td>
                             <td class="px-4 py-3">
                                 <div class="text-base font-semibold text-gray-900">
                                     {{ item.lectura.lectura_actual }}
@@ -408,11 +407,11 @@
                                     </span>
                                 </div>
                                 {% endif %}
-                            </td>
+                             </td>
                             <td class="px-4 py-3">
                                 <div class="text-sm text-gray-900">{{ item.lectura.fecha_lectura|date:"d/m/Y" }}</div>
                                 <div class="text-xs text-gray-500">—</div>
-                            </td>
+                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center">
                                     <div class="h-7 w-7 rounded-full bg-purple-50 flex items-center justify-center mr-2">
@@ -423,7 +422,7 @@
                                         <div class="text-xs text-gray-500">{{ item.lectura.dispositivo|truncatechars:12|default:"—" }}</div>
                                     </div>
                                 </div>
-                            </td>
+                             </td>
                             <td class="px-4 py-3">
                                 {% if item.lectura.estado == 'cargada' %}
                                     <span class="status-badge bg-green-50 text-green-700 text-xs">
@@ -446,7 +445,7 @@
                                         {{ item.lectura.estado|default:"—" }}
                                     </span>
                                 {% endif %}
-                            </td>
+                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <a href="{% url 'detalle_lectura' alias=slug lectura_id=item.lectura.id %}" 
@@ -473,8 +472,8 @@
                                         <i class="fas fa-trash-alt text-xs"></i>
                                     </button>
                                 </div>
-                            </td>
-                        </tr>
+                             </td>
+                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -541,9 +540,9 @@
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer (ancho completo) -->
     <footer class="mt-12 border-t border-gray-200 bg-white">
-        <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
+        <div class="w-full py-5 px-4 sm:px-6 lg:px-8">
             <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
                 <span class="flex items-center gap-1.5">
                     <i class="fas fa-mobile-alt text-emerald-600"></i>

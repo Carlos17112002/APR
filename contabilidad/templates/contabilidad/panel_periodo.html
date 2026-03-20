@@ -19,9 +19,9 @@
             line-height: 1.4;
         }
         
+        /* Contenedor principal sin límite de ancho */
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
             padding: 20px;
         }
         
@@ -48,10 +48,12 @@
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow-x: auto; /* Permite scroll horizontal en tablas */
         }
         
         table {
             width: 100%;
+            min-width: 800px; /* Para que en pantallas pequeñas la tabla sea scrollable */
             border-collapse: collapse;
             margin: 20px 0;
             font-size: 14px;
@@ -106,6 +108,7 @@
         
         .button-group {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-top: 20px;
             padding-top: 20px;
@@ -150,12 +153,14 @@
         .search-box {
             margin-bottom: 15px;
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             align-items: flex-end;
         }
         
         .search-input {
             flex: 1;
+            min-width: 200px;
             padding: 8px 12px;
             border: 1px solid #ced4da;
             border-radius: 4px;
@@ -417,7 +422,7 @@
         
         .grid-4 {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
         }
         
@@ -485,6 +490,25 @@
         .date-input.invalid {
             border-color: #dc2626;
             background-color: #fef2f2;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -565,65 +589,67 @@
             </div>
             
             <!-- Tabla de Períodos -->
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Mes/Año</th>
-                        <th>Fecha Inicio</th>
-                        <th>Fecha Fin</th>
-                        <th>UF</th>
-                        <th>UTM</th>
-                        <th class="text-center">Días Hábil.</th>
-                        <th class="text-center">Días Dom. y Fest.</th>
-                        <th>Factor Actual.</th>
-                        <th>Estado</th>
-                        <th class="actions-cell">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="periodosTableBody">
-                    {% for periodo in periodos %}
-                    <tr data-periodo-id="{{ periodo.id }}">
-                        <td class="codigo-cell">#{{ periodo.id }}</td>
-                        <td>{{ periodo.mes_anio }}</td>
-                        <td>{{ periodo.fecha_inicio|date:"d/m/Y" }}</td>
-                        <td>{{ periodo.fecha_fin|date:"d/m/Y" }}</td>
-                        <td class="monospace">${{ periodo.uf|floatformat:2 }}</td>
-                        <td class="monospace">${{ periodo.utm|floatformat:2 }}</td>
-                        <td class="text-center">{{ periodo.dias_habiles }}</td>
-                        <td class="text-center">{{ periodo.dias_no_habiles }}</td>
-                        <td class="monospace">{{ periodo.factor_actualizacion|floatformat:4 }}</td>
-                        <td>
-                            {% if periodo.estado == 'ACTIVO' %}
-                            <span class="badge badge-activo">{{ periodo.get_estado_display }}</span>
-                            {% elif periodo.estado == 'INACTIVO' %}
-                            <span class="badge badge-inactivo">{{ periodo.get_estado_display }}</span>
-                            {% elif periodo.estado == 'PROCESADO' %}
-                            <span class="badge badge-procesado">{{ periodo.get_estado_display }}</span>
-                            {% elif periodo.estado == 'CERRADO' %}
-                            <span class="badge badge-cerrado">{{ periodo.get_estado_display }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="actions-cell">
-                            <button class="edit-btn" onclick="editarPeriodo({{ periodo.id }})" title="Editar">
-                                ✎
-                            </button>
-                            <button class="delete-btn" 
-                                    onclick="eliminarPeriodo({{ periodo.id }}, '{{ periodo.mes_anio }}')" 
-                                    title="Eliminar">
-                                ✕
-                            </button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="11" style="text-align: center; padding: 20px; color: #6c757d;">
-                            No hay períodos registrados. Use el botón "Agregar Período" para crear uno.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Mes/Año</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                            <th>UF</th>
+                            <th>UTM</th>
+                            <th class="text-center">Días Hábil.</th>
+                            <th class="text-center">Días Dom. y Fest.</th>
+                            <th>Factor Actual.</th>
+                            <th>Estado</th>
+                            <th class="actions-cell">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="periodosTableBody">
+                        {% for periodo in periodos %}
+                        <tr data-periodo-id="{{ periodo.id }}">
+                            <td class="codigo-cell">#{{ periodo.id }}</td>
+                            <td>{{ periodo.mes_anio }}</td>
+                            <td>{{ periodo.fecha_inicio|date:"d/m/Y" }}</td>
+                            <td>{{ periodo.fecha_fin|date:"d/m/Y" }}</td>
+                            <td class="monospace">${{ periodo.uf|floatformat:2 }}</td>
+                            <td class="monospace">${{ periodo.utm|floatformat:2 }}</td>
+                            <td class="text-center">{{ periodo.dias_habiles }}</td>
+                            <td class="text-center">{{ periodo.dias_no_habiles }}</td>
+                            <td class="monospace">{{ periodo.factor_actualizacion|floatformat:4 }}</td>
+                            <td>
+                                {% if periodo.estado == 'ACTIVO' %}
+                                <span class="badge badge-activo">{{ periodo.get_estado_display }}</span>
+                                {% elif periodo.estado == 'INACTIVO' %}
+                                <span class="badge badge-inactivo">{{ periodo.get_estado_display }}</span>
+                                {% elif periodo.estado == 'PROCESADO' %}
+                                <span class="badge badge-procesado">{{ periodo.get_estado_display }}</span>
+                                {% elif periodo.estado == 'CERRADO' %}
+                                <span class="badge badge-cerrado">{{ periodo.get_estado_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions-cell">
+                                <button class="edit-btn" onclick="editarPeriodo({{ periodo.id }})" title="Editar">
+                                    ✎
+                                </button>
+                                <button class="delete-btn" 
+                                        onclick="eliminarPeriodo({{ periodo.id }}, '{{ periodo.mes_anio }}')" 
+                                        title="Eliminar">
+                                    ✕
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" style="text-align: center; padding: 20px; color: #6c757d;">
+                                No hay períodos registrados. Use el botón "Agregar Período" para crear uno.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             
             <!-- Total registros -->
             <div id="totalRegistros" style="text-align: right; margin: 10px 0; font-size: 12px; color: #6c757d;">
@@ -646,7 +672,7 @@
         </div>
     </div>
     
-    <!-- Modal para agregar/editar Período -->
+    <!-- Modal para agregar/editar Período (el código permanece igual) -->
     <div id="modalPeriodo" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -661,11 +687,9 @@
                 
                 <form id="formPeriodo" onsubmit="return guardarPeriodo(event)">
                     <div class="grid-2">
-                        <!-- Mes -->
                         <div class="form-group">
                             <label class="form-label">Mes *</label>
-                            <select id="mes" name="mes" class="form-control" required 
-                                    onchange="actualizarFechasYDias()">
+                            <select id="mes" name="mes" class="form-control" required onchange="actualizarFechasYDias()">
                                 <option value="">Seleccionar mes</option>
                                 <option value="1">Enero</option>
                                 <option value="2">Febrero</option>
@@ -682,11 +706,9 @@
                             </select>
                         </div>
                         
-                        <!-- Año -->
                         <div class="form-group">
                             <label class="form-label">Año *</label>
-                            <select id="anio" name="anio" class="form-control" required 
-                                    onchange="actualizarFechasYDias()">
+                            <select id="anio" name="anio" class="form-control" required onchange="actualizarFechasYDias()">
                                 <option value="">Seleccionar año</option>
                                 <option value="2024">2024</option>
                                 <option value="2025">2025</option>
@@ -698,34 +720,24 @@
                     </div>
                     
                     <div class="grid-2">
-                        <!-- Fecha Inicio -->
                         <div class="form-group">
                             <label class="form-label">Fecha Inicio *</label>
                             <div class="date-input-group">
-                                <input type="text" 
-                                       id="fecha_inicio" 
-                                       name="fecha_inicio"
+                                <input type="text" id="fecha_inicio" name="fecha_inicio"
                                        class="form-control monospace date-input"
-                                       placeholder="DD/MM/AAAA"
-                                       maxlength="10"
-                                       required
+                                       placeholder="DD/MM/AAAA" maxlength="10" required
                                        oninput="formatearYValidarFecha(this)">
                                 <span class="date-hint">DD/MM/AAAA</span>
                             </div>
                             <small class="text-gray-500">Formato: DD/MM/AAAA (se formatea automáticamente)</small>
                         </div>
                         
-                        <!-- Fecha Fin -->
                         <div class="form-group">
                             <label class="form-label">Fecha Fin *</label>
                             <div class="date-input-group">
-                                <input type="text" 
-                                       id="fecha_fin" 
-                                       name="fecha_fin"
+                                <input type="text" id="fecha_fin" name="fecha_fin"
                                        class="form-control monospace date-input"
-                                       placeholder="DD/MM/AAAA"
-                                       maxlength="10"
-                                       required
+                                       placeholder="DD/MM/AAAA" maxlength="10" required
                                        oninput="formatearYValidarFecha(this)">
                                 <span class="date-hint">DD/MM/AAAA</span>
                             </div>
@@ -734,107 +746,56 @@
                     </div>
                     
                     <div class="grid-4">
-                        <!-- UF -->
                         <div class="form-group">
                             <label class="form-label">UF *</label>
-                            <input type="number" 
-                                id="uf" 
-                                name="uf"
-                                class="form-control"
-                                step="0.01"
-                                min="0"
-                                placeholder="Ej: 36452.12"
-                                required
-                                style="width: 100%; margin-bottom: 5px;">
-                            
-                            <a href="https://www.sii.cl/valores_y_fechas/uf/uf2026.htm" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            style="text-decoration: none; display: inline-block;">
-                                <button type="button" 
-                                        style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">
+                            <input type="number" id="uf" name="uf" class="form-control"
+                                   step="0.01" min="0" placeholder="Ej: 36452.12" required>
+                            <a href="https://www.sii.cl/valores_y_fechas/uf/uf2026.htm" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                                <button type="button" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%; margin-top: 5px;">
                                     📄 Consultar valor UF en SII
                                 </button>
                             </a>
                         </div>
                         
-                        <!-- UTM -->
                         <div class="form-group">
                             <label class="form-label">UTM *</label>
-                            <input type="number" 
-                                id="utm" 
-                                name="utm"
-                                class="form-control"
-                                step="0.01"
-                                min="0"
-                                placeholder="Ej: 65048.00"
-                                required
-                                style="width: 100%; margin-bottom: 5px;">
-                            
-                            <a href="https://www.sii.cl/valores_y_fechas/utm/utm2026.htm" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            style="text-decoration: none; display: inline-block;">
-                                <button type="button" 
-                                        style="background: #8b5cf6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">
+                            <input type="number" id="utm" name="utm" class="form-control"
+                                   step="0.01" min="0" placeholder="Ej: 65048.00" required>
+                            <a href="https://www.sii.cl/valores_y_fechas/utm/utm2026.htm" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                                <button type="button" style="background: #8b5cf6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%; margin-top: 5px;">
                                     📄 Consultar valor UTM en SII
                                 </button>
                             </a>
                         </div>
                         
-                        <!-- Días Hábitos -->
                         <div class="form-group">
                             <label class="form-label">Días Hábiles *</label>
-                            <input type="number" 
-                                id="dias_habiles" 
-                                name="dias_habiles"
-                                class="form-control"
-                                min="1"
-                                max="31"
-                                placeholder="Ej: 22"
-                                required>
+                            <input type="number" id="dias_habiles" name="dias_habiles" class="form-control"
+                                   min="1" max="31" placeholder="Ej: 22" required>
                             <small class="text-gray-500">Calculados automáticamente</small>
                         </div>
                         
-                        <!-- Días Domingo y Festivos -->
                         <div class="form-group">
                             <label class="form-label">Días Dom. y Fest. *</label>
-                            <input type="number" 
-                                id="dias_no_habiles" 
-                                name="dias_no_habiles"
-                                class="form-control"
-                                min="0"
-                                max="31"
-                                placeholder="Ej: 9"
-                                required>
+                            <input type="number" id="dias_no_habiles" name="dias_no_habiles" class="form-control"
+                                   min="0" max="31" placeholder="Ej: 9" required>
                             <small class="text-gray-500">Calculados automáticamente</small>
                         </div>
                     </div>
                     
-                    <!-- Lista de Feriados del Mes -->
                     <div class="form-group" id="feriadosContainer" style="display: none;">
                         <label class="form-label">Feriados del Mes</label>
-                        <div class="feriados-list" id="feriadosList">
-                            <!-- Los feriados se cargarán aquí -->
-                        </div>
+                        <div class="feriados-list" id="feriadosList"></div>
                     </div>
                     
                     <div class="grid-2">
-                        <!-- Factor Actualización -->
                         <div class="form-group">
                             <label class="form-label">Factor Actualización *</label>
-                            <input type="number" 
-                                   id="factor_actualizacion" 
-                                   name="factor_actualizacion"
-                                   class="form-control"
-                                   step="0.0001"
-                                   min="1"
-                                   placeholder="Ej: 1.0345"
-                                   required>
+                            <input type="number" id="factor_actualizacion" name="factor_actualizacion"
+                                   class="form-control" step="0.0001" min="1" placeholder="Ej: 1.0345" required>
                             <small class="text-gray-500">Factor IPC o actualización monetaria</small>
                         </div>
                         
-                        <!-- Estado -->
                         <div class="form-group">
                             <label class="form-label">Estado *</label>
                             <select id="estado" name="estado" class="form-control" required>
@@ -848,9 +809,7 @@
                     
                     <div class="modal-footer">
                         <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
-                        <button type="submit" class="btn-save">
-                            💾 Guardar Período
-                        </button>
+                        <button type="submit" class="btn-save">💾 Guardar Período</button>
                     </div>
                 </form>
             </div>

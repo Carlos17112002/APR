@@ -52,9 +52,9 @@
 </head>
 <body class="bg-gray-50">
 
-  <!-- Navbar consistente con panel SSR -->
+  <!-- Navbar (sin límite de ancho) -->
   <header class="bg-emerald-700 text-white sticky top-0 z-20 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo + Empresa -->
         <div class="flex items-center gap-3">
@@ -82,8 +82,8 @@
     </div>
   </header>
 
-  <!-- Contenido principal -->
-  <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+  <!-- Contenido principal (ancho completo) -->
+  <div class="w-full py-8 px-4 sm:px-6 lg:px-8">
     
     <!-- Header de página simplificado -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -223,7 +223,7 @@
                         </div>
                         <span class="text-sm font-medium text-gray-900">{{ item.nombre }}</span>
                       </div>
-                    </td>
+                     </td>
                     <td class="px-4 py-3 whitespace-nowrap">
                       <div class="flex items-center gap-2">
                         <span class="text-sm font-medium text-gray-900">{{ item.cantidad }}</span>
@@ -235,16 +235,16 @@
                           <span class="status-badge bg-green-100 text-green-700 text-[10px]">Stock</span>
                         {% endif %}
                       </div>
-                    </td>
+                     </td>
                     <td class="px-4 py-3 whitespace-nowrap">
                       <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium categoria-badge" data-categoria="{{ item.categoria }}">
                         <i class="fas fa-circle mr-1.5 text-[6px]"></i>
                         {{ item.categoria|title }}
                       </span>
-                    </td>
+                     </td>
                     <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
                       {{ item.fecha_creacion|date:"d/m/Y" }}
-                    </td>
+                     </td>
                     <td class="px-4 py-3 whitespace-nowrap text-right">
                       <div class="flex items-center justify-end gap-1.5">
                         <button class="h-7 w-7 rounded-md text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center">
@@ -254,8 +254,8 @@
                           <i class="fas fa-trash-alt text-xs"></i>
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                     </td>
+                   </tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -405,55 +405,55 @@
                       <i class="fas fa-folder text-gray-400 mr-2 text-xs"></i>
                       <span class="text-gray-700">General</span>
                     </div>
-                  </td>
+                   </td>
                   <td class="px-4 py-2.5 text-right w-24">
                     <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
                 <tr class="border-b border-gray-100 hover:bg-gray-50">
                   <td class="px-4 py-2.5">
                     <div class="flex items-center">
                       <i class="fas fa-folder text-purple-400 mr-2 text-xs"></i>
                       <span class="text-gray-700">Consumo</span>
                     </div>
-                  </td>
+                   </td>
                   <td class="px-4 py-2.5 text-right w-24">
                     <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
                 <tr class="border-b border-gray-100 hover:bg-gray-50">
                   <td class="px-4 py-2.5">
                     <div class="flex items-center">
                       <i class="fas fa-folder text-blue-400 mr-2 text-xs"></i>
                       <span class="text-gray-700">Tecnología</span>
                     </div>
-                  </td>
+                   </td>
                   <td class="px-4 py-2.5 text-right w-24">
                     <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
                 <tr class="border-b border-gray-100 hover:bg-gray-50">
                   <td class="px-4 py-2.5">
                     <div class="flex items-center">
                       <i class="fas fa-folder text-gray-400 mr-2 text-xs"></i>
                       <span class="text-gray-700">Oficina</span>
                     </div>
-                  </td>
+                   </td>
                   <td class="px-4 py-2.5 text-right w-24">
                     <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
                 <tr class="border-b border-gray-100 hover:bg-gray-50">
                   <td class="px-4 py-2.5">
                     <div class="flex items-center">
                       <i class="fas fa-folder text-cyan-400 mr-2 text-xs"></i>
                       <span class="text-gray-700">Limpieza</span>
                     </div>
-                  </td>
+                   </td>
                   <td class="px-4 py-2.5 text-right w-24">
                     <span class="status-badge bg-gray-100 text-gray-600 text-[10px]">Predeterminada</span>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
                 <!-- Las categorías personalizadas se agregarán aquí vía JavaScript -->
               </tbody>
             </table>
@@ -482,9 +482,9 @@
     </div>
   </div>
 
-  <!-- Footer simplificado -->
+  <!-- Footer (ancho completo) -->
   <footer class="mt-12 border-t border-gray-200 bg-white">
-    <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
+    <div class="w-full py-5 px-4 sm:px-6 lg:px-8">
       <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
         <span>© {{ empresa.nombre }} · Sistema de Inventario v1.0</span>
         <span class="flex items-center gap-1.5">

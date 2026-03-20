@@ -10,40 +10,40 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             min-height: 100vh;
         }
-        
         .gradient-primary {
             background: linear-gradient(135deg, #059669 0%, #047857 100%);
         }
-        
         .card-shadow {
             box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
         }
-        
-        .stats-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-        }
-        
         .table-row-hover:hover {
             background-color: #f8fafc;
         }
-        
         .tab-active {
             border-bottom: 3px solid #059669;
             color: #059669;
             font-weight: 600;
         }
-        
+        .subtab-active {
+            background-color: #059669;
+            color: white;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
         .modal-overlay {
             display: none;
             position: fixed;
@@ -57,20 +57,16 @@
             z-index: 50;
             backdrop-filter: blur(4px);
         }
-        
         .modal-content {
             animation: modalSlideIn 0.2s ease;
         }
-        
         @keyframes modalSlideIn {
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-
         .toast-animation {
             animation: slideIn 0.2s ease forwards;
         }
-
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
@@ -79,9 +75,9 @@
 </head>
 <body>
 
-    <!-- Header -->
+    <!-- Header (sin límite de ancho) -->
     <div class="gradient-primary text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="px-4 sm:px-6 lg:px-8 py-6">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-3">
                     <a href="{% url 'listado_clientes' alias=slug %}" 
@@ -96,7 +92,6 @@
                         <p class="text-sm opacity-90">{{ empresa.nombre }} · Cliente #{{ cliente.id }}</p>
                     </div>
                 </div>
-                
                 <div class="flex items-center space-x-4">
                     <a href="{% url 'editar_cliente' alias=slug cliente_id=cliente.id %}" 
                        class="bg-white text-emerald-700 hover:bg-gray-100 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
@@ -107,7 +102,8 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Contenido principal (ahora con ancho completo) -->
+    <div class="px-4 sm:px-6 lg:px-8 py-8 w-full">
         
         <!-- Mensajes del sistema -->
         {% if messages %}
@@ -121,196 +117,421 @@
             {% endfor %}
         {% endif %}
         
-        <!-- Pestañas de navegación -->
-        <div class="bg-white rounded-t-xl card-shadow mb-6">
-            <div class="flex border-b border-gray-200 overflow-x-auto">
-                <button id="tabInfo" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium tab-active whitespace-nowrap" 
-                        onclick="switchTab('info')">
-                    <i class="fas fa-info-circle mr-2"></i>Información General
-                </button>
-                <button id="tabLecturas" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium whitespace-nowrap" 
-                        onclick="switchTab('lecturas')">
-                    <i class="fas fa-tachometer-alt mr-2"></i>Lecturas
-                </button>
-                <button id="tabPagos" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium whitespace-nowrap" 
-                        onclick="switchTab('pagos')">
-                    <i class="fas fa-credit-card mr-2"></i>Pagos
-                </button>
-                <button id="tabHistorial" class="px-6 py-4 text-gray-600 hover:text-gray-900 font-medium whitespace-nowrap" 
-                        onclick="switchTab('historial')">
-                    <i class="fas fa-history mr-2"></i>Historial Completo
-                </button>
+        <!-- Tarjeta de información del cliente -->
+        <div class="bg-white rounded-xl card-shadow p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Nombre completo</p>
+                    <p class="font-semibold text-gray-900 mt-1">{{ cliente.nombre }} {{ cliente.apellido_paterno }} {{ cliente.apellido_materno }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">RUT</p>
+                    <p class="font-mono font-semibold text-gray-900 mt-1">{{ cliente.rut|default:"No registrado" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Dirección</p>
+                    <p class="font-semibold text-gray-900 mt-1">{{ cliente.direccion|default:"No registrada" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">N° Medidor</p>
+                    <p class="font-mono font-semibold text-gray-900 mt-1">{{ cliente.medidor|default:"No asignado" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen rápido -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="stat-card flex items-center">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mr-3">
+                    <i class="fas fa-tachometer-alt text-emerald-600"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Último consumo</p>
+                    <p class="text-xl font-bold text-gray-900">
+                        {% if lecturas_completas.0 %}
+                            {{ lecturas_completas.0.consumo|floatformat:1 }} m³
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="stat-card flex items-center">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                    <i class="fas fa-calendar-alt text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Última lectura</p>
+                    <p class="text-xl font-bold text-gray-900">
+                        {% if lecturas_completas.0 %}
+                            {{ lecturas_completas.0.fecha_lectura_actual|date:"d/m/Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="stat-card flex items-center">
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                    <i class="fas fa-dollar-sign text-purple-600"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Deuda actual</p>
+                    <p class="text-xl font-bold text-red-600">
+                        {% if deuda_actual %}
+                            ${{ deuda_actual|intcomma }}
+                        {% else %}
+                            $0
+                        {% endif %}
+                    </p>
+                </div>
             </div>
         </div>
         
-        <!-- Pestaña: Información General -->
-        <div id="contentInfo" class="tab-content">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <!-- Información Básica -->
-                <div class="lg:col-span-2">
-                    <div class="bg-white rounded-xl card-shadow p-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-xl font-semibold text-gray-900">Información del Cliente</h2>
-                            <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium">
-                                <i class="fas fa-user-check mr-1"></i> Activo
-                            </span>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h3 class="text-sm font-medium text-gray-500 mb-3">Datos Personales</h3>
-                                <div class="space-y-4">
-                                    <div>
-                                        <p class="text-xs text-gray-500">Nombre Completo</p>
-                                        <p class="font-medium text-gray-900">{{ cliente.nombre }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">RUT</p>
-                                        <p class="font-mono font-medium text-gray-900">{{ cliente.rut }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Fecha de Registro</p>
-                                        <p class="font-medium text-gray-900">
-                                            <i class="fas fa-calendar-alt text-gray-400 mr-1"></i>
-                                            {{ cliente.fecha_creacion|date:"d/m/Y" }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <h3 class="text-sm font-medium text-gray-500 mb-3">Información de Contacto</h3>
-                                <div class="space-y-4">
-                                    <div>
-                                        <p class="text-xs text-gray-500">Email</p>
-                                        {% if cliente.email %}
-                                        <p class="font-medium text-gray-900">
-                                            <i class="fas fa-envelope text-gray-400 mr-1"></i>
-                                            <a href="mailto:{{ cliente.email }}" class="text-emerald-700 hover:text-emerald-900 hover:underline">
-                                                {{ cliente.email }}
-                                            </a>
-                                        </p>
-                                        {% else %}
-                                        <p class="text-gray-400 italic">No registrado</p>
-                                        {% endif %}
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Teléfono</p>
-                                        {% if cliente.telefono %}
-                                        <p class="font-medium text-gray-900">
-                                            <i class="fas fa-phone text-gray-400 mr-1"></i>
-                                            <a href="tel:{{ cliente.telefono }}" class="text-emerald-700 hover:text-emerald-900 hover:underline">
-                                                {{ cliente.telefono }}
-                                            </a>
-                                        </p>
-                                        {% else %}
-                                        <p class="text-gray-400 italic">No registrado</p>
-                                        {% endif %}
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Dirección</p>
-                                        <p class="font-medium text-gray-900">
-                                            <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
-                                            {{ cliente.direccion|default:"No registrada" }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Información Técnica -->
-                        <div class="mt-8 pt-8 border-t border-gray-200">
-                            <h3 class="text-sm font-medium text-gray-500 mb-3">Información Técnica</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <p class="text-xs text-gray-500">Número de Medidor</p>
-                                    <p class="font-bold text-gray-900 text-lg">{{ cliente.medidor|default:"N/A" }}</p>
-                                </div>
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <p class="text-xs text-gray-500">Sector</p>
-                                    <p class="font-bold text-gray-900 text-lg">{{ cliente.sector|default:"N/A" }}</p>
-                                </div>
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <p class="text-xs text-gray-500">Última Lectura</p>
-                                    {% if lecturas.0 %}
-                                    <p class="font-bold text-gray-900 text-lg">
-                                        {{ lecturas.0.lectura_actual|floatformat:2 }} m³
-                                    </p>
-                                    {% else %}
-                                    <p class="font-bold text-gray-900 text-lg">Sin datos</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Pestañas de navegación -->
+        <div class="bg-white rounded-t-xl card-shadow mb-6 overflow-x-auto">
+            <div class="flex border-b border-gray-200">
+                <button id="tabDocumentos" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('Documentos')">📄 Documentos</button>
+                <button id="tabContrato" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('Contrato')">📝 Contrato</button>
+                <button id="tabSubsidio" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('Subsidio')">💰 Subsidio</button>
+                <button id="tabCargosDescuentos" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('CargosDescuentos')">➕➖ Cargos y Descuentos</button>
+                <button id="tabConvenios" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('Convenios')">🤝 Convenios</button>
+                <button id="tabConsumo" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('Consumo')">📊 Consumo</button>
+                <button id="tabLecturas" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('Lecturas')">🔢 Lecturas</button>
+                <button id="tabOtrosIngresos" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('OtrosIngresos')">💰 Otros Ingresos</button>
+                <button id="tabCambioMedidor" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('CambioMedidor')">🔄 Cambio Medidor</button>
+                <button id="tabCorteReposicion" class="px-4 py-4 text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900" onclick="switchTab('CorteReposicion')">⚡ Corte y Reposición</button>
+            </div>
+        </div>
+        
+        <!-- ========== CONTENIDO DE PESTAÑAS ========== -->
+        
+        <!-- Documentos -->
+        <div id="contentDocumentos" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-900">Documentos</h2>
+                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ documentos|length }} registro(s)</span>
                 </div>
-                
-                <!-- Estadísticas y Acciones Rápidas -->
-                <div class="space-y-6">
-                    <!-- Estadísticas -->
-                    <div class="bg-white rounded-xl card-shadow p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Estadísticas</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <p class="text-sm text-gray-500">Consumo Promedio</p>
-                                <p class="text-2xl font-bold text-emerald-700">{{ consumo_promedio|floatformat:2 }} m³</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500">Total Pagado</p>
-                                <p class="text-2xl font-bold text-blue-700">${{ total_pagado|floatformat:0|intcomma }}</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500">Deuda Actual</p>
-                                <p class="text-2xl font-bold {% if deuda_actual > 0 %}text-red-700{% else %}text-gray-700{% endif %}">
-                                    ${{ deuda_actual|floatformat:0|intcomma }}
-                                </p>
-                            </div>
+                {% if documentos %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periodo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Documento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Emisión</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Vencimiento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consumo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">URL</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pago</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Traza</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for doc in documentos %}
+                            <tr class="table-row-hover">
+                                <td class="px-6 py-4">{{ doc.periodo }}<\/td>
+                                <td class="px-6 py-4">${{ doc.monto|intcomma }}<\/td>
+                                <td class="px-6 py-4">{{ doc.documento }}<\/td>
+                                <td class="px-6 py-4">{{ doc.fecha_emision|date:"d/m/Y" }}<\/td>
+                                <td class="px-6 py-4">{{ doc.fecha_vencimiento|date:"d/m/Y" }}<\/td>
+                                <td class="px-6 py-4">{{ doc.fecha_pago|date:"d/m/Y"|default:"-" }}<\/td>
+                                <td class="px-6 py-4">{{ doc.consumo|floatformat:2 }} m³<\/td>
+                                <td class="px-6 py-4"><a href="{{ doc.url }}" target="_blank" class="text-emerald-600 hover:underline">Ver<\/a><\/td>
+                                <td class="px-6 py-4">{{ doc.pago|yesno:"Sí,No" }}<\/td>
+                                <td class="px-6 py-4">{{ doc.traza }}<\/td>
+                                <td class="px-6 py-4">{{ doc.usuario }}<\/td>
+                            <\/tr>
+                            {% endfor %}
+                        </tbody>
+                    <\/table>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">No hay documentos registrados.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contrato (ahora usa el objeto contrato) -->
+        <div id="contentContrato" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Datos del Contrato</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Datos Cliente (siguen en cliente) -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-emerald-700 mb-3">Datos Cliente</h3>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="text-gray-500">Nacimiento:</span> {{ cliente.fecha_nacimiento|date:"d/m/Y"|default:"-" }}</p>
+                            <p><span class="text-gray-500">Defunción:</span> {{ cliente.fecha_defuncion|date:"d/m/Y"|default:"-" }}</p>
+                            <p><span class="text-gray-500">Sexo:</span> {{ cliente.sexo|default:"-" }}</p>
+                            <p><span class="text-gray-500">Estado Civil:</span> {{ cliente.estado_civil|default:"-" }}</p>
+                            <p><span class="text-gray-500">Profesión:</span> {{ cliente.profesion|default:"-" }}</p>
+                            <p><span class="text-gray-500">Email Contacto:</span> {{ cliente.email_contacto|default:"-" }}</p>
+                            <p><span class="text-gray-500">Contacto 1:</span> {{ cliente.contacto1|default:"-" }}</p>
+                            <p><span class="text-gray-500">Contacto 2:</span> {{ cliente.contacto2|default:"-" }}</p>
+                            <p><span class="text-gray-500">Incorporación:</span> {{ cliente.fecha_incorporacion|date:"d/m/Y"|default:"-" }}</p>
+                            <p><span class="text-gray-500">Número Libro:</span> {{ cliente.numero_libro|default:"-" }}</p>
+                            <p><span class="text-gray-500">Dirección Cliente:</span> {{ cliente.direccion|default:"-" }}</p>
                         </div>
                     </div>
-                    
-                    <!-- Acciones Rápidas -->
-                    <div class="bg-white rounded-xl card-shadow p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-                        <div class="space-y-3">
-                            <button onclick="abrirModalLectura()" 
-                                    class="w-full flex items-center justify-between p-3 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">
-                                <div class="flex items-center">
-                                    <i class="fas fa-tachometer-alt mr-3"></i>
-                                    <span>Registrar Lectura</span>
-                                </div>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            <a href="{% url 'historial_cliente' alias=slug cliente_id=cliente.id %}" 
-                               class="flex items-center justify-between p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">
-                                <div class="flex items-center">
-                                    <i class="fas fa-history mr-3"></i>
-                                    <span>Ver Historial</span>
-                                </div>
-                                <i class="fas fa-arrow-right"></i>
-                            </a>
-                            <button onclick="openDeleteModal('{{ cliente.id }}', '{{ cliente.nombre|escapejs }}')" 
-                                    class="w-full flex items-center justify-between p-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors">
-                                <div class="flex items-center">
-                                    <i class="fas fa-trash-alt mr-3"></i>
-                                    <span>Eliminar Cliente</span>
-                                </div>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
+                    <!-- Datos Arranque (vienen del contrato) -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-emerald-700 mb-3">Datos Arranque</h3>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="text-gray-500">Tipo Cliente:</span> {{ contrato.tipo_cliente|default:"-" }}</p>
+                            <p><span class="text-gray-500">Tipo Servicio SSR:</span> {{ contrato.tipo_servicio_ssr|default:"-" }}</p>
+                            <p><span class="text-gray-500">Fecha Contrato:</span> {{ contrato.fecha_contrato|date:"d/m/Y"|default:"-" }}</p>
+                            <p><span class="text-gray-500">Comuna:</span> {{ contrato.comuna|default:"-" }}</p>
+                            <p><span class="text-gray-500">Ciudad:</span> {{ contrato.ciudad|default:"-" }}</p>
+                            <p><span class="text-gray-500">Sector Arranque:</span> {{ contrato.sector_arranque|default:"-" }}</p>
+                            <p><span class="text-gray-500">Dirección Arranque:</span> {{ contrato.direccion_arranque|default:"-" }}</p>
+                            <p><span class="text-gray-500">UTM Norte:</span> {{ contrato.utm_norte|default:"-" }}</p>
+                            <p><span class="text-gray-500">UTM Este:</span> {{ contrato.utm_este|default:"-" }}</p>
+                            <p><span class="text-gray-500">Rol:</span> {{ contrato.rol|default:"-" }}</p>
+                            <p><span class="text-gray-500">Socio:</span> {{ contrato.socio|yesno:"Sí,No" }}</p>
+                            <p><span class="text-gray-500">Servicio:</span> {{ contrato.servicio|default:"-" }}</p>
+                            <p><span class="text-gray-500">Diámetro:</span> {{ contrato.diametro|default:"-" }}</p>
+                            <p><span class="text-gray-500">Marca Medidor:</span> {{ contrato.marca_medidor|default:"-" }}</p>
+                            <p><span class="text-gray-500">Número Medidor:</span> {{ contrato.numero_medidor|default:"-" }}</p>
+                            <p><span class="text-gray-500">Año Medidor:</span> {{ contrato.ano_medidor|default:"-" }}</p>
+                            <p><span class="text-gray-500">Tipo Medidor:</span> {{ contrato.tipo_medidor|default:"-" }}</p>
+                            <p><span class="text-gray-500">Sello:</span> {{ contrato.sello_medidor|default:"-" }}</p>
+                            <p><span class="text-gray-500">Código Unión Domiciliaria:</span> {{ contrato.codigo_union_domiciliaria|default:"-" }}</p>
+                        </div>
+                    </div>
+                    <!-- Datos Facturación (vienen del contrato) -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-emerald-700 mb-3">Datos Facturación</h3>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="text-gray-500">Email Recepción Documento:</span> {{ contrato.email_recepcion_documento|default:"-" }}</p>
+                            <p><span class="text-gray-500">Tarifa:</span> {{ contrato.tarifa|default:"-" }}</p>
+                            <p><span class="text-gray-500">Tipo Documento:</span> {{ contrato.tipo_documento|default:"-" }}</p>
+                            <p><span class="text-gray-500">Tipo Servicio:</span> {{ contrato.tipo_servicio|default:"-" }}</p>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Gráfico de Consumo (ahora con datos reales) -->
-            <div class="bg-white rounded-xl card-shadow p-6 mb-8">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900">Historial de Consumo</h2>
-                    <select name="rango" onchange="cambiarRango(this.value)" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                        <option value="6m" {% if rango_seleccionado == '6m' %}selected{% endif %}>Últimos 6 meses</option>
-                        <option value="1y" {% if rango_seleccionado == '1y' %}selected{% endif %}>Último año</option>
-                        <option value="all" {% if rango_seleccionado == 'all' %}selected{% endif %}>Todo el historial</option>
-                    </select>
+        </div>
+
+        <!-- Subsidio (sin cambios) -->
+        <div id="contentSubsidio" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-900">Subsidios</h2>
+                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ subsidios|length }} registro(s)</span>
                 </div>
+                {% if subsidios %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subsidio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Municipalidad</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Decreto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tramo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">RUT Beneficiario</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Beneficiario</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vivienda</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Decreto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Inicio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Vencimiento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Encuesta</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for s in subsidios %}
+                            <tr class="table-row-hover">
+                                <td class="px-6 py-4">{{ s.subsidio }}</td>
+                                <td class="px-6 py-4">{{ s.municipalidad }}</td>
+                                <td class="px-6 py-4">{{ s.numero_decreto }}</td>
+                                <td class="px-6 py-4">{{ s.tramo }}</td>
+                                <td class="px-6 py-4">{{ s.rut_beneficiario }}</td>
+                                <td class="px-6 py-4">{{ s.beneficiario }}</td>
+                                <td class="px-6 py-4">{{ s.vivienda }}</td>
+                                <td class="px-6 py-4">{{ s.fecha_decreto|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ s.fecha_inicio|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ s.fecha_vencimiento|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ s.fecha_encuesta|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-hand-holding-usd text-4xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">No hay subsidios registrados.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Cargos y Descuentos (sin cambios) -->
+        <div id="contentCargosDescuentos" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200 flex flex-wrap gap-2">
+                    <button id="subtabCargosPermanentes" class="px-4 py-2 rounded-lg text-sm font-medium subtab-active" onclick="switchSubTab('CargosPermanentes')">Cargos Permanentes</button>
+                    <button id="subtabCargos" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" onclick="switchSubTab('Cargos')">Cargos</button>
+                    <button id="subtabDescuentos" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" onclick="switchSubTab('Descuentos')">Descuentos</button>
+                </div>
+                <!-- Cargos Permanentes -->
+                <div id="subcontentCargosPermanentes" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facturable</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periodo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% if cargos_permanentes %}
+                                {% for cp in cargos_permanentes %}
+                                <tr class="table-row-hover">
+                                    <td class="px-6 py-4">{{ cp.fecha|date:"d/m/Y" }}</td>
+                                    <td class="px-6 py-4">{{ cp.codigo }}</td>
+                                    <td class="px-6 py-4">{{ cp.descripcion }}</td>
+                                    <td class="px-6 py-4">${{ cp.monto|intcomma }}</td>
+                                    <td class="px-6 py-4">{{ cp.facturable|yesno:"Sí,No" }}</td>
+                                    <td class="px-6 py-4">{{ cp.periodo }}</td>
+                                    <td class="px-6 py-4">{{ cp.usuario }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="7" class="text-center py-8 text-gray-500">No hay cargos permanentes.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Cargos -->
+                <div id="subcontentCargos" class="overflow-x-auto hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facturable</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periodo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% if cargos %}
+                                {% for c in cargos %}
+                                <tr class="table-row-hover">
+                                    <td class="px-6 py-4">{{ c.fecha|date:"d/m/Y" }}</td>
+                                    <td class="px-6 py-4">{{ c.codigo }}</td>
+                                    <td class="px-6 py-4">{{ c.descripcion }}</td>
+                                    <td class="px-6 py-4">${{ c.monto|intcomma }}</td>
+                                    <td class="px-6 py-4">{{ c.facturable|yesno:"Sí,No" }}</td>
+                                    <td class="px-6 py-4">{{ c.periodo }}</td>
+                                    <td class="px-6 py-4">{{ c.usuario }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="7" class="text-center py-8 text-gray-500">No hay cargos.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Descuentos -->
+                <div id="subcontentDescuentos" class="overflow-x-auto hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facturable</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periodo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% if descuentos %}
+                                {% for d in descuentos %}
+                                <tr class="table-row-hover">
+                                    <td class="px-6 py-4">{{ d.fecha|date:"d/m/Y" }}</td>
+                                    <td class="px-6 py-4">{{ d.codigo }}</td>
+                                    <td class="px-6 py-4">{{ d.descripcion }}</td>
+                                    <td class="px-6 py-4">${{ d.monto|intcomma }}</td>
+                                    <td class="px-6 py-4">{{ d.facturable|yesno:"Sí,No" }}</td>
+                                    <td class="px-6 py-4">{{ d.periodo }}</td>
+                                    <td class="px-6 py-4">{{ d.usuario }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="7" class="text-center py-8 text-gray-500">No hay descuentos.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Convenios (sin cambios) -->
+        <div id="contentConvenios" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-900">Convenios</h2>
+                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ convenios|length }} registro(s)</span>
+                </div>
+                {% if convenios %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Convenio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Convenio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Cuotas</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facturable</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for conv in convenios %}
+                            <tr class="table-row-hover">
+                                <td class="px-6 py-4">{{ conv.convenio }}</td>
+                                <td class="px-6 py-4">{{ conv.descripcion }}</td>
+                                <td class="px-6 py-4">{{ conv.fecha_convenio|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ conv.total_cuotas }}</td>
+                                <td class="px-6 py-4">${{ conv.monto|intcomma }}</td>
+                                <td class="px-6 py-4">{{ conv.facturable|yesno:"Sí,No" }}</td>
+                                <td class="px-6 py-4">{{ conv.usuario }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-handshake text-4xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">No hay convenios.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Consumo (gráfico) -->
+        <div id="contentConsumo" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Historial de Consumo</h2>
                 <div class="h-64">
                     <canvas id="consumoChart"></canvas>
                 </div>
@@ -319,61 +540,54 @@
                 {% endif %}
             </div>
         </div>
-        
-        <!-- Pestaña: Lecturas -->
+
+        <!-- Lecturas (con botón de nueva lectura) -->
         <div id="contentLecturas" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
-                <div class="px-6 py-5 border-b border-gray-200">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-900">Historial de Lecturas</h2>
-                            <p class="text-gray-500 text-sm mt-1" id="contadorLecturas">{{ lecturas|length }} lectura{{ lecturas|length|pluralize }} registrada{{ lecturas|length|pluralize }}</p>
-                        </div>
-                        <button onclick="abrirModalLectura()" 
-                                class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
-                            <i class="fas fa-plus mr-2"></i> Nueva Lectura
-                        </button>
+                <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Lecturas</h2>
+                        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm inline-block mt-1">{{ lecturas_completas|length }} registro(s)</span>
                     </div>
+                    <button onclick="abrirModalLectura()" 
+                            class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Nueva Lectura
+                    </button>
                 </div>
-                
-                {% if lecturas %}
+                {% if lecturas_completas %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead>
-                            <tr class="bg-gray-50">
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periodo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Lectura Anterior</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Anterior</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Lectura Actual</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Actual</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consumo (m³)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Observaciones</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consumo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cambio Medidor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Término Medio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Saldo Promedio Anterior</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consumo Facturado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Abono Próximo Periodo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código Lectura</th>
                             </tr>
                         </thead>
                         <tbody id="tablaLecturasBody" class="divide-y divide-gray-200">
-                            {% for lectura in lecturas %}
-                            <tr class="table-row-hover" data-lectura-id="{{ lectura.id }}">
-                                <td class="px-6 py-4">{{ lectura.fecha_lectura|date:"d/m/Y" }}</td>
-                                <td class="px-6 py-4 font-mono">{{ lectura.lectura_anterior|floatformat:3|default:"-" }}</td>
-                                <td class="px-6 py-4 font-mono font-bold">{{ lectura.lectura_actual|floatformat:3 }}</td>
-                                <td class="px-6 py-4"><span class="font-bold text-blue-700">{{ lectura.consumo|floatformat:3|default:"0" }} m³</span></td>
-                                <td class="px-6 py-4">
-                                    {% if lectura.estado == 'cargada' %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
-                                        <i class="fas fa-check-circle mr-1"></i> Normal
-                                    </span>
-                                    {% elif lectura.estado == 'procesada' %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                                        <i class="fas fa-file-invoice mr-1"></i> Procesada
-                                    </span>
-                                    {% elif lectura.estado == 'pendiente' %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
-                                        <i class="fas fa-clock mr-1"></i> Pendiente
-                                    </span>
-                                    {% else %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">{{ lectura.estado|capfirst }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-500">{{ lectura.observaciones_app|truncatechars:30|default:"-" }}</td>
+                            {% for l in lecturas_completas %}
+                            <tr class="table-row-hover" data-lectura-id="{{ forloop.counter }}">
+                                <td class="px-6 py-4">{{ l.periodo }}</td>
+                                <td class="px-6 py-4">{{ l.fecha_lectura_anterior|date:"d/m/Y"|default:"-" }}</td>
+                                <td class="px-6 py-4">{{ l.lectura_anterior|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ l.fecha_lectura_actual|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ l.lectura_actual|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ l.consumo|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ l.cambio_medidor|yesno:"Sí,No" }}</td>
+                                <td class="px-6 py-4">{{ l.termino_medio|default:"-" }}</td>
+                                <td class="px-6 py-4">{{ l.saldo_promedio_anterior|default:"-" }}</td>
+                                <td class="px-6 py-4">{{ l.consumo_facturado|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ l.abono_proximo_periodo|default:"-" }}</td>
+                                <td class="px-6 py-4">{{ l.codigo_lectura|default:"-" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -382,59 +596,39 @@
                 {% else %}
                 <div id="sinLecturasPlaceholder" class="text-center py-12">
                     <i class="fas fa-tachometer-alt text-4xl text-gray-300 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-700 mb-2">No hay lecturas registradas</h3>
-                    <p class="text-gray-500 mb-6">Este cliente no tiene lecturas registradas.</p>
-                    <button onclick="abrirModalLectura()" 
-                            class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors inline-flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Registrar Primera Lectura
-                    </button>
+                    <p class="text-gray-500">No hay lecturas registradas.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
-        
-        <!-- Pestaña: Pagos -->
-        <div id="contentPagos" class="tab-content hidden">
+
+        <!-- Otros Ingresos (sin cambios) -->
+        <div id="contentOtrosIngresos" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
-                <div class="px-6 py-5 border-b border-gray-200">
-                    <div>
-                        <h2 class="text-xl font-semibold text-gray-900">Historial de Pagos</h2>
-                        <p class="text-gray-500 text-sm mt-1">Total pagado: ${{ total_pagado|floatformat:0|intcomma }}</p>
-                    </div>
+                <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-900">Otros Ingresos</h2>
+                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ otros_ingresos|length }} registro(s)</span>
                 </div>
-                
-                {% if pagos %}
+                {% if otros_ingresos %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead>
-                            <tr class="bg-gray-50">
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Documento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Método</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Referencia</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Período</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Comprobante</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
-                            {% for pago in pagos %}
+                            {% for ing in otros_ingresos %}
                             <tr class="table-row-hover">
-                                <td class="px-6 py-4">{{ pago.fecha|date:"d/m/Y" }}</td>
-                                <td class="px-6 py-4"><span class="font-bold text-emerald-700">${{ pago.monto|floatformat:0|intcomma }}</span></td>
-                                <td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">{{ pago.metodo_pago }}</span></td>
-                                <td class="px-6 py-4 font-mono text-sm">{{ pago.referencia|default:"-" }}</td>
-                                <td class="px-6 py-4">{{ pago.periodo|date:"m/Y"|default:"-" }}</td>
-                                <td class="px-6 py-4">
-                                    {% if pago.estado == 'confirmado' %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">
-                                        <i class="fas fa-check-circle mr-1"></i> Confirmado
-                                    </span>
-                                    {% else %}
-                                    <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
-                                        <i class="fas fa-clock mr-1"></i> Pendiente
-                                    </span>
-                                    {% endif %}
-                                </td>
+                                <td class="px-6 py-4">{{ ing.concepto }}</td>
+                                <td class="px-6 py-4">{{ ing.documento }}</td>
+                                <td class="px-6 py-4">{{ ing.fecha_pago|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">${{ ing.monto|intcomma }}</td>
+                                <td class="px-6 py-4">{{ ing.comprobante|default:"-" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -442,26 +636,144 @@
                 </div>
                 {% else %}
                 <div class="text-center py-12">
-                    <i class="fas fa-credit-card text-4xl text-gray-300 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-700 mb-2">No hay pagos registrados</h3>
-                    <p class="text-gray-500 mb-6">Este cliente no tiene pagos registrados.</p>
+                    <i class="fas fa-coins text-4xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">No hay otros ingresos.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
-        
-        <!-- Pestaña: Historial Completo -->
-        <div id="contentHistorial" class="tab-content hidden">
-            <div class="text-center py-12">
-                <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
-                <h3 class="text-lg font-medium text-gray-700 mb-2">Historial Completo</h3>
-                <p class="text-gray-500 mb-6">Para ver el historial completo del cliente, visite la página dedicada.</p>
-                <a href="{% url 'historial_cliente' alias=slug cliente_id=cliente.id %}" 
-                   class="bg-purple-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-purple-700 transition-colors inline-flex items-center">
-                    <i class="fas fa-external-link-alt mr-2"></i> Ver Historial Completo
-                </a>
+
+        <!-- Cambio Medidor (sin cambios) -->
+        <div id="contentCambioMedidor" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-900">Cambios de Medidor</h2>
+                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ cambios_medidor|length }} registro(s)</span>
+                </div>
+                {% if cambios_medidor %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N°</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periodo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Marca Retirado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Retirado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Año Retirado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Lectura Ant.</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Ant.</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Retiro</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consumo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Instalación</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Instalado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Inicial</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Registro</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for cm in cambios_medidor %}
+                            <tr class="table-row-hover">
+                                <td class="px-6 py-4">{{ forloop.counter }}</td>
+                                <td class="px-6 py-4">{{ cm.periodo }}</td>
+                                <td class="px-6 py-4">{{ cm.marca_retirado }}</td>
+                                <td class="px-6 py-4">{{ cm.numero_retirado }}</td>
+                                <td class="px-6 py-4">{{ cm.ano_retirado }}</td>
+                                <td class="px-6 py-4">{{ cm.fecha_lectura_anterior|date:"d/m/Y"|default:"-" }}</td>
+                                <td class="px-6 py-4">{{ cm.lectura_anterior|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ cm.lectura_retiro|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ cm.consumo|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ cm.fecha_instalacion|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ cm.numero_instalado }}</td>
+                                <td class="px-6 py-4">{{ cm.lectura_inicial|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ cm.fecha_registro|date:"d/m/Y H:i" }}</td>
+                                <td class="px-6 py-4">{{ cm.usuario }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-exchange-alt text-4xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">No hay cambios de medidor.</p>
+                </div>
+                {% endif %}
             </div>
         </div>
+
+        <!-- Corte y Reposición (con subpestañas) -->
+        <div id="contentCorteReposicion" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200 flex flex-wrap gap-2">
+                    <button id="subtabHistoricoCorte" class="px-4 py-2 rounded-lg text-sm font-medium subtab-active" onclick="switchSubTabCorte('historico')">Histórico Corte y Reposición</button>
+                    <button id="subtabAnulaciones" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" onclick="switchSubTabCorte('anulaciones')">Anulaciones Corte</button>
+                </div>
+                <!-- Histórico Corte y Reposición -->
+                <div id="subcontentHistoricoCorte" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Corte</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operador Corte</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Corte</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Corte</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Reposición</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operador Reposición</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% if historico_corte %}
+                                {% for hc in historico_corte %}
+                                <tr class="table-row-hover">
+                                    <td class="px-6 py-4">{{ hc.fecha_corte|date:"d/m/Y" }}</td>
+                                    <td class="px-6 py-4">{{ hc.operador_corte }}</td>
+                                    <td class="px-6 py-4">{{ hc.lectura_corte|floatformat:2 }}</td>
+                                    <td class="px-6 py-4">{{ hc.tipo_corte }}</td>
+                                    <td class="px-6 py-4">{{ hc.fecha_reposicion|date:"d/m/Y"|default:"-" }}</td>
+                                    <td class="px-6 py-4">{{ hc.operador_reposicion|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="6" class="text-center py-8 text-gray-500">No hay histórico de cortes.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Anulaciones Corte -->
+                <div id="subcontentAnulaciones" class="overflow-x-auto hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Corte</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operador Corte</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lectura Corte</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Corte</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Anulación</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% if anulaciones_corte %}
+                                {% for an in anulaciones_corte %}
+                                <tr class="table-row-hover">
+                                    <td class="px-6 py-4">{{ an.fecha_corte|date:"d/m/Y" }}</td>
+                                    <td class="px-6 py-4">{{ an.operador_corte }}</td>
+                                    <td class="px-6 py-4">{{ an.lectura_corte|floatformat:2 }}</td>
+                                    <td class="px-6 py-4">{{ an.tipo_corte }}</td>
+                                    <td class="px-6 py-4">{{ an.fecha_anulacion|date:"d/m/Y" }}</td>
+                                    <td class="px-6 py-4">{{ an.usuario }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="6" class="text-center py-8 text-gray-500">No hay anulaciones de corte.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Modal de registro de lectura -->
@@ -520,69 +832,69 @@
         </div>
     </div>
 
-    <!-- Modal de eliminación de cliente -->
-    <div id="deleteModal" class="modal-overlay hidden">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
-            <div class="p-5">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-gray-900">Confirmar eliminación</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Esta acción no se puede deshacer</p>
-                    </div>
-                </div>
-                
-                <div class="mb-6">
-                    <p class="text-sm text-gray-700 mb-2">¿Estás seguro de eliminar al cliente:</p>
-                    <p class="text-base font-semibold text-red-600" id="deleteClientName"></p>
-                </div>
-                
-                <form id="deleteForm" method="post" action="" class="flex justify-end gap-2">
-                    {% csrf_token %}
-                    <input type="hidden" name="cliente_id" id="deleteClientId">
-                    <button type="button" onclick="closeDeleteModal()" 
-                            class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        Cancelar
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2">
-                        <i class="fas fa-trash-alt"></i>
-                        Eliminar
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
+    <!-- Scripts -->
     <script>
-        // ----- Datos del gráfico desde Django -----
+        // Datos para el gráfico (pasados desde Django)
         const fechas = {{ fechas_grafico|safe|default:"[]" }};
         const consumos = {{ consumos_grafico|safe|default:"[]" }};
 
-        // ----- Sistema de pestañas -----
+        // Función para cambiar de pestaña principal
         function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const content = document.getElementById('content' + tabName);
+            if (content) content.classList.remove('hidden');
             document.querySelectorAll('[id^="tab"]').forEach(tab => {
-                tab.classList.remove('tab-active');
+                tab.classList.remove('tab-active', 'text-emerald-600', 'font-semibold');
                 tab.classList.add('text-gray-600');
             });
-            document.getElementById('content' + capitalizeFirst(tabName)).classList.remove('hidden');
-            document.getElementById('tab' + capitalizeFirst(tabName)).classList.add('tab-active');
-            document.getElementById('tab' + capitalizeFirst(tabName)).classList.remove('text-gray-600');
+            const activeTab = document.getElementById('tab' + tabName);
+            if (activeTab) {
+                activeTab.classList.add('tab-active', 'text-emerald-600', 'font-semibold');
+                activeTab.classList.remove('text-gray-600');
+            }
         }
-        
-        function capitalizeFirst(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
+
+        // Subpestañas para Cargos y Descuentos
+        function switchSubTab(subtab) {
+            document.querySelectorAll('[id^="subcontent"]').forEach(el => el.classList.add('hidden'));
+            const subContent = document.getElementById('subcontent' + subtab);
+            if (subContent) subContent.classList.remove('hidden');
+            document.querySelectorAll('#subtabCargosPermanentes, #subtabCargos, #subtabDescuentos').forEach(btn => {
+                btn.classList.remove('subtab-active', 'bg-emerald-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            const subTabBtn = document.getElementById('subtab' + subtab);
+            if (subTabBtn) {
+                subTabBtn.classList.add('subtab-active', 'bg-emerald-600', 'text-white');
+                subTabBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            }
         }
-        
-        // ----- Gráfico de consumo (real) -----
+
+        // Subpestañas para Corte y Reposición
+        function switchSubTabCorte(subtab) {
+            document.getElementById('subcontentHistoricoCorte')?.classList.add('hidden');
+            document.getElementById('subcontentAnulaciones')?.classList.add('hidden');
+            if (subtab === 'historico') {
+                document.getElementById('subcontentHistoricoCorte')?.classList.remove('hidden');
+            } else {
+                document.getElementById('subcontentAnulaciones')?.classList.remove('hidden');
+            }
+            document.querySelectorAll('#subtabHistoricoCorte, #subtabAnulaciones').forEach(btn => {
+                btn.classList.remove('subtab-active', 'bg-emerald-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            const activeBtn = document.getElementById('subtab' + (subtab === 'historico' ? 'HistoricoCorte' : 'Anulaciones'));
+            if (activeBtn) {
+                activeBtn.classList.add('subtab-active', 'bg-emerald-600', 'text-white');
+                activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            }
+        }
+
+        // Inicialización al cargar la página
         document.addEventListener('DOMContentLoaded', function() {
-            const ctx = document.getElementById('consumoChart').getContext('2d');
-            if (fechas.length > 0) {
+            switchTab('Documentos');
+            const ctx = document.getElementById('consumoChart');
+            if (ctx && fechas.length > 0) {
                 new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -601,85 +913,26 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
-                        scales: {
-                            y: { beginAtZero: true, grid: { drawBorder: false } },
-                            x: { grid: { display: false } }
-                        }
+                        scales: { y: { beginAtZero: true } }
                     }
                 });
-            } else {
-                ctx.font = "14px Inter";
-                ctx.fillStyle = "#9ca3af";
-                ctx.textAlign = "center";
-                ctx.fillText("Sin datos de consumo", ctx.canvas.width/2, ctx.canvas.height/2);
             }
         });
-        
-        // ----- Cambiar rango del gráfico -----
-        function cambiarRango(rango) {
-            window.location.href = window.location.pathname + '?rango=' + rango;
-        }
-        
-        // ----- Modal de eliminación de cliente -----
-        function openDeleteModal(clientId, clientName) {
-            document.getElementById('deleteClientId').value = clientId;
-            document.getElementById('deleteClientName').textContent = clientName;
-            document.getElementById('deleteForm').action = `/{{ slug }}/clientes/${clientId}/eliminar/`;
-            document.getElementById('deleteModal').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-        
-        function closeDeleteModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-        
-        document.getElementById('deleteForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const clientId = formData.get('cliente_id');
-            fetch(this.action, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = '/{{ slug }}/listado/';
-                } else {
-                    alert('Error: ' + (data.error || 'No se pudo eliminar el cliente'));
-                }
-                closeDeleteModal();
-            })
-            .catch(error => {
-                alert('Error de conexión');
-                console.error(error);
-                closeDeleteModal();
-            });
-        });
-        
-        window.onclick = function(event) {
-            const modal = document.getElementById('deleteModal');
-            if (event.target === modal) closeDeleteModal();
-            const modalLectura = document.getElementById('modalRegistrarLectura');
-            if (event.target === modalLectura) cerrarModalLectura();
-        };
-        
-        // ----- Modal de registro de lectura (con prevención de doble clic) -----
+
+        // ----- Modal de registro de lectura -----
         let enviando = false;
 
         function abrirModalLectura() {
             document.getElementById('modalRegistrarLectura').style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
-        
+
         function cerrarModalLectura() {
             document.getElementById('modalRegistrarLectura').style.display = 'none';
             document.body.style.overflow = 'auto';
             document.getElementById('formRegistrarLectura').reset();
         }
-        
+
         document.getElementById('formRegistrarLectura').addEventListener('submit', function(e) {
             e.preventDefault();
             if (enviando) return;
@@ -691,7 +944,7 @@
 
             const formData = new FormData(this);
             const url = "{% url 'registrar_lectura_ajax' alias=slug cliente_id=cliente.id %}";
-            
+
             fetch(url, {
                 method: 'POST',
                 headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
@@ -717,8 +970,7 @@
                 btn.innerHTML = '<i class="fas fa-save mr-2"></i> Guardar Lectura';
             });
         });
-        
-        // Función para agregar una nueva fila a la tabla de lecturas
+
         function agregarFilaLectura(lectura) {
             const tbody = document.getElementById('tablaLecturasBody');
             const placeholder = document.getElementById('sinLecturasPlaceholder');
@@ -741,45 +993,34 @@
             fila.className = 'table-row-hover';
             fila.setAttribute('data-lectura-id', lectura.id);
             
-            let badgeHtml = '';
-            if (lectura.estado === 'cargada') {
-                badgeHtml = '<span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800"><i class="fas fa-check-circle mr-1"></i> Normal</span>';
-            } else if (lectura.estado === 'procesada') {
-                badgeHtml = '<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800"><i class="fas fa-file-invoice mr-1"></i> Procesada</span>';
-            } else if (lectura.estado === 'pendiente') {
-                badgeHtml = '<span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800"><i class="fas fa-clock mr-1"></i> Pendiente</span>';
-            } else {
-                badgeHtml = `<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">${lectura.estado}</span>`;
-            }
-            
             fila.innerHTML = `
-                <td class="px-6 py-4">${lectura.fecha}</td>
-                <td class="px-6 py-4 font-mono">${lectura.lectura_anterior !== null ? lectura.lectura_anterior : '-'}</td>
-                <td class="px-6 py-4 font-mono font-bold">${lectura.lectura_actual}</td>
-                <td class="px-6 py-4"><span class="font-bold text-blue-700">${lectura.consumo} m³</span></td>
-                <td class="px-6 py-4">${badgeHtml}</td>
-                <td class="px-6 py-4 text-sm text-gray-500">${lectura.observaciones || '-'}</td>
+                <td class="px-6 py-4">${lectura.periodo}</td>
+                <td class="px-6 py-4">${lectura.fecha_lectura_anterior || '-'}</td>
+                <td class="px-6 py-4">${lectura.lectura_anterior}</td>
+                <td class="px-6 py-4">${lectura.fecha_lectura_actual}</td>
+                <td class="px-6 py-4">${lectura.lectura_actual}</td>
+                <td class="px-6 py-4">${lectura.consumo}</td>
+                <td class="px-6 py-4">${lectura.cambio_medidor ? 'Sí' : 'No'}</td>
+                <td class="px-6 py-4">${lectura.termino_medio || '-'}</td>
+                <td class="px-6 py-4">${lectura.saldo_promedio_anterior || '-'}</td>
+                <td class="px-6 py-4">${lectura.consumo_facturado}</td>
+                <td class="px-6 py-4">${lectura.abono_proximo_periodo || '-'}</td>
+                <td class="px-6 py-4">${lectura.codigo_lectura || '-'}</td>
             `;
             
             tbody.insertBefore(fila, tbody.firstChild);
             
-            const contador = document.getElementById('contadorLecturas');
+            const contador = document.querySelector('#contentLecturas .bg-emerald-100');
             if (contador) {
                 let texto = contador.textContent;
                 let match = texto.match(/(\d+)/);
                 if (match) {
                     let total = parseInt(match[0]) + 1;
-                    contador.textContent = total + ' lectura' + (total !== 1 ? 's' : '') + ' registrada' + (total !== 1 ? 's' : '');
+                    contador.textContent = total + ' registro(s)';
                 }
             }
-            
-            const ultimaLecturaSpan = document.querySelector('.bg-gray-50 p.text-lg');
-            if (ultimaLecturaSpan && ultimaLecturaSpan.textContent.includes('Sin datos')) {
-                ultimaLecturaSpan.textContent = lectura.lectura_actual + ' m³';
-            }
         }
-        
-        // Función para mostrar notificaciones toast
+
         function mostrarToast(mensaje, tipo) {
             const toast = document.createElement('div');
             toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${tipo === 'success' ? 'bg-emerald-600' : 'bg-red-600'} toast-animation z-50`;

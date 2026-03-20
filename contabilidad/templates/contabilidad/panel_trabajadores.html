@@ -302,9 +302,9 @@
         <div class="loading-spinner"></div>
     </div>
 
-    <!-- Navbar -->
+    <!-- Navbar (sin límite de ancho) -->
     <nav class="gradient-navbar text-white shadow">
-        <div class="max-w-7xl mx-auto px-4 py-4">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                     <a href="{% url 'panel_remuneraciones' alias=alias %}" 
@@ -332,8 +332,8 @@
         </div>
     </nav>
 
-    <!-- Contenido principal -->
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Contenido principal (ancho completo) -->
+    <main class="w-full px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- Sección de búsqueda -->
         <div class="search-card">
@@ -547,8 +547,7 @@
                             <th>Ficha Covid</th>
                             <th>Estado</th>
                             <th class="text-center">Acciones</th>
-                        </tr>
-                    </thead>
+                        </thead>
                     <tbody id="trabajadores-table-body">
                         {% if trabajadores_json %}
                             {% for trabajador in trabajadores_json %}
@@ -608,7 +607,6 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center justify-center gap-1">
-                                        <!-- Botón "Ver detalles" ahora redirige a edición (porque no hay vista de detalle) -->
                                         <button class="action-btn text-green-600 hover:text-green-800" 
                                                 onclick="editarTrabajador('{{ trabajador.id }}')"
                                                 title="Editar">

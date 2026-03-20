@@ -16,45 +16,138 @@ from empresas.models import Empresa
 # ============================================================================
 
 def crear_cliente(request, alias):
-    """
-    Crea un nuevo cliente en la base de datos de la empresa.
-    (Sin creación de usuario en auth_user)
-    """
     slug = alias
     alias_db = f'db_{slug}'
-    empresa = Empresa.objects.get(slug=slug)          # desde base default
+    empresa = get_object_or_404(Empresa, slug=slug)
     sectores = empresa.sectores()
     error = None
 
     if request.method == 'POST':
+        # --- Campos de Cliente (básicos y adicionales) ---
         rut = request.POST.get('rut')
         nombre = request.POST.get('nombre')
-        email = request.POST.get('email')
+        apellido_paterno = request.POST.get('apellido_paterno', '')
+        apellido_materno = request.POST.get('apellido_materno', '')
         direccion = request.POST.get('direccion')
         medidor = request.POST.get('medidor')
-        telefono = request.POST.get('telefono')
-        sector = request.POST.get('sector')
+        email = request.POST.get('email', '')
+        telefono = request.POST.get('telefono', '')
+        sector = request.POST.get('sector', '')
         latitude = request.POST.get('latitude')
         longitude = request.POST.get('longitude')
 
-        # Verificar si ya existe un cliente con el mismo RUT en la BD de la empresa
-        if Cliente.objects.using(alias_db).filter(rut=rut).exists():
+        # Sanitizar coordenadas (reemplazar coma por punto y convertir a float)
+        if latitude:
+            latitude = latitude.replace(',', '.')
+            try:
+                latitude = float(latitude)
+            except (ValueError, TypeError):
+                latitude = None
+        if longitude:
+            longitude = longitude.replace(',', '.')
+            try:
+                longitude = float(longitude)
+            except (ValueError, TypeError):
+                longitude = None
+
+        fecha_nacimiento = request.POST.get('fecha_nacimiento') or None
+        fecha_defuncion = request.POST.get('fecha_defuncion') or None
+        sexo = request.POST.get('sexo', '')
+        estado_civil = request.POST.get('estado_civil', '')
+        profesion = request.POST.get('profesion', '')
+        email_contacto = request.POST.get('email_contacto', '')
+        contacto1 = request.POST.get('contacto1', '')
+        contacto2 = request.POST.get('contacto2', '')
+        fecha_incorporacion = request.POST.get('fecha_incorporacion') or None
+        numero_libro = request.POST.get('numero_libro', '')
+
+        # --- Campos del Contrato (Arranque y Facturación) ---
+        tipo_cliente = request.POST.get('tipo_cliente', '')
+        tipo_servicio_ssr = request.POST.get('tipo_servicio_ssr', '')
+        fecha_contrato = request.POST.get('fecha_contrato') or None
+        comuna = request.POST.get('comuna', '')
+        ciudad = request.POST.get('ciudad', '')
+        direccion_arranque = request.POST.get('direccion_arranque', '')
+        utm_norte = request.POST.get('utm_norte', '')
+        utm_este = request.POST.get('utm_este', '')
+        rol = request.POST.get('rol', '')
+        socio = request.POST.get('socio') == 'on'
+        servicio = request.POST.get('servicio', '')
+        diametro = request.POST.get('diametro', '')
+        marca_medidor = request.POST.get('marca_medidor', '')
+        numero_medidor_contrato = request.POST.get('numero_medidor', '')
+        ano_medidor = request.POST.get('ano_medidor') or None
+        tipo_medidor = request.POST.get('tipo_medidor', '')
+        sello_medidor = request.POST.get('sello_medidor', '')
+        codigo_union_domiciliaria = request.POST.get('codigo_union_domiciliaria', '')
+
+        email_recepcion_documento = request.POST.get('email_recepcion_documento', '')
+        tarifa = request.POST.get('tarifa', '')
+        tipo_documento = request.POST.get('tipo_documento', '')
+        tipo_servicio = request.POST.get('tipo_servicio', '')
+
+        # Validar campos obligatorios del cliente
+        if not all([rut, nombre, direccion, medidor]):
+            error = 'Los campos RUT, Nombre, Dirección y Medidor son obligatorios.'
+        elif Cliente.objects.using(alias_db).filter(rut=rut).exists():
             error = 'Ya existe un cliente con ese RUT.'
         else:
             try:
-                Cliente.objects.using(alias_db).create(
-                    usuario_id=None,                     # Sin usuario asociado
+                # Crear cliente
+                cliente = Cliente.objects.using(alias_db).create(
+                    usuario_id=None,
                     empresa_slug=slug,
                     nombre=nombre,
+                    apellido_paterno=apellido_paterno,
+                    apellido_materno=apellido_materno,
                     rut=rut,
                     direccion=direccion,
-                    medidor=medidor,
-                    email=email,
                     telefono=telefono,
-                    sector=sector,
+                    email=email,
+                    medidor=medidor,
                     latitude=latitude,
                     longitude=longitude,
+                    sector=sector,
+                    fecha_nacimiento=fecha_nacimiento,
+                    fecha_defuncion=fecha_defuncion,
+                    sexo=sexo,
+                    estado_civil=estado_civil,
+                    profesion=profesion,
+                    email_contacto=email_contacto,
+                    contacto1=contacto1,
+                    contacto2=contacto2,
+                    fecha_incorporacion=fecha_incorporacion,
+                    numero_libro=numero_libro,
                 )
+
+                # Crear contrato asociado
+                Contrato.objects.using(alias_db).create(
+                    cliente=cliente,
+                    tipo_cliente=tipo_cliente,
+                    tipo_servicio_ssr=tipo_servicio_ssr,
+                    fecha_contrato=fecha_contrato,
+                    comuna=comuna,
+                    ciudad=ciudad,
+                    sector_arranque=sector,  # Usamos el mismo sector por defecto
+                    direccion_arranque=direccion_arranque,
+                    utm_norte=utm_norte,
+                    utm_este=utm_este,
+                    rol=rol,
+                    socio=socio,
+                    servicio=servicio,
+                    diametro=diametro,
+                    marca_medidor=marca_medidor,
+                    numero_medidor=numero_medidor_contrato,
+                    ano_medidor=ano_medidor,
+                    tipo_medidor=tipo_medidor,
+                    sello_medidor=sello_medidor,
+                    codigo_union_domiciliaria=codigo_union_domiciliaria,
+                    email_recepcion_documento=email_recepcion_documento,
+                    tarifa=tarifa,
+                    tipo_documento=tipo_documento,
+                    tipo_servicio=tipo_servicio,
+                )
+
                 messages.success(request, 'Cliente creado exitosamente.')
                 return redirect('listado_clientes', alias=slug)
             except Exception as e:
@@ -132,54 +225,60 @@ def listado_clientes(request, alias):
     }
     return render(request, 'listado_clientes.html', context)
 
+# clientes/views.py - función detalle_cliente
+
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Avg, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
-from decimal import Decimal
 import json
 
 from empresas.models import Empresa
-from clientes.models import Cliente
+from clientes.models import Cliente, Contrato
 from lecturas.models import LecturaMovil
+from boletas.models import Boleta
 
 def detalle_cliente(request, alias, cliente_id):
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
     cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
 
-    # Obtener lecturas del cliente desde la base de datos por defecto
+    # Obtener el contrato asociado (si no existe, será None)
+    try:
+        contrato = cliente.contrato
+    except Contrato.DoesNotExist:
+        contrato = None
+
+    # ----- LECTURAS -----
     lecturas = LecturaMovil.objects.filter(
         empresa_slug=alias,
         cliente=cliente_id
     ).order_by('-fecha_lectura')
 
-    # Obtener pagos (si existen)
+    # ----- PAGOS -----
     try:
         from pagos.models import Pago
         pagos = Pago.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
     except ImportError:
         pagos = []
 
-    # Estadísticas básicas
+    # ----- ESTADÍSTICAS -----
     consumo_promedio = lecturas.aggregate(Avg('consumo'))['consumo__avg'] or 0
     total_pagado = pagos.aggregate(Sum('monto'))['monto__sum'] or 0 if pagos else 0
-    deuda_actual = 0  # Calcular según tu lógica
+    deuda_actual = 0  # Ajusta según tu lógica
 
-    # --- Datos para el gráfico de consumo ---
-    rango = request.GET.get('rango', '6m')  # 6m, 1y, all
+    # ----- GRÁFICO DE CONSUMO -----
+    rango = request.GET.get('rango', '6m')
     hoy = timezone.now()
 
-    # Determinar fecha de inicio según el rango
     if rango == '6m':
         fecha_inicio = hoy - timedelta(days=180)
     elif rango == '1y':
         fecha_inicio = hoy - timedelta(days=365)
-    else:  # 'all' o cualquier otro
-        fecha_inicio = None  # sin límite
+    else:  # 'all'
+        fecha_inicio = None
 
-    # Consulta base para el consumo agrupado por mes
     lecturas_historico = LecturaMovil.objects.filter(
         empresa_slug=alias,
         cliente=cliente_id,
@@ -188,34 +287,28 @@ def detalle_cliente(request, alias, cliente_id):
     if fecha_inicio:
         lecturas_historico = lecturas_historico.filter(fecha_lectura__gte=fecha_inicio)
 
-    # Agrupar por mes
     consumo_por_mes = lecturas_historico.annotate(
         mes=TruncMonth('fecha_lectura')
     ).values('mes').annotate(
         total_consumo=Sum('consumo')
     ).order_by('mes')
 
-    # Construir listas para el gráfico
     meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
                      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     fechas_grafico = []
     consumos_grafico = []
 
-    # Crear un diccionario con los consumos por mes (clave: 'YYYY-MM')
     consumo_dict = {}
     for item in consumo_por_mes:
         if item['mes']:
             key = item['mes'].strftime('%Y-%m')
             consumo_dict[key] = float(item['total_consumo'] or 0)
 
-    # Determinar el rango de meses a mostrar
     if rango == 'all':
-        # Si es 'all', usar todos los meses disponibles en consumo_dict, ordenados
         claves_ordenadas = sorted(consumo_dict.keys())
         fechas_grafico = [f"{meses_espanol[int(k[5:7])-1]} '{k[2:4]}" for k in claves_ordenadas]
         consumos_grafico = [consumo_dict[k] for k in claves_ordenadas]
     else:
-        # Para rango '6m' o '1y', generamos los últimos N meses
         num_meses = 6 if rango == '6m' else 12
         for i in range(num_meses - 1, -1, -1):
             fecha = hoy - timedelta(days=30 * i)
@@ -227,19 +320,78 @@ def detalle_cliente(request, alias, cliente_id):
             key = f"{anio_num}-{mes_num:02d}"
             consumos_grafico.append(consumo_dict.get(key, 0.0))
 
+    # ----- LECTURAS COMPLETAS PARA LA TABLA -----
+    lecturas_completas = []
+    for lectura in lecturas:
+        lecturas_completas.append({
+            'periodo': lectura.fecha_lectura.strftime('%m/%Y') if lectura.fecha_lectura else '',
+            'fecha_lectura_anterior': getattr(lectura, 'fecha_lectura_anterior', None),
+            'lectura_anterior': getattr(lectura, 'lectura_anterior', 0),
+            'fecha_lectura_actual': lectura.fecha_lectura,
+            'lectura_actual': getattr(lectura, 'lectura_actual', 0),
+            'consumo': getattr(lectura, 'consumo', 0),
+            'cambio_medidor': getattr(lectura, 'cambio_medidor', False),
+            'termino_medio': getattr(lectura, 'termino_medio', ''),
+            'saldo_promedio_anterior': getattr(lectura, 'saldo_promedio_anterior', ''),
+            'consumo_facturado': getattr(lectura, 'consumo_facturado', getattr(lectura, 'consumo', 0)),
+            'abono_proximo_periodo': getattr(lectura, 'abono_proximo_periodo', ''),
+            'codigo_lectura': getattr(lectura, 'codigo_lectura', ''),
+        })
+
+    # ----- DOCUMENTOS (BOLETAS) -----
+    boletas = Boleta.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_emision')
+    documentos = []
+    for b in boletas:
+        documentos.append({
+            'periodo': b.periodo or (b.fecha_emision.strftime('%m/%Y') if b.fecha_emision else ''),
+            'monto': float(b.total) if b.total else 0,
+            'documento': f"Boleta #{b.id}",
+            'fecha_emision': b.fecha_emision,
+            'fecha_vencimiento': b.fecha_vencimiento,
+            'fecha_pago': b.fecha_pago,
+            'consumo': float(b.consumo) if b.consumo else 0,
+            'url': '',
+            'pago': b.estado == 'pagada',
+            'traza': '',
+            'usuario': '',
+        })
+
+    # ----- OTRAS VARIABLES (listas vacías por ahora) -----
+    subsidios = []
+    cargos_permanentes = []
+    cargos = []
+    descuentos = []
+    convenios = []
+    otros_ingresos = []
+    cambios_medidor = []
+    historico_corte = []
+    anulaciones_corte = []
+
+    # ----- CONTEXTO FINAL -----
     context = {
         'empresa': empresa,
         'slug': alias,
         'cliente': cliente,
+        'contrato': contrato,  # ← NUEVO: para mostrar datos del contrato
         'lecturas': lecturas,
         'pagos': pagos,
         'consumo_promedio': consumo_promedio,
         'total_pagado': total_pagado,
         'deuda_actual': deuda_actual,
-        # Para el gráfico
         'fechas_grafico': json.dumps(fechas_grafico),
         'consumos_grafico': json.dumps(consumos_grafico),
         'rango_seleccionado': rango,
+        'documentos': documentos,
+        'subsidios': subsidios,
+        'cargos_permanentes': cargos_permanentes,
+        'cargos': cargos,
+        'descuentos': descuentos,
+        'convenios': convenios,
+        'lecturas_completas': lecturas_completas,
+        'otros_ingresos': otros_ingresos,
+        'cambios_medidor': cambios_medidor,
+        'historico_corte': historico_corte,
+        'anulaciones_corte': anulaciones_corte,
     }
     return render(request, 'clientes/detalle_cliente.html', context)
 
@@ -249,57 +401,147 @@ def editar_cliente(request, alias, cliente_id):
     empresa = get_object_or_404(Empresa, slug=alias)
     cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
 
-    # Obtener sectores disponibles (método que ya tienes en Empresa)
-    sectores = empresa.sectores()  # Devuelve lista de strings
+    try:
+        contrato = cliente.contrato
+    except Contrato.DoesNotExist:
+        contrato = Contrato(cliente=cliente)
 
-    # Definir el formulario dentro de la vista para poder pasarle los sectores
-    from django import forms
-
-    class ClienteForm(forms.ModelForm):
-        # Convertir sector en un campo de selección
-        sector = forms.ChoiceField(
-            choices=[('', 'Seleccione un sector')] + [(s, s) for s in sectores],
-            required=False,
-            widget=forms.Select(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'})
-        )
-
-        class Meta:
-            model = Cliente
-            fields = ['nombre', 'rut', 'direccion', 'telefono', 'email',
-                      'medidor', 'sector', 'latitude', 'longitude']
-            widgets = {
-                'nombre': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus', 'placeholder': 'Nombre completo'}),
-                'rut': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus', 'placeholder': '12.345.678-9'}),
-                'direccion': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'}),
-                'telefono': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'}),
-                'email': forms.EmailInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'}),
-                'medidor': forms.TextInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus'}),
-                'latitude': forms.NumberInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus', 'step': 'any'}),
-                'longitude': forms.NumberInput(attrs={'class': 'w-full px-4 py-2.5 border border-gray-300 rounded-lg input-focus', 'step': 'any'}),
-            }
+    sectores = empresa.sectores()
+    error = None
 
     if request.method == 'POST':
-        form = ClienteForm(request.POST, instance=cliente)
-        if form.is_valid():
-            cliente_actualizado = form.save(commit=False)  # No guarda aún
-            # Si quieres asegurar el slug de la empresa (opcional)
-            cliente_actualizado.empresa_slug = alias
-            cliente_actualizado.save(using=db_alias)       # Guarda en la BD correcta
-            messages.success(request, f'Cliente {cliente.nombre} actualizado correctamente.')
-            return redirect('detalle_cliente', alias=alias, cliente_id=cliente.id)
+        # Campos de Cliente
+        rut = request.POST.get('rut')
+        nombre = request.POST.get('nombre')
+        apellido_paterno = request.POST.get('apellido_paterno', '')
+        apellido_materno = request.POST.get('apellido_materno', '')
+        direccion = request.POST.get('direccion')
+        medidor = request.POST.get('medidor')
+        email = request.POST.get('email', '')
+        telefono = request.POST.get('telefono', '')
+        sector = request.POST.get('sector', '')
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+
+        # Sanitizar coordenadas
+        if latitude:
+            latitude = latitude.replace(',', '.')
+            try:
+                latitude = float(latitude)
+            except (ValueError, TypeError):
+                latitude = None
+        if longitude:
+            longitude = longitude.replace(',', '.')
+            try:
+                longitude = float(longitude)
+            except (ValueError, TypeError):
+                longitude = None
+
+        # Resto de campos de cliente (fechas, etc.)
+        fecha_nacimiento = request.POST.get('fecha_nacimiento') or None
+        fecha_defuncion = request.POST.get('fecha_defuncion') or None
+        sexo = request.POST.get('sexo', '')
+        estado_civil = request.POST.get('estado_civil', '')
+        profesion = request.POST.get('profesion', '')
+        email_contacto = request.POST.get('email_contacto', '')
+        contacto1 = request.POST.get('contacto1', '')
+        contacto2 = request.POST.get('contacto2', '')
+        fecha_incorporacion = request.POST.get('fecha_incorporacion') or None
+        numero_libro = request.POST.get('numero_libro', '')
+
+        # Campos del contrato
+        tipo_cliente = request.POST.get('tipo_cliente', '')
+        tipo_servicio_ssr = request.POST.get('tipo_servicio_ssr', '')
+        fecha_contrato = request.POST.get('fecha_contrato') or None
+        comuna = request.POST.get('comuna', '')
+        ciudad = request.POST.get('ciudad', '')
+        direccion_arranque = request.POST.get('direccion_arranque', '')
+        utm_norte = request.POST.get('utm_norte', '')
+        utm_este = request.POST.get('utm_este', '')
+        rol = request.POST.get('rol', '')
+        socio = request.POST.get('socio') == 'on'
+        servicio = request.POST.get('servicio', '')
+        diametro = request.POST.get('diametro', '')
+        marca_medidor = request.POST.get('marca_medidor', '')
+        numero_medidor_contrato = request.POST.get('numero_medidor', '')
+        ano_medidor = request.POST.get('ano_medidor') or None
+        tipo_medidor = request.POST.get('tipo_medidor', '')
+        sello_medidor = request.POST.get('sello_medidor', '')
+        codigo_union_domiciliaria = request.POST.get('codigo_union_domiciliaria', '')
+
+        email_recepcion_documento = request.POST.get('email_recepcion_documento', '')
+        tarifa = request.POST.get('tarifa', '')
+        tipo_documento = request.POST.get('tipo_documento', '')
+        tipo_servicio = request.POST.get('tipo_servicio', '')
+
+        # Validar campos obligatorios
+        if not all([rut, nombre, direccion, medidor]):
+            error = 'Los campos RUT, Nombre, Dirección y Medidor son obligatorios.'
         else:
-            # Si hay errores, mostrar mensaje
-            messages.error(request, 'Por favor corrige los errores del formulario.')
-    else:
-        form = ClienteForm(instance=cliente)
+            try:
+                # Actualizar cliente
+                cliente.rut = rut
+                cliente.nombre = nombre
+                cliente.apellido_paterno = apellido_paterno
+                cliente.apellido_materno = apellido_materno
+                cliente.direccion = direccion
+                cliente.medidor = medidor
+                cliente.email = email
+                cliente.telefono = telefono
+                cliente.sector = sector
+                cliente.latitude = latitude
+                cliente.longitude = longitude
+                cliente.fecha_nacimiento = fecha_nacimiento
+                cliente.fecha_defuncion = fecha_defuncion
+                cliente.sexo = sexo
+                cliente.estado_civil = estado_civil
+                cliente.profesion = profesion
+                cliente.email_contacto = email_contacto
+                cliente.contacto1 = contacto1
+                cliente.contacto2 = contacto2
+                cliente.fecha_incorporacion = fecha_incorporacion
+                cliente.numero_libro = numero_libro
+                cliente.save(using=db_alias)
+
+                # Actualizar contrato
+                contrato.tipo_cliente = tipo_cliente
+                contrato.tipo_servicio_ssr = tipo_servicio_ssr
+                contrato.fecha_contrato = fecha_contrato
+                contrato.comuna = comuna
+                contrato.ciudad = ciudad
+                contrato.sector_arranque = sector
+                contrato.direccion_arranque = direccion_arranque
+                contrato.utm_norte = utm_norte
+                contrato.utm_este = utm_este
+                contrato.rol = rol
+                contrato.socio = socio
+                contrato.servicio = servicio
+                contrato.diametro = diametro
+                contrato.marca_medidor = marca_medidor
+                contrato.numero_medidor = numero_medidor_contrato
+                contrato.ano_medidor = ano_medidor
+                contrato.tipo_medidor = tipo_medidor
+                contrato.sello_medidor = sello_medidor
+                contrato.codigo_union_domiciliaria = codigo_union_domiciliaria
+                contrato.email_recepcion_documento = email_recepcion_documento
+                contrato.tarifa = tarifa
+                contrato.tipo_documento = tipo_documento
+                contrato.tipo_servicio = tipo_servicio
+                contrato.save(using=db_alias)
+
+                messages.success(request, f'Cliente {cliente.nombre} actualizado correctamente.')
+                return redirect('detalle_cliente', alias=alias, cliente_id=cliente.id)
+            except Exception as e:
+                error = f'Error al actualizar el cliente: {str(e)}'
 
     context = {
         'empresa': empresa,
         'slug': alias,
         'cliente': cliente,
-        'form': form,
+        'contrato': contrato,
+        'sectores': sectores,
+        'error': error,
     }
-
     return render(request, 'clientes/editar_cliente.html', context)
 
 

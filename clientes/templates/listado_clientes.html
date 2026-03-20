@@ -67,9 +67,9 @@
 </head>
 <body class="bg-gray-50">
 
-  <!-- Navbar consistente con panel SSR -->
+  <!-- Navbar sin límite de ancho -->
   <header class="bg-emerald-700 text-white sticky top-0 z-20 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo + Empresa -->
         <div class="flex items-center gap-3">
@@ -94,8 +94,8 @@
     </div>
   </header>
 
-  <!-- Contenido principal -->
-  <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+  <!-- Contenido principal (ancho completo) -->
+  <div class="w-full py-8 px-4 sm:px-6 lg:px-8">
     
     <!-- Header de página -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -306,10 +306,10 @@
                         <div class="text-xs text-gray-500">{{ cliente.fecha_creacion|date:"d/m/Y" }}</div>
                       </div>
                     </div>
-                  </td>
+                   </td>
                   <td class="px-4 py-3 whitespace-nowrap font-mono text-sm text-gray-900">
                     {{ cliente.rut }}
-                  </td>
+                   </td>
                   <td class="px-4 py-3 whitespace-nowrap">
                     <div class="flex items-center">
                       <div class="h-7 w-7 rounded-md bg-blue-50 flex items-center justify-center mr-2">
@@ -317,7 +317,7 @@
                       </div>
                       <span class="text-sm font-medium text-gray-900">{{ cliente.medidor }}</span>
                     </div>
-                  </td>
+                   </td>
                   <td class="px-4 py-3 whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium
                       {% if cliente.sector == 'Norte' %}bg-blue-50 text-blue-700
@@ -328,7 +328,7 @@
                       <i class="fas fa-map-marker-alt mr-1 text-[8px]"></i>
                       {{ cliente.sector }}
                     </span>
-                  </td>
+                   </td>
                   <td class="px-4 py-3 whitespace-nowrap">
                     {% if cliente.email %}
                       <div class="flex items-center text-sm">
@@ -343,7 +343,7 @@
                         <i class="fas fa-phone mr-1"></i>{{ cliente.telefono }}
                       </div>
                     {% endif %}
-                  </td>
+                   </td>
                   <!-- Columna Boleta: icono y botón de impresión -->
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {% if cliente.boleta_mes %}
@@ -366,7 +366,7 @@
                         <i class="fas fa-file-invoice text-sm"></i>
                       </span>
                     {% endif %}
-                  </td>
+                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-right">
                     <div class="flex items-center justify-end gap-1">
                       <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
@@ -390,11 +390,11 @@
                         <i class="fas fa-trash-alt text-xs"></i>
                       </button>
                     </div>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
               {% endfor %}
             </tbody>
-          </table>
+           </table>
         </div>
 
         <!-- Paginación simplificada (si usas paginación) -->
@@ -548,76 +548,76 @@
     });
 
     // =========== MODAL DE ELIMINACIÓN ===========
-  // Generamos la URL base hasta antes del ID, eliminando el '/0/eliminar/' final
-  const baseDeleteUrl = "{% url 'eliminar_cliente' alias=slug cliente_id=0 %}".replace(/0\/eliminar\/$/, '');
+    // Generamos la URL base hasta antes del ID, eliminando el '/0/eliminar/' final
+    const baseDeleteUrl = "{% url 'eliminar_cliente' alias=slug cliente_id=0 %}".replace(/0\/eliminar\/$/, '');
 
-  function openDeleteModal(clientId, clientName) {
-      document.getElementById('deleteClientId').value = clientId;
-      document.getElementById('deleteClientName').textContent = clientName;
-      // Construimos la URL completa: base + clientId + '/eliminar/'
-      document.getElementById('deleteForm').action = baseDeleteUrl + clientId + '/eliminar/';
-      document.getElementById('deleteModal').classList.remove('hidden');
-      document.body.style.overflow = 'hidden';
-  }
+    function openDeleteModal(clientId, clientName) {
+        document.getElementById('deleteClientId').value = clientId;
+        document.getElementById('deleteClientName').textContent = clientName;
+        // Construimos la URL completa: base + clientId + '/eliminar/'
+        document.getElementById('deleteForm').action = baseDeleteUrl + clientId + '/eliminar/';
+        document.getElementById('deleteModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
 
-  function closeDeleteModal() {
-      document.getElementById('deleteModal').classList.add('hidden');
-      document.body.style.overflow = 'auto';
-  }
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
 
-  // =========== ELIMINACIÓN CON AJAX ===========
-  document.getElementById('deleteForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const formData = new FormData(this);
-      const clientId = formData.get('cliente_id');
-      
-      fetch(this.action, {
-          method: 'POST',
-          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
-          body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-          closeDeleteModal();
-          
-          if (data.success) {
-              // Mostrar toast
-              document.getElementById('successToast').classList.remove('hidden');
-              
-              // Eliminar fila con animación
-              const row = document.querySelector(`tr[data-client-id="${clientId}"]`);
-              if (row) {
-                  row.style.opacity = '0';
-                  row.style.transform = 'translateX(-20px)';
-                  row.style.transition = 'all 0.3s ease';
-                  setTimeout(() => row.remove(), 300);
-              }
-              
-              // Ocultar toast después de 3 segundos
-              setTimeout(() => closeToast(), 3000);
-          } else {
-              alert('Error: ' + (data.error || 'No se pudo eliminar el cliente'));
-          }
-      })
-      .catch(error => {
-          closeDeleteModal();
-          alert('Error de conexión');
-          console.error(error);
-      });
-  });
+    // =========== ELIMINACIÓN CON AJAX ===========
+    document.getElementById('deleteForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const clientId = formData.get('cliente_id');
+        
+        fetch(this.action, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            closeDeleteModal();
+            
+            if (data.success) {
+                // Mostrar toast
+                document.getElementById('successToast').classList.remove('hidden');
+                
+                // Eliminar fila con animación
+                const row = document.querySelector(`tr[data-client-id="${clientId}"]`);
+                if (row) {
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(-20px)';
+                    row.style.transition = 'all 0.3s ease';
+                    setTimeout(() => row.remove(), 300);
+                }
+                
+                // Ocultar toast después de 3 segundos
+                setTimeout(() => closeToast(), 3000);
+            } else {
+                alert('Error: ' + (data.error || 'No se pudo eliminar el cliente'));
+            }
+        })
+        .catch(error => {
+            closeDeleteModal();
+            alert('Error de conexión');
+            console.error(error);
+        });
+    });
 
-  function closeToast() {
-      document.getElementById('successToast').classList.add('hidden');
-  }
+    function closeToast() {
+        document.getElementById('successToast').classList.add('hidden');
+    }
 
-  // =========== CIERRE DE MODAL AL HACER CLIC FUERA ===========
-  window.onclick = function(event) {
-      const modal = document.getElementById('deleteModal');
-      if (event.target === modal) {
-          closeDeleteModal();
-      }
-  }
+    // =========== CIERRE DE MODAL AL HACER CLIC FUERA ===========
+    window.onclick = function(event) {
+        const modal = document.getElementById('deleteModal');
+        if (event.target === modal) {
+            closeDeleteModal();
+        }
+    }
 
     // =========== FUNCIONES DE ACCIONES (SIMULADAS) ===========
     function exportToCSV() {

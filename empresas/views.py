@@ -44,10 +44,10 @@ from django.db.models.functions import TruncMonth
 import calendar
 from decimal import Decimal
 
+# Importar modelos de pozos y producción
+from empresas.models import Pozo, Produccion
+
 def panel_empresa(request, slug):
-    """
-    Vista para acceder al panel de una empresa específica
-    """
     try:
         # 1. Obtener la empresa desde la base de datos DEFAULT
         empresa = Empresa.objects.get(slug=slug)
@@ -68,7 +68,7 @@ def panel_empresa(request, slug):
             messages.error(request, f'No se puede conectar a la base de datos: {str(e)}')
             return redirect('dashboard_admin_ssr')
 
-        # 4. Importar modelos
+        # 4. Importar modelos de la BD de la empresa (clientes, lecturas, etc.)
         from clientes.models import Cliente
         from lecturas.models import LecturaMovil
         from avisos.models import Aviso
@@ -326,6 +326,72 @@ def panel_empresa(request, slug):
             print(f"Error obteniendo clientes con coordenadas: {e}")
             puntos_clientes = []
 
+        # ========== POZOS Y PRODUCCIÓN ==========
+        total_pozos = Pozo.objects.filter(empresa=empresa, activo=True).count()
+        pozos = Pozo.objects.filter(empresa=empresa, activo=True).order_by('nombre')
+
+        # Producción mensual últimos 12 meses (total)
+        try:
+            fecha_inicio_prod = ahora - timedelta(days=365)
+            produccion_por_mes = Produccion.objects.filter(
+                empresa=empresa,
+                fecha__gte=fecha_inicio_prod
+            ).annotate(
+                mes=TruncMonth('fecha')
+            ).values('mes').annotate(
+                total_produccion=Sum('volumen')
+            ).order_by('mes')
+
+            prod_dict = {}
+            for item in produccion_por_mes:
+                key = item['mes'].strftime('%Y-%m')
+                prod_dict[key] = float(item['total_produccion'] or 0)
+
+            meses_produccion = []
+            produccion_mensual = []
+            for i in range(11, -1, -1):
+                fecha = ahora - timedelta(days=30 * i)
+                mes_num = fecha.month
+                anio_num = fecha.year
+                mes_nombre = calendar.month_abbr[mes_num]
+                anio_corto = str(anio_num)[2:]
+                meses_produccion.append(f"{mes_nombre} '{anio_corto}")
+                key = f"{anio_num}-{mes_num:02d}"
+                produccion_mensual.append(prod_dict.get(key, 0.0))
+
+            # Producción por pozo individual (para el filtro)
+            produccion_por_pozo = {}
+            for pozo in pozos:
+                try:
+                    prod_pozo = Produccion.objects.filter(
+                        empresa=empresa,
+                        pozo=pozo,
+                        fecha__gte=fecha_inicio_prod
+                    ).annotate(
+                        mes=TruncMonth('fecha')
+                    ).values('mes').annotate(
+                        total=Sum('volumen')
+                    ).order_by('mes')
+
+                    prod_dict_pozo = {}
+                    for item in prod_pozo:
+                        key = item['mes'].strftime('%Y-%m')
+                        prod_dict_pozo[key] = float(item['total'] or 0)
+
+                    serie = []
+                    for i in range(11, -1, -1):
+                        fecha = ahora - timedelta(days=30*i)
+                        key = f"{fecha.year}-{fecha.month:02d}"
+                        serie.append(prod_dict_pozo.get(key, 0.0))
+                    produccion_por_pozo[str(pozo.id)] = serie
+                except Exception as e:
+                    produccion_por_pozo[str(pozo.id)] = [0.0]*12
+        except Exception as e:
+            print(f"Error obteniendo producción mensual: {e}")
+            meses_produccion = []
+            produccion_mensual = []
+            produccion_por_pozo = {}
+
         # ========== HELPERS (AJUSTADOS PARA USAR BD PRINCIPAL EN LECTURAS) ==========
         from .helpers import (
             obtener_certificado_firma,
@@ -374,9 +440,6 @@ def panel_empresa(request, slug):
             print(f"Error helper recaudación: {e}")
             pagos = []
 
-        # ⚠️ Estos dos helpers (producción/consumo y puntos_lectura) deben estar actualizados
-        # para usar la BD principal (sin using) y filtrar por empresa_slug.
-        # Si no, podrían no mostrar datos correctos.
         try:
             meses, produccion, consumo = obtener_produccion_consumo(alias)
         except Exception as e:
@@ -434,15 +497,15 @@ def panel_empresa(request, slug):
             'meses': meses,
             'produccion': produccion,
             'consumo': consumo,
-            'puntos_lectura': puntos_lectura,          # Podrías eliminarlo si no lo usas
+            'puntos_lectura': puntos_lectura,
             'db_existe': os.path.exists(db_path),
-
+            'pozos': pozos,
             'consumo_total_mes': float(consumo_total_mes),
             'variacion_consumo': round(variacion_consumo, 1),
             'porcentaje_lecturas_completadas': round(porcentaje_lecturas_completadas, 0),
             'lecturas_completadas': lecturas_completadas,
             'lecturas_pendientes': lecturas_pendientes,
-            'hora_pico_consumo': "10:00",              # Simulado, puedes ajustar
+            'hora_pico_consumo': "10:00",
             'consumo_top10': float(consumo_top10),
             'top_consumidores': top_consumidores_template,
             'meses_grafico': json.dumps(meses_grafico),
@@ -458,9 +521,15 @@ def panel_empresa(request, slug):
             'dias_en_mes': dias_en_mes,
             'sectores_empresa': empresa.sectores(),
 
-            # Nuevo: puntos de clientes para el mapa
             'puntos_clientes': json.dumps(puntos_clientes),
             'total_clientes_mapa': len(puntos_clientes),
+
+            # Nuevas variables para pozos y producción
+            'total_pozos': total_pozos,
+            'meses_produccion': json.dumps(meses_produccion),
+            'produccion_mensual': json.dumps(produccion_mensual),
+            'consumo_produccion': json.dumps(consumo_mensual),
+            'produccion_por_pozo_json': json.dumps(produccion_por_pozo),
         }
 
         return render(request, 'admin_ssr/panel_empresa.html', context)
@@ -473,6 +542,42 @@ def panel_empresa(request, slug):
         import traceback
         print(f"Error completo: {traceback.format_exc()}")
         return redirect('dashboard_admin_ssr')
+
+
+def agregar_produccion(request, slug):
+    """
+    Vista para registrar una nueva producción desde el modal del panel.
+    """
+    if request.method == 'POST':
+        try:
+            empresa = Empresa.objects.get(slug=slug)
+            pozo_id = request.POST.get('pozo')
+            fecha = request.POST.get('fecha')
+            volumen = request.POST.get('volumen')
+            observacion = request.POST.get('observacion', '')
+
+            if not all([pozo_id, fecha, volumen]):
+                messages.error(request, 'Todos los campos son obligatorios')
+                return redirect('panel_empresa', slug=slug)
+
+            pozo = Pozo.objects.get(id=pozo_id, empresa=empresa)
+
+            Produccion.objects.create(
+                empresa=empresa,
+                pozo=pozo,
+                fecha=fecha,
+                volumen=volumen,
+                observacion=observacion
+            )
+            messages.success(request, 'Producción registrada correctamente')
+        except Pozo.DoesNotExist:
+            messages.error(request, 'El pozo seleccionado no existe')
+        except Exception as e:
+            messages.error(request, f'Error al registrar producción: {str(e)}')
+
+        return redirect('panel_empresa', slug=slug)
+    else:
+        return redirect('panel_empresa', slug=slug)
 
 from lecturas.models import LecturaMovil
 
@@ -1414,3 +1519,244 @@ def obtener_sectores_empresa(request, empresa_slug):
             'success': False,
             'error': str(e)
         }, status=500)
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils import timezone
+from .models import Empresa, Pozo
+
+@staff_member_required
+def agregar_pozo(request, empresa_slug):
+    empresa = get_object_or_404(Empresa, slug=empresa_slug)
+    
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        ubicacion = request.POST.get('ubicacion', '')
+        caudal_estimado = request.POST.get('caudal_estimado')
+        activo = request.POST.get('activo') == 'on'
+        
+        if not nombre:
+            messages.error(request, 'El nombre del pozo es obligatorio.')
+            return redirect('dashboard_admin_ssr')
+        
+        pozo = Pozo(
+            empresa=empresa,
+            nombre=nombre,
+            ubicacion=ubicacion,
+            caudal_estimado=caudal_estimado if caudal_estimado else None,
+            activo=activo
+        )
+        pozo.save()
+        
+        messages.success(request, f'Pozo "{nombre}" agregado correctamente.')
+        return redirect('dashboard_admin_ssr')
+    
+    # Si no es POST, redirigir al dashboard
+    return redirect('dashboard_admin_ssr')
+
+
+from django.http import JsonResponse
+from django.db.models import Sum
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, TruncYear
+from django.utils import timezone
+from datetime import timedelta
+from .models import Empresa, Produccion
+from lecturas.models import LecturaMovil
+
+def datos_produccion_consumo_api(request, slug):
+    """API para obtener datos de producción y consumo según período y pozo."""
+    periodo = request.GET.get('periodo', 'mes')
+    pozo_id = request.GET.get('pozo', 'todos')
+    
+    try:
+        empresa = Empresa.objects.get(slug=slug)
+    except Empresa.DoesNotExist:
+        return JsonResponse({'error': 'Empresa no encontrada'}, status=404)
+    
+    # Definir truncador según período
+    trunc_map = {
+        'dia': TruncDay,
+        'semana': TruncWeek,
+        'mes': TruncMonth,
+        'año': TruncYear,
+    }
+    trunc_func = trunc_map.get(periodo, TruncMonth)
+    
+    # Rango de fechas según período
+    hoy = timezone.now().date()
+    if periodo == 'dia':
+        fecha_inicio = hoy - timedelta(days=30)
+    elif periodo == 'semana':
+        fecha_inicio = hoy - timedelta(weeks=12)
+    elif periodo == 'mes':
+        fecha_inicio = hoy - timedelta(days=365)
+    elif periodo == 'año':
+        fecha_inicio = hoy - timedelta(days=5*365)
+    else:
+        fecha_inicio = hoy - timedelta(days=365)
+    
+    # Consulta de producción
+    prod_qs = Produccion.objects.filter(empresa=empresa, fecha__gte=fecha_inicio)
+    if pozo_id != 'todos':
+        prod_qs = prod_qs.filter(pozo_id=pozo_id)
+    
+    prod_por_periodo = prod_qs.annotate(
+        periodo=trunc_func('fecha')
+    ).values('periodo').annotate(
+        total=Sum('volumen')
+    ).order_by('periodo')
+    
+    # Consulta de consumo
+    consumo_qs = LecturaMovil.objects.filter(
+        empresa_slug=slug,
+        fecha_lectura__gte=fecha_inicio,
+        consumo__isnull=False
+    )
+    consumo_por_periodo = consumo_qs.annotate(
+        periodo=trunc_func('fecha_lectura')
+    ).values('periodo').annotate(
+        total=Sum('consumo')
+    ).order_by('periodo')
+    
+    # Diccionarios para combinar
+    prod_dict = {item['periodo']: float(item['total']) for item in prod_por_periodo}
+    consumo_dict = {item['periodo']: float(item['total']) for item in consumo_por_periodo}
+    
+    # Períodos únicos ordenados
+    periodos = sorted(set(list(prod_dict.keys()) + list(consumo_dict.keys())))
+    
+    # Meses en español
+    meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    
+    labels = []
+    prod_data = []
+    consumo_data = []
+    for p in periodos:
+        if periodo == 'mes':
+            mes = meses_espanol[p.month - 1]
+            anio = str(p.year)[2:]
+            label = f"{mes} '{anio}"
+        elif periodo == 'dia':
+            label = p.strftime('%d/%m')
+        elif periodo == 'semana':
+            label = f"Semana {p.strftime('%W')}"
+        elif periodo == 'año':
+            label = p.strftime('%Y')
+        else:
+            label = p.strftime('%d/%m/%Y')
+        
+        labels.append(label)
+        prod_data.append(prod_dict.get(p, 0))
+        consumo_data.append(consumo_dict.get(p, 0))
+    
+    return JsonResponse({
+        'labels': labels,
+        'produccion': prod_data,
+        'consumo': consumo_data,
+    })
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
+from .models import Pozo
+
+@require_GET
+def api_pozos_empresa(request, slug):
+    """Retorna lista de pozos de una empresa en formato JSON."""
+    try:
+        empresa = Empresa.objects.get(slug=slug)
+        pozos = Pozo.objects.filter(empresa=empresa).order_by('nombre')
+        data = []
+        for p in pozos:
+            data.append({
+                'id': p.id,
+                'nombre': p.nombre,
+                'ubicacion': p.ubicacion or '',
+                'caudal_estimado': float(p.caudal_estimado) if p.caudal_estimado else None,
+                'activo': p.activo,
+            })
+        return JsonResponse(data, safe=False)
+    except Empresa.DoesNotExist:
+        return JsonResponse({'error': 'Empresa no encontrada'}, status=404)
+
+@require_POST
+@csrf_exempt  # O usar @csrf_protect con token incluido en el fetch
+def eliminar_pozo(request, pozo_id):
+    """Elimina un pozo (solo superusuario)."""
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    try:
+        pozo = Pozo.objects.get(id=pozo_id)
+        pozo.delete()
+        return JsonResponse({'mensaje': 'Pozo eliminado'})
+    except Pozo.DoesNotExist:
+        return JsonResponse({'error': 'Pozo no encontrado'}, status=404)
+
+from django.http import JsonResponse
+from .models import Pozo
+
+def api_pozo_detalle(request, pozo_id):
+    try:
+        pozo = Pozo.objects.get(id=pozo_id)
+        data = {
+            'id': pozo.id,
+            'nombre': pozo.nombre,
+            'ubicacion': pozo.ubicacion or '',
+            'caudal_estimado': float(pozo.caudal_estimado) if pozo.caudal_estimado else '',
+            'activo': pozo.activo,
+        }
+        return JsonResponse(data)
+    except Pozo.DoesNotExist:
+        return JsonResponse({'error': 'Pozo no encontrado'}, status=404)
+
+from django.shortcuts import get_object_or_404
+from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@csrf_exempt
+def editar_pozo_api(request, pozo_id):
+    if request.method == 'POST':
+        pozo = get_object_or_404(Pozo, id=pozo_id)
+        try:
+            data = json.loads(request.body)  # Si envías JSON
+            pozo.nombre = data.get('nombre', pozo.nombre)
+            pozo.ubicacion = data.get('ubicacion', pozo.ubicacion)
+            pozo.caudal_estimado = data.get('caudal_estimado') if data.get('caudal_estimado') else None
+            pozo.activo = data.get('activo', pozo.activo)
+            pozo.save()
+            return JsonResponse({'mensaje': 'Pozo actualizado correctamente'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@require_POST
+@csrf_exempt
+def editar_pozo(request, pozo_id):
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    try:
+        pozo = Pozo.objects.get(id=pozo_id)
+        pozo.nombre = request.POST.get('nombre')
+        pozo.ubicacion = request.POST.get('ubicacion', '')
+        pozo.caudal_estimado = request.POST.get('caudal_estimado') or None
+        pozo.activo = request.POST.get('activo') == 'on'
+        pozo.save()
+        
+        # Si la petición es AJAX (desde el modal), devolver JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'mensaje': 'Pozo actualizado correctamente'})
+        
+        # Si es POST normal, redirigir
+        messages.success(request, f'Pozo "{pozo.nombre}" actualizado.')
+        return redirect('dashboard_admin_ssr')
+        
+    except Pozo.DoesNotExist:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Pozo no encontrado'}, status=404)
+        messages.error(request, 'Pozo no encontrado')
+        return redirect('dashboard_admin_ssr')

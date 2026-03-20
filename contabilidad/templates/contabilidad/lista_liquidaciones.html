@@ -80,9 +80,9 @@
 </head>
 <body class="bg-gray-50">
     
-    <!-- Navbar -->
+    <!-- Navbar (sin límite de ancho) -->
     <nav class="gradient-navbar text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 py-4">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex items-center space-x-4">
                     <a href="{% url 'panel_liquidaciones' alias=alias %}" 
@@ -110,8 +110,8 @@
         </div>
     </nav>
 
-    <!-- Contenido principal -->
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Contenido principal (ancho completo) -->
+    <main class="w-full px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- Instrucciones -->
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
@@ -130,10 +130,9 @@
             </div>
         </div>
 
-        <!-- Filtros con Formulario GET - AHORA FUNCIONAL -->
+        <!-- Filtros con Formulario GET -->
         <div class="bg-white rounded-xl shadow p-6 mb-8">
             <form method="GET" action="" class="space-y-4">
-                <!-- Campo oculto para mantener el período -->
                 <input type="hidden" name="periodo_id" value="{{ periodo.id }}">
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -176,10 +175,7 @@
             </form>
         </div>
 
-
-        
-
-        <!-- Estadísticas (calculadas en la vista) -->
+        <!-- Estadísticas -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-xl shadow p-6 text-center">
                 <div class="text-2xl font-bold text-gray-800">{{ total_trabajadores }}</div>
@@ -217,8 +213,7 @@
                             <th class="py-4 px-6 text-left font-semibold text-gray-700">Sueldo Base</th>
                             <th class="py-4 px-6 text-left font-semibold text-gray-700">Estado Liquidación</th>
                             <th class="py-4 px-6 text-left font-semibold text-gray-700">Acciones</th>
-                        </tr>
-                    </thead>
+                        </thead>
                     <tbody>
                         {% for trabajador in trabajadores %}
                         <tr class="border-t table-row-hover">
@@ -226,7 +221,7 @@
                                 <div class="font-mono font-medium text-gray-900">
                                     {{ trabajador.rut }}
                                 </div>
-                            </td>
+                             </td>
                             
                             <td class="py-4 px-6">
                                 <div class="font-medium text-gray-900">
@@ -235,13 +230,13 @@
                                 {% if trabajador.email %}
                                 <div class="text-sm text-gray-500">{{ trabajador.email }}</div>
                                 {% endif %}
-                            </td>
+                             </td>
                             
                             <td class="py-4 px-6">
                                 <div class="text-gray-700">
                                     {{ trabajador.cargo|default:"Sin cargo especificado" }}
                                 </div>
-                            </td>
+                             </td>
                             
                             <td class="py-4 px-6">
                                 <div class="text-gray-700">
@@ -250,7 +245,7 @@
                                     <div class="text-xs text-gray-500">{{ trabajador.centro_costo_codigo }}</div>
                                     {% endif %}
                                 </div>
-                            </td>
+                             </td>
                             
                             <td class="py-4 px-6">
                                 <div class="font-medium text-gray-900">
@@ -259,7 +254,7 @@
                                 <div class="text-xs text-gray-500">
                                     Diario: ${{ trabajador.sueldo_diario|default:0|floatformat:0 }}
                                 </div>
-                            </td>
+                             </td>
                             
                             <td class="py-4 px-6">
                                 {% if trabajador.tiene_liquidacion %}
@@ -284,7 +279,7 @@
                                     PENDIENTE
                                 </span>
                                 {% endif %}
-                            </td>
+                             </td>
                             
                             <td class="py-4 px-6">
                                 <div class="flex gap-2">
@@ -306,10 +301,10 @@
                                     </a>
                                     {% endif %}
                                 </div>
-                            </td>
-                        </tr>
+                             </td>
+                         </tr>
                         {% empty %}
-                        <tr>
+                         <tr>
                             <td colspan="7" class="py-12 text-center">
                                 <div class="max-w-md mx-auto">
                                     <i class="fas fa-users text-gray-300 text-5xl mb-4"></i>
@@ -327,14 +322,14 @@
                                     </a>
                                     {% endif %}
                                 </div>
-                            </td>
-                        </tr>
+                             </td>
+                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             
-            <!-- Paginación (opcional) -->
+            <!-- Paginación -->
             {% if is_paginated %}
             <div class="bg-gray-50 px-6 py-4 border-t">
                 <div class="flex items-center justify-between">
@@ -404,9 +399,9 @@
 
     </main>
 
-    <!-- Footer -->
+    <!-- Footer (ancho completo) -->
     <footer class="bg-white border-t mt-8">
-        <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
             <div class="text-center text-gray-500 text-sm">
                 <p>Sistema de Liquidaciones - {{ empresa.nombre }}</p>
                 <p class="mt-1">Período: {{ periodo.nombre_mes }} {{ periodo.anio }} | 

@@ -27,6 +27,22 @@
             box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
             border-color: #059669;
         }
+        
+        .form-section {
+            border-radius: 12px;
+            background: white;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
     </style>
 </head>
 <body>
@@ -59,168 +75,287 @@
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Mensajes de error -->
-        {% if form.errors %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Mensajes de error personalizados -->
+        {% if error %}
         <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl mb-6 card-shadow">
             <div class="flex items-center">
                 <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
-                <div>
-                    <h3 class="font-semibold text-red-700">Errores en el formulario</h3>
-                    <div class="mt-1 text-sm text-red-600">
-                        {% for field in form %}
-                            {% for error in field.errors %}
-                                <div>• {{ field.label }}: {{ error }}</div>
-                            {% endfor %}
-                        {% endfor %}
-                        {% if form.non_field_errors %}
-                            <div>• {{ form.non_field_errors }}</div>
-                        {% endif %}
-                    </div>
-                </div>
+                <span>{{ error }}</span>
             </div>
         </div>
         {% endif %}
-        
-        <!-- ... (header y mensajes de error) ... -->
 
-        <!-- Formulario -->
-        <div class="bg-white rounded-xl card-shadow p-8">
-            <form method="post">
-                {% csrf_token %}
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Nombre -->
-                    <div>
-                        <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-user text-gray-400 mr-1.5"></i>Nombre Completo *
-                        </label>
-                        {{ form.nombre }}
-                    </div>
-                    
-                    <!-- RUT -->
-                    <div>
-                        <label for="{{ form.rut.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-id-card text-gray-400 mr-1.5"></i>RUT *
-                        </label>
-                        {{ form.rut }}
-                    </div>
-                    
-                    <!-- Email -->
-                    <div>
-                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-envelope text-gray-400 mr-1.5"></i>Email
-                        </label>
-                        {{ form.email }}
-                    </div>
-                    
-                    <!-- Teléfono -->
-                    <div>
-                        <label for="{{ form.telefono.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-phone text-gray-400 mr-1.5"></i>Teléfono
-                        </label>
-                        {{ form.telefono }}
-                    </div>
-                    
-                    <!-- Dirección -->
-                    <div class="md:col-span-2">
-                        <label for="{{ form.direccion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-map-marker-alt text-gray-400 mr-1.5"></i>Dirección
-                        </label>
-                        {{ form.direccion }}
-                    </div>
-                    
-                    <!-- Medidor -->
-                    <div>
-                        <label for="{{ form.medidor.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-tachometer-alt text-gray-400 mr-1.5"></i>Número de Medidor *
-                        </label>
-                        {{ form.medidor }}
-                    </div>
-                    
-                    <!-- Sector (ahora es un select) -->
-                    <div>
-                        <label for="{{ form.sector.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-map text-gray-400 mr-1.5"></i>Sector
-                        </label>
-                        {{ form.sector }}
-                    </div>
-                    
-                    <!-- Latitud / Longitud (opcional) -->
-                    <div>
-                        <label for="{{ form.latitude.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-map-pin text-gray-400 mr-1.5"></i>Latitud
-                        </label>
-                        {{ form.latitude }}
-                    </div>
-                    <div>
-                        <label for="{{ form.longitude.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-map-pin text-gray-400 mr-1.5"></i>Longitud
-                        </label>
-                        {{ form.longitude }}
-                    </div>
-                </div>
-                
-                <!-- Campos ocultos adicionales -->
-                {% for field in form %}
-                    {% if field.is_hidden %}
-                        {{ field }}
-                    {% endif %}
-                {% endfor %}
-                
-                <div class="flex justify-between mt-8 pt-6 border-t border-gray-200">
-                    <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
-                    class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                        <i class="fas fa-times mr-2"></i> Cancelar
-                    </a>
-                    
-                    <div class="flex space-x-3">
-                        <button type="button" onclick="window.location.href='{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}'" 
-                                class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                            Ver Detalles
-                        </button>
-                        
-                        <button type="submit" 
-                                class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
-                            <i class="fas fa-save mr-2"></i> Guardar Cambios
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
 
-        <!-- Información adicional del cliente (sin campos inexistentes) -->
-        <div class="mt-6 bg-white rounded-xl card-shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Información del Cliente</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <p class="text-xs text-gray-500">RUT</p>
-                    <p class="font-medium text-gray-900">{{ cliente.rut }}</p>
+            <!-- Información Básica (campos de Cliente) -->
+            <div class="form-section card-shadow">
+                <div class="form-section-title">
+                    <i class="fas fa-user-circle mr-2 text-emerald-600"></i>
+                    Información Básica
                 </div>
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <p class="text-xs text-gray-500">Medidor</p>
-                    <p class="font-medium text-gray-900">{{ cliente.medidor }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
+                        <input type="text" name="nombre" value="{{ cliente.nombre }}" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Apellido Paterno</label>
+                        <input type="text" name="apellido_paterno" value="{{ cliente.apellido_paterno }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Apellido Materno</label>
+                        <input type="text" name="apellido_materno" value="{{ cliente.apellido_materno }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">RUT *</label>
+                        <input type="text" name="rut" value="{{ cliente.rut }}" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" name="email" value="{{ cliente.email }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                        <input type="text" name="telefono" value="{{ cliente.telefono }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">N° Medidor *</label>
+                        <input type="text" name="medidor" value="{{ cliente.medidor }}" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Dirección *</label>
+                        <input type="text" name="direccion" value="{{ cliente.direccion }}" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sector</label>
+                        <select name="sector" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                            <option value="">Seleccione</option>
+                            {% for sector in sectores %}
+                                <option value="{{ sector }}" {% if cliente.sector == sector %}selected{% endif %}>{{ sector }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
             </div>
-        </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Agregar clases a los inputs
-            document.querySelectorAll('input, select, textarea').forEach(input => {
-                if (!input.classList.contains('input-focus')) {
-                    input.classList.add('input-focus', 'w-full', 'px-4', 'py-2.5', 'border', 'border-gray-300', 'rounded-lg', 'transition-colors');
-                }
-            });
-            
-            // Para textareas
-            document.querySelectorAll('textarea').forEach(textarea => {
-                textarea.classList.add('resize-none');
-                textarea.rows = 4;
-            });
-        });
-    </script>
+            <!-- Datos Cliente (adicionales, también en Cliente) -->
+            <div class="form-section card-shadow">
+                <div class="form-section-title">
+                    <i class="fas fa-address-card mr-2 text-blue-600"></i>
+                    Datos Cliente
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Nacimiento</label>
+                        <input type="date" name="fecha_nacimiento" value="{{ cliente.fecha_nacimiento|date:'Y-m-d' }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Defunción</label>
+                        <input type="date" name="fecha_defuncion" value="{{ cliente.fecha_defuncion|date:'Y-m-d' }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sexo</label>
+                        <select name="sexo" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                            <option value="">Seleccione</option>
+                            <option value="Masculino" {% if cliente.sexo == 'Masculino' %}selected{% endif %}>Masculino</option>
+                            <option value="Femenino" {% if cliente.sexo == 'Femenino' %}selected{% endif %}>Femenino</option>
+                            <option value="Otro" {% if cliente.sexo == 'Otro' %}selected{% endif %}>Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estado Civil</label>
+                        <select name="estado_civil" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                            <option value="">Seleccione</option>
+                            <option value="Soltero/a" {% if cliente.estado_civil == 'Soltero/a' %}selected{% endif %}>Soltero/a</option>
+                            <option value="Casado/a" {% if cliente.estado_civil == 'Casado/a' %}selected{% endif %}>Casado/a</option>
+                            <option value="Viudo/a" {% if cliente.estado_civil == 'Viudo/a' %}selected{% endif %}>Viudo/a</option>
+                            <option value="Divorciado/a" {% if cliente.estado_civil == 'Divorciado/a' %}selected{% endif %}>Divorciado/a</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Profesión / Oficio</label>
+                        <input type="text" name="profesion" value="{{ cliente.profesion }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Contacto</label>
+                        <input type="email" name="email_contacto" value="{{ cliente.email_contacto }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Contacto 1</label>
+                        <input type="text" name="contacto1" value="{{ cliente.contacto1 }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Contacto 2</label>
+                        <input type="text" name="contacto2" value="{{ cliente.contacto2 }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Incorporación</label>
+                        <input type="date" name="fecha_incorporacion" value="{{ cliente.fecha_incorporacion|date:'Y-m-d' }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Número Libro</label>
+                        <input type="text" name="numero_libro" value="{{ cliente.numero_libro }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                </div>
+            </div>
 
+            <!-- Datos Arranque (campos de Contrato) -->
+            <div class="form-section card-shadow">
+                <div class="form-section-title">
+                    <i class="fas fa-tools mr-2 text-amber-600"></i>
+                    Datos Arranque
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo Cliente</label>
+                        <select name="tipo_cliente" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                            <option value="">Seleccione</option>
+                            <option value="Residencial" {% if contrato.tipo_cliente == 'Residencial' %}selected{% endif %}>Residencial</option>
+                            <option value="Comercial" {% if contrato.tipo_cliente == 'Comercial' %}selected{% endif %}>Comercial</option>
+                            <option value="Industrial" {% if contrato.tipo_cliente == 'Industrial' %}selected{% endif %}>Industrial</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo Servicio SSR</label>
+                        <input type="text" name="tipo_servicio_ssr" value="{{ contrato.tipo_servicio_ssr }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Contrato</label>
+                        <input type="date" name="fecha_contrato" value="{{ contrato.fecha_contrato|date:'Y-m-d' }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Comuna</label>
+                        <input type="text" name="comuna" value="{{ contrato.comuna }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ciudad</label>
+                        <input type="text" name="ciudad" value="{{ contrato.ciudad }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Dirección Arranque</label>
+                        <input type="text" name="direccion_arranque" value="{{ contrato.direccion_arranque }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">UTM Norte</label>
+                        <input type="text" name="utm_norte" value="{{ contrato.utm_norte }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">UTM Este</label>
+                        <input type="text" name="utm_este" value="{{ contrato.utm_este }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
+                        <input type="text" name="rol" value="{{ contrato.rol }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="socio" id="socio" class="h-5 w-5 text-emerald-600 rounded" {% if contrato.socio %}checked{% endif %}>
+                        <label for="socio" class="ml-2 text-sm text-gray-700">¿Es socio?</label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Servicio</label>
+                        <input type="text" name="servicio" value="{{ contrato.servicio }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Diámetro</label>
+                        <input type="text" name="diametro" value="{{ contrato.diametro }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Marca Medidor</label>
+                        <input type="text" name="marca_medidor" value="{{ contrato.marca_medidor }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Número Medidor</label>
+                        <input type="text" name="numero_medidor" value="{{ contrato.numero_medidor }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Año Medidor</label>
+                        <input type="number" name="ano_medidor" value="{{ contrato.ano_medidor }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo Medidor</label>
+                        <input type="text" name="tipo_medidor" value="{{ contrato.tipo_medidor }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sello Medidor</label>
+                        <input type="text" name="sello_medidor" value="{{ contrato.sello_medidor }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Código Unión Domiciliaria</label>
+                        <input type="text" name="codigo_union_domiciliaria" value="{{ contrato.codigo_union_domiciliaria }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datos Facturación (campos de Contrato) -->
+            <div class="form-section card-shadow">
+                <div class="form-section-title">
+                    <i class="fas fa-file-invoice-dollar mr-2 text-purple-600"></i>
+                    Datos Facturación
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Recepción Documento</label>
+                        <input type="email" name="email_recepcion_documento" value="{{ contrato.email_recepcion_documento }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tarifa</label>
+                        <input type="text" name="tarifa" value="{{ contrato.tarifa }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo Documento</label>
+                        <input type="text" name="tipo_documento" value="{{ contrato.tipo_documento }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo Servicio</label>
+                        <input type="text" name="tipo_servicio" value="{{ contrato.tipo_servicio }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ubicación Geográfica (coordenadas, campos de Cliente) -->
+            <div class="form-section card-shadow">
+                <div class="form-section-title">
+                    <i class="fas fa-map-marked-alt mr-2 text-purple-600"></i>
+                    Ubicación Geográfica
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
+                        <input type="text" name="latitude" value="{{ cliente.latitude }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
+                        <input type="text" name="longitude" value="{{ cliente.longitude }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-2">Si desea actualizar la ubicación, puede usar el mapa (no incluido en edición por simplicidad).</p>
+            </div>
+
+            <!-- Campos ocultos -->
+            <input type="hidden" name="empresa_slug" value="{{ slug }}">
+            <input type="hidden" name="usuario_id" value="{{ cliente.usuario_id|default:'0' }}">
+
+            <!-- Acciones -->
+            <div class="bg-white card-shadow rounded-xl p-6 mt-8 flex justify-between">
+                <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
+                   class="px-5 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-times mr-2"></i> Cancelar
+                </a>
+                <div class="flex space-x-3">
+                    <a href="{% url 'detalle_cliente' alias=slug cliente_id=cliente.id %}" 
+                       class="px-5 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Ver Detalles
+                    </a>
+                    <button type="submit" 
+                            class="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                        <i class="fas fa-save mr-2"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

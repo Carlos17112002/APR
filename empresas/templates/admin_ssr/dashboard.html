@@ -390,6 +390,18 @@
               </a>
             </div>
             
+            <!-- Botones de pozos -->
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <button onclick="abrirModalPozo('{{ empresa.slug }}', '{{ empresa.nombre }}')" 
+                      class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center">
+                <i class="fas fa-water mr-2"></i> Agregar Pozo
+              </button>
+              <button onclick="abrirModalListaPozos('{{ empresa.slug }}', '{{ empresa.nombre }}')"
+                      class="bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center">
+                <i class="fas fa-list mr-2"></i> Listar Pozos
+              </button>
+            </div>
+            
             <form method="post" action="{% url 'eliminar_empresa' empresa.slug %}" onsubmit="return confirm('¿Está seguro de eliminar esta empresa? Esta acción no se puede deshacer y eliminará todos los datos asociados.')">
               {% csrf_token %}
               <button type="submit" class="btn-danger text-white py-2.5 rounded-lg font-medium w-full flex items-center justify-center">
@@ -444,217 +456,327 @@
     </footer>
   </main>
 
-  <script>
-// Reemplaza TODO el script JavaScript existente con este:
+  <!-- Modal para agregar pozo -->
+  <div id="modalPozo" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl max-w-md w-full p-6">
+          <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-bold">Agregar Pozo a <span id="empresaNombre"></span></h3>
+              <button onclick="cerrarModalPozo()" class="text-gray-500 hover:text-gray-700">
+                  <i class="fas fa-times"></i>
+              </button>
+          </div>
+          
+          <form id="formPozo" method="post" action="">
+              {% csrf_token %}
+              <input type="hidden" id="empresaSlug" name="empresa_slug">
+              
+              <div class="space-y-4">
+                  <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del pozo *</label>
+                      <input type="text" name="nombre" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  
+                  <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                      <input type="text" name="ubicacion" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  
+                  <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Caudal estimado (m³/día)</label>
+                      <input type="number" step="0.01" name="caudal_estimado" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  
+                  <div class="flex items-center">
+                      <input type="checkbox" name="activo" id="activo" checked class="h-4 w-4 text-blue-600">
+                      <label for="activo" class="ml-2 text-sm text-gray-700">Activo</label>
+                  </div>
+              </div>
+              
+              <div class="flex gap-3 mt-6">
+                  <button type="button" onclick="cerrarModalPozo()" 
+                          class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                      Cancelar
+                  </button>
+                  <button type="submit" 
+                          class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                      Guardar Pozo
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Calcular apps generadas
-    try {
-        const empresasConApp = document.querySelectorAll('.app-badge.app-active');
-        const totalApps = empresasConApp.length;
-        const appsElement = document.getElementById('apps-generadas');
-        if (appsElement) {
-            appsElement.textContent = totalApps;
-            appsElement.classList.add(totalApps === 0 ? 'text-gray-600' : 'text-purple-600');
-        }
-    } catch (error) {
-        console.log('Error contando apps:', error);
-    }
-    
-    // Navegación activa
-    document.querySelectorAll('.top-nav-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.querySelectorAll('.top-nav-link').forEach(item => {
-                item.classList.remove('active');
-            });
-            this.classList.add('active');
-        });
-    });
-    
-    // Búsqueda en tiempo real
-    const searchInput = document.querySelector('input[placeholder="Buscar empresa..."]');
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const empresas = document.querySelectorAll('.grid > div');
-            
-            empresas.forEach(empresa => {
-                const nombre = empresa.querySelector('h3').textContent.toLowerCase();
-                const slug = empresa.querySelector('.text-xs.bg-gray-100').textContent.toLowerCase();
-                
-                if (nombre.includes(searchTerm) || slug.includes(searchTerm)) {
-                    empresa.style.display = 'block';
-                } else {
-                    empresa.style.display = 'none';
-                }
-            });
-        });
-    }
-    
-    // ===== CORRECCIÓN PARA ELIMINACIÓN =====
-    document.querySelectorAll('form[action*="eliminar_empresa"]').forEach(form => {
-        // Remover el onsubmit original
-        form.onsubmit = null;
-        
-        // Agregar nuevo evento de submit
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Obtener nombre de la empresa desde la tarjeta
-            const card = this.closest('.bg-white.rounded-xl');
-            const nombreEmpresa = card ? card.querySelector('h3').textContent.trim() : 'esta empresa';
-            const slugEmpresa = this.action.split('/').filter(part => part).pop();
-            
-            // Crear modal de confirmación
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
-            modal.innerHTML = `
-                <div class="bg-white rounded-2xl max-w-lg w-full p-0 overflow-hidden shadow-2xl">
-                    <!-- Header rojo -->
-                    <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-6">
-                        <div class="flex items-center">
-                            <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mr-4">
-                                <i class="fas fa-exclamation-triangle text-white text-xl"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-bold">Confirmar Eliminación</h3>
-                                <p class="text-red-100 text-sm mt-1">Acción permanente e irreversible</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Contenido -->
-                    <div class="p-6">
-                        <div class="mb-6">
-                            <h4 class="font-bold text-gray-800 mb-2">¿Eliminar <span class="text-red-600">${nombreEmpresa}</span>?</h4>
-                            <p class="text-gray-600 mb-4">Esta acción eliminará permanentemente:</p>
-                            
-                            <ul class="space-y-2 text-sm text-gray-700 mb-6">
-                                <li class="flex items-start">
-                                    <i class="fas fa-database text-red-500 mt-0.5 mr-2"></i>
-                                    <span>Base de datos completa y todos sus registros</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-users text-red-500 mt-0.5 mr-2"></i>
-                                    <span>Todos los usuarios y permisos asociados</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-file-invoice-dollar text-red-500 mt-0.5 mr-2"></i>
-                                    <span>Registros contables y transacciones</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-mobile-alt text-red-500 mt-0.5 mr-2"></i>
-                                    <span>Configuración de la app móvil</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-images text-red-500 mt-0.5 mr-2"></i>
-                                    <span>Todos los archivos multimedia</span>
-                                </li>
-                            </ul>
-                            
-                            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                                <div class="flex">
-                                    <i class="fas fa-skull-crossbones text-red-600 mt-0.5 mr-3"></i>
-                                    <div>
-                                        <p class="text-sm font-semibold text-red-800">¡ADVERTENCIA!</p>
-                                        <p class="text-sm text-red-700 mt-1">Esta acción <strong>NO SE PUEDE DESHACER</strong> y eliminará todos los datos de forma permanente.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Confirmación por texto -->
-                        <div class="mb-6">
-                            <p class="text-sm text-gray-700 mb-3">Para confirmar, escriba el nombre exacto:</p>
-                            <div class="bg-gray-100 p-3 rounded-lg mb-2">
-                                <code class="font-mono text-gray-800 text-sm">${nombreEmpresa}</code>
-                            </div>
-                            <input type="text" 
-                                   id="confirmDeleteText" 
-                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                   placeholder="Escriba aquí para confirmar"
-                                   autocomplete="off">
-                            <p class="text-xs text-gray-500 mt-2">Debe coincidir exactamente</p>
-                        </div>
-                        
-                        <!-- Botones -->
-                        <div class="flex space-x-3">
-                            <button type="button" 
-                                    id="cancelDeleteBtn" 
-                                    class="flex-1 px-5 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-times mr-2"></i> Cancelar
-                            </button>
-                            <button type="button" 
-                                    id="confirmDeleteBtn" 
-                                    disabled
-                                    class="flex-1 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fas fa-trash-alt mr-2"></i> Eliminar
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Footer -->
-                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                        <p class="text-xs text-gray-500 text-center">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Esta acción se registrará en el historial de auditoría
-                        </p>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            document.body.style.overflow = 'hidden';
-            
-            // Elementos del modal
-            const confirmInput = document.getElementById('confirmDeleteText');
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            const cancelBtn = document.getElementById('cancelDeleteBtn');
-            
-            // Validar entrada de texto
-            confirmInput.addEventListener('input', function() {
-                const inputValue = this.value.trim();
-                confirmBtn.disabled = inputValue !== nombreEmpresa;
-                
-                if (inputValue === nombreEmpresa) {
-                    confirmBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
-                } else {
-                    confirmBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
-                }
-            });
-            
-            // Enfocar input
-            setTimeout(() => confirmInput.focus(), 100);
-            
-            // Cancelar
-            cancelBtn.addEventListener('click', function() {
-                document.body.removeChild(modal);
-                document.body.style.overflow = 'auto';
-            });
-            
-            // Cerrar modal al hacer clic fuera
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                    document.body.style.overflow = 'auto';
-                }
-            });
-            
-            // Confirmar eliminación
-            confirmBtn.addEventListener('click', function() {
-                if (confirmBtn.disabled) return;
-                
-                // Mostrar loading
-                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Eliminando...';
-                confirmBtn.disabled = true;
-                
-                // Enviar el formulario
-                form.submit();
-            });
-        });
-    });
-});
-</script>
+  <!-- Modal para listar pozos (con opciones de editar y eliminar) -->
+  <div id="modalListaPozos" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl max-w-3xl w-full max-h-[80vh] overflow-y-auto p-6">
+          <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-bold">Pozos de <span id="empresaNombreLista"></span></h3>
+              <button onclick="cerrarModalListaPozos()" class="text-gray-500 hover:text-gray-700">
+                  <i class="fas fa-times"></i>
+              </button>
+          </div>
+          <div id="contenedorTablaPozos" class="overflow-x-auto">
+              <!-- Aquí se insertará la tabla con JavaScript -->
+              <p class="text-center text-gray-500 py-4">Cargando...</p>
+          </div>
+      </div>
+  </div>
+
+  <!-- Modal para editar pozo -->
+  <div id="modalEditarPozo" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl max-w-md w-full p-6">
+          <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-bold">Editar Pozo</h3>
+              <button onclick="cerrarModalEditarPozo()" class="text-gray-500 hover:text-gray-700">
+                  <i class="fas fa-times"></i>
+              </button>
+          </div>
+          
+          <form id="formEditarPozo" method="post" action="">
+              {% csrf_token %}
+              <input type="hidden" id="editPozoId" name="pozo_id">
+              
+              <div class="space-y-4">
+                  <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del pozo *</label>
+                      <input type="text" id="editNombre" name="nombre" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  
+                  <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                      <input type="text" id="editUbicacion" name="ubicacion" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  
+                  <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Caudal estimado (m³/día)</label>
+                      <input type="number" step="0.01" id="editCaudal" name="caudal_estimado" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  
+                  <div class="flex items-center">
+                      <input type="checkbox" id="editActivo" name="activo" class="h-4 w-4 text-blue-600">
+                      <label for="editActivo" class="ml-2 text-sm text-gray-700">Activo</label>
+                  </div>
+              </div>
+              
+              <div class="flex gap-3 mt-6">
+                  <button type="button" onclick="cerrarModalEditarPozo()" 
+                          class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                      Cancelar
+                  </button>
+                  <button type="submit" 
+                          class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                      Actualizar Pozo
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
+
+  <script>
+  // Funciones para el modal de agregar pozo
+  function abrirModalPozo(slug, nombre) {
+      document.getElementById('empresaNombre').textContent = nombre;
+      document.getElementById('empresaSlug').value = slug;
+      document.getElementById('formPozo').action = `/empresas/agregar-pozo/${slug}/`;
+      document.getElementById('modalPozo').classList.remove('hidden');
+      document.getElementById('modalPozo').classList.add('flex');
+  }
+
+  function cerrarModalPozo() {
+      document.getElementById('modalPozo').classList.add('hidden');
+      document.getElementById('modalPozo').classList.remove('flex');
+  }
+
+  // Funciones para el modal de listar pozos
+  function abrirModalListaPozos(slug, nombre) {
+      document.getElementById('empresaNombreLista').textContent = nombre;
+      const contenedor = document.getElementById('contenedorTablaPozos');
+      contenedor.innerHTML = '<p class="text-center text-gray-500 py-4">Cargando...</p>';
+      
+      document.getElementById('modalListaPozos').classList.remove('hidden');
+      document.getElementById('modalListaPozos').classList.add('flex');
+      
+      fetch(`/empresas/api/pozos/${slug}/`)
+          .then(response => response.json())
+          .then(data => {
+              if (data.error) {
+                  contenedor.innerHTML = `<p class="text-center text-red-500 py-4">${data.error}</p>`;
+                  return;
+              }
+              if (data.length === 0) {
+                  contenedor.innerHTML = '<p class="text-center text-gray-500 py-4">No hay pozos registrados.</p>';
+                  return;
+              }
+              
+              let html = '<table class="min-w-full bg-white border border-gray-200">';
+              html += '<thead><tr class="bg-gray-100">';
+              html += '<th class="py-2 px-4 border-b">Nombre</th>';
+              html += '<th class="py-2 px-4 border-b">Ubicación</th>';
+              html += '<th class="py-2 px-4 border-b">Caudal (m³/día)</th>';
+              html += '<th class="py-2 px-4 border-b">Estado</th>';
+              html += '<th class="py-2 px-4 border-b">Acciones</th>';
+              html += '</tr></thead><tbody>';
+              
+              data.forEach(pozo => {
+                  html += '<tr>';
+                  html += `<td class="py-2 px-4 border-b">${pozo.nombre}</td>`;
+                  html += `<td class="py-2 px-4 border-b">${pozo.ubicacion || '-'}</td>`;
+                  html += `<td class="py-2 px-4 border-b">${pozo.caudal_estimado || '-'}</td>`;
+                  html += `<td class="py-2 px-4 border-b">${pozo.activo ? 'Activo' : 'Inactivo'}</td>`;
+                  html += `<td class="py-2 px-4 border-b">`;
+                  html += `<button onclick="abrirModalEditarPozo(${pozo.id})" class="text-blue-600 hover:text-blue-800 mr-2"><i class="fas fa-edit"></i></button>`;
+                  html += `<button onclick="eliminarPozo(${pozo.id}, '${pozo.nombre}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>`;
+                  html += `</td>`;
+                  html += '</tr>';
+              });
+              html += '</tbody></table>';
+              contenedor.innerHTML = html;
+          })
+          .catch(error => {
+              contenedor.innerHTML = `<p class="text-center text-red-500 py-4">Error al cargar pozos.</p>`;
+              console.error('Error:', error);
+          });
+  }
+
+  function cerrarModalListaPozos() {
+      document.getElementById('modalListaPozos').classList.add('hidden');
+      document.getElementById('modalListaPozos').classList.remove('flex');
+  }
+
+  // Funciones para el modal de editar pozo
+  async function abrirModalEditarPozo(pozoId) {
+      try {
+          const response = await fetch(`/empresas/api/pozo/${pozoId}/`);
+          const data = await response.json();
+          
+          if (data.error) {
+              alert('Error al cargar datos del pozo');
+              return;
+          }
+          
+          document.getElementById('editPozoId').value = data.id;
+          document.getElementById('editNombre').value = data.nombre;
+          document.getElementById('editUbicacion').value = data.ubicacion || '';
+          document.getElementById('editCaudal').value = data.caudal_estimado || '';
+          document.getElementById('editActivo').checked = data.activo;
+          
+          document.getElementById('formEditarPozo').action = `/empresas/editar-pozo/${data.id}/`;
+          document.getElementById('modalEditarPozo').classList.remove('hidden');
+          document.getElementById('modalEditarPozo').classList.add('flex');
+      } catch (error) {
+          alert('Error al obtener datos del pozo');
+          console.error(error);
+      }
+  }
+
+  function cerrarModalEditarPozo() {
+      document.getElementById('modalEditarPozo').classList.add('hidden');
+      document.getElementById('modalEditarPozo').classList.remove('flex');
+  }
+
+  // Función para eliminar pozo
+  function eliminarPozo(pozoId, nombrePozo) {
+      if (confirm(`¿Está seguro de eliminar el pozo "${nombrePozo}"?`)) {
+          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+          
+          fetch(`/empresas/eliminar-pozo/${pozoId}/`, {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': csrfToken,
+              },
+          })
+          .then(response => {
+              if (response.ok) {
+                  // Recargar la lista de pozos
+                  const empresaSlug = document.getElementById('empresaNombreLista').textContent.toLowerCase().replace(/\s+/g, '-');
+                  abrirModalListaPozos(empresaSlug, document.getElementById('empresaNombreLista').textContent);
+              } else {
+                  alert('Error al eliminar el pozo.');
+              }
+          })
+          .catch(error => {
+              alert('Error de red al eliminar.');
+              console.error(error);
+          });
+      }
+  }
+
+  // Cerrar modales al hacer clic fuera
+  document.getElementById('modalPozo').addEventListener('click', function(e) {
+      if (e.target === this) cerrarModalPozo();
+  });
+  document.getElementById('modalListaPozos').addEventListener('click', function(e) {
+      if (e.target === this) cerrarModalListaPozos();
+  });
+  document.getElementById('modalEditarPozo').addEventListener('click', function(e) {
+      if (e.target === this) cerrarModalEditarPozo();
+  });
+
+  // Código existente
+  document.addEventListener('DOMContentLoaded', function() {
+      try {
+          const empresasConApp = document.querySelectorAll('.app-badge.app-active');
+          const totalApps = empresasConApp.length;
+          const appsElement = document.getElementById('apps-generadas');
+          if (appsElement) {
+              appsElement.textContent = totalApps;
+              appsElement.classList.add(totalApps === 0 ? 'text-gray-600' : 'text-purple-600');
+          }
+      } catch (error) {
+          console.log('Error contando apps:', error);
+      }
+      
+      document.querySelectorAll('.top-nav-link').forEach(link => {
+          link.addEventListener('click', function(e) {
+              e.preventDefault();
+              document.querySelectorAll('.top-nav-link').forEach(item => {
+                  item.classList.remove('active');
+              });
+              this.classList.add('active');
+          });
+      });
+      
+      const searchInput = document.querySelector('input[placeholder="Buscar empresa..."]');
+      if (searchInput) {
+          searchInput.addEventListener('input', function(e) {
+              const searchTerm = e.target.value.toLowerCase();
+              const empresas = document.querySelectorAll('.grid > div');
+              
+              empresas.forEach(empresa => {
+                  const nombre = empresa.querySelector('h3').textContent.toLowerCase();
+                  const slug = empresa.querySelector('.text-xs.bg-gray-100').textContent.toLowerCase();
+                  
+                  if (nombre.includes(searchTerm) || slug.includes(searchTerm)) {
+                      empresa.style.display = 'block';
+                  } else {
+                      empresa.style.display = 'none';
+                  }
+              });
+          });
+      }
+      
+      // Confirmación de eliminación de empresa
+      document.querySelectorAll('form[action*="eliminar_empresa"]').forEach(form => {
+          form.onsubmit = null;
+          
+          form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              
+              const card = this.closest('.bg-white.rounded-xl');
+              const nombreEmpresa = card ? card.querySelector('h3').textContent.trim() : 'esta empresa';
+              
+              if (confirm(`¿Está seguro de eliminar la empresa "${nombreEmpresa}"? Esta acción no se puede deshacer.`)) {
+                  form.submit();
+              }
+          });
+      });
+  });
+  </script>
 </body>
 </html>

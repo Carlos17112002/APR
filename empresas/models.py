@@ -304,3 +304,29 @@ class EliminacionEmpresa(models.Model):
     def __str__(self):
         return f"{self.slug} eliminado por {self.ejecutado_por} el {self.fecha.strftime('%d/%m/%Y %H:%M')}"
 
+from django.db import models
+from empresas.models import Empresa  # Ajusta import si está en otro lado
+
+class Pozo(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='pozos')
+    nombre = models.CharField(max_length=100)
+    ubicacion = models.CharField(max_length=200, blank=True)
+    caudal_estimado = models.DecimalField(max_digits=10, decimal_places=2, help_text="m³/día", null=True, blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nombre} - {self.empresa.nombre}"
+
+class Produccion(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='producciones')
+    pozo = models.ForeignKey(Pozo, on_delete=models.SET_NULL, null=True, blank=True, related_name='producciones')
+    fecha = models.DateField()
+    volumen = models.DecimalField(max_digits=10, decimal_places=2, help_text="m³")
+    observacion = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.empresa.nombre} - {self.fecha} - {self.volumen} m³"

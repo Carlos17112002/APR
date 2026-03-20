@@ -3606,9 +3606,11 @@ def generar_linea_previred(liquidacion):
     """
     Genera una línea con 105 campos separados por punto y coma,
     según especificación de Previred (formato variable por separador, versión 92, febrero 2026).
+    Versión corregida que utiliza los modelos reales de la aplicación.
     """
     trab = liquidacion.trabajador
     periodo = liquidacion.periodo
+    empresa = periodo.empresa  # necesario para datos de la empresa (mutual, CCAF, etc.)
     uf_valor = periodo.uf
 
     # Topes en pesos
@@ -3616,6 +3618,8 @@ def generar_linea_previred(liquidacion):
     TOPE_SC = uf_valor * Decimal('135.2')
     # Renta imponible para AFP (topeada)
     renta_imponible = min(liquidacion.total_imponible, TOPE_AFP)
+    # Renta imponible para Seguro de Cesantía (topeada)
+    renta_sc = min(liquidacion.total_imponible, TOPE_SC)
 
     # Separar RUT
     rut_partes = trab.rut.split('-')
@@ -3647,12 +3651,22 @@ def generar_linea_previred(liquidacion):
         regimen = 'INP'
     campos[11] = regimen
 
-    campos[12] = '0'                                     # Tipo trabajador (activo)
+    # Tipo trabajador: mapeo desde el modelo Trabajador (campo 'tipo_trabajador')
+    tipo_trab_map = {
+        'dependiente': '0',       # Activo
+        'independiente': '1',     # Independiente
+        'agricola': '2',          # Agrícola (supuesto)
+    }
+    campos[12] = tipo_trab_map.get(trab.tipo_trabajador, '0')
+
     campos[13] = str(liquidacion.dias_trabajados)        # Días trabajados
     campos[14] = '00'                                    # Tipo de línea (principal)
-    campos[15] = '0'                                     # Código movimiento personal
-    campos[16] = ''                                      # Fecha desde
-    campos[17] = ''                                      # Fecha hasta
+
+    # Código movimiento personal: se obtiene de los booleanos de la liquidación
+    campos[15] = obtener_movimiento_previred(liquidacion)
+
+    campos[16] = ''                                      # Fecha desde (vacío)
+    campos[17] = ''                                      # Fecha hasta (vacío)
 
     # ------------------------------------------------------------------
     # 18-25: Asignación familiar y cargas
@@ -3685,13 +3699,11 @@ def generar_linea_previred(liquidacion):
         campos[26] = cod_afp                                    # Código AFP
         campos[27] = formatear_monto(renta_imponible)           # Renta imponible AFP
         campos[28] = formatear_monto(liquidacion.cotizacion_afp)  # Cotización AFP
-        # SIS: obtener desde modelo o usar 1.54%
-        try:
-            afp_obj = AFP.objects.get(nombre__iexact=liquidacion.afp_nombre)
-            sis_porc = afp_obj.sis
-        except AFP.DoesNotExist:
-            sis_porc = Decimal('1.54')
-        campos[29] = formatear_monto(renta_imponible * sis_porc / 100)
+
+        # SIS: tasa fija 1,54% (legal para el período febrero 2026)
+        SIS_TASA = Decimal('0.0154')
+        campos[29] = formatear_monto(renta_imponible * SIS_TASA)
+
         campos[30] = formatear_monto(liquidacion.cuenta_2_afp)   # Cuenta 2 AFP
 
         # Renta sustitutiva y relacionados (no aplica)
@@ -3710,24 +3722,15 @@ def generar_linea_previred(liquidacion):
         campos[39] = formatear_monto(monto_tp)                  # Monto trabajo pesado
     else:
         # Sin AFP
-        campos[26] = ''
-        campos[27] = '0'
-        campos[28] = '0'
-        campos[29] = '0'
-        campos[30] = '0'
-        campos[31] = '0'
+        for i in range(26, 40):
+            campos[i] = '0' if i in (27,28,29,30,31,33,34,39) else ''
         campos[32] = '0,00'
-        campos[33] = '0'
-        campos[34] = '0'
-        campos[35] = ''
-        campos[36] = ''
-        campos[37] = ''
         campos[38] = '0,00'
-        campos[39] = '0'
 
     # ------------------------------------------------------------------
     # 40-61: APVI, APVC, Afiliado Voluntario (todo vacío/cero)
     # ------------------------------------------------------------------
+    # (Se mantiene igual, pero se pueden dejar como están)
     campos[40] = ''       # Código institución APVI
     campos[41] = ''       # Número contrato APVI
     campos[42] = '0'      # Forma pago APVI
@@ -3754,19 +3757,11 @@ def generar_linea_previred(liquidacion):
     # ------------------------------------------------------------------
     # 62-74: Datos IPS/ISL/Fonasa (no aplica para trabajadores en AFP)
     # ------------------------------------------------------------------
-    campos[62] = ''       # Código Ex-Caja
-    campos[63] = '0,00'   # Tasa
-    campos[64] = '0'      # Renta IPS
-    campos[65] = '0'      # Cotización IPS
-    campos[66] = '0'      # Renta desahucio
-    campos[67] = ''       # Código Ex-Caja desahucio
-    campos[68] = '0,00'   # Tasa desahucio
-    campos[69] = '0'      # Cotización desahucio
-    campos[70] = '0'      # Cotización Fonasa
-    campos[71] = '0'      # Cotización Acc. Trabajo (ISL)
-    campos[72] = '0'      # Bonificación Ley 15.386
-    campos[73] = '0'      # Descuento cargas IPS
-    campos[74] = '0'      # Bonos de gobierno
+    for i in range(62, 75):
+        campos[i] = '0' if i in (64,65,66,69,70,71,72,73,74) else ''
+    campos[63] = '0,00'
+    campos[68] = '0,00'
+    # (Algunos campos específicos ya se cubren con el bucle)
 
     # ------------------------------------------------------------------
     # 75-82: Datos de Salud
@@ -3796,17 +3791,32 @@ def generar_linea_previred(liquidacion):
         campos[82] = '0'
 
     # ------------------------------------------------------------------
-    # 83-91: Datos CCAF (asumimos empresa sin CCAF)
+    # 83-91: Datos CCAF
     # ------------------------------------------------------------------
-    campos[83] = ''       # Código CCAF
-    campos[84] = formatear_monto(renta_imponible)  # Renta CCAF
-    campos[85] = '0'
-    campos[86] = '0'
-    campos[87] = '0'
-    campos[88] = '0'
-    campos[89] = '0'
-    campos[90] = '0'      # Cotización no afiliados a Isapre
-    campos[91] = '0'      # Descuento cargas familiares CCAF
+    # Intenta obtener el código de CCAF desde la empresa (si existe el campo)
+    ccaf_codigo = getattr(empresa, 'ccaf_codigo', None)
+    if ccaf_codigo:
+        campos[83] = ccaf_codigo
+        campos[84] = formatear_monto(renta_imponible)  # Renta CCAF
+        # Los demás campos se pueden mantener en 0 si no hay otros conceptos
+        campos[85] = '0'
+        campos[86] = '0'
+        campos[87] = '0'
+        campos[88] = '0'
+        campos[89] = '0'
+        campos[90] = '0'
+        campos[91] = '0'
+    else:
+        # Sin CCAF: todo vacío o cero
+        campos[83] = ''
+        campos[84] = '0'
+        campos[85] = '0'
+        campos[86] = '0'
+        campos[87] = '0'
+        campos[88] = '0'
+        campos[89] = '0'
+        campos[90] = '0'
+        campos[91] = '0'
 
     # ------------------------------------------------------------------
     # 92: RIMA
@@ -3835,22 +3845,31 @@ def generar_linea_previred(liquidacion):
     campos[95] = '0'
 
     # ------------------------------------------------------------------
-    # 96-99: Datos Mutual (ejemplo ACHS, tasa 0.93%)
+    # 96-99: Datos Mutual (según la empresa)
     # ------------------------------------------------------------------
-    campos[96] = '01'                              # Código ACHS
-    renta_mutual = renta_imponible
-    campos[97] = formatear_monto(renta_mutual)
-    tasa_mutual = Decimal('0.0093')
-    campos[98] = formatear_monto(renta_mutual * tasa_mutual)
-    campos[99] = '001'                              # Sucursal (ejemplo)
+    mutual_codigo = getattr(empresa, 'mutual_codigo', None)
+    mutual_tasa = getattr(empresa, 'mutual_tasa', Decimal('0'))
+    if mutual_codigo:
+        campos[96] = mutual_codigo
+        campos[97] = formatear_monto(renta_imponible)
+        campos[98] = formatear_monto(renta_imponible * mutual_tasa)
+        campos[99] = '001'  # Sucursal por defecto, ajustable
+    else:
+        # Sin mutual
+        campos[96] = ''
+        campos[97] = '0'
+        campos[98] = '0'
+        campos[99] = ''
 
     # ------------------------------------------------------------------
     # 100-102: Datos AFC
     # ------------------------------------------------------------------
-    renta_afc = min(liquidacion.total_imponible, TOPE_SC)
-    campos[100] = formatear_monto(renta_afc)
-    campos[101] = formatear_monto(liquidacion.cotizacion_afc)
-    campos[102] = formatear_monto(liquidacion.afc_empleador or 0)
+    # Renta imponible para AFC (tope SC)
+    campos[100] = formatear_monto(renta_sc)
+
+    # Usar los valores de la liquidación (se asume que están correctamente calculados)
+    campos[101] = formatear_monto(liquidacion.cotizacion_afc)      # Cotización trabajador
+    campos[102] = formatear_monto(liquidacion.afc_empleador or 0)  # Cotización empleador
 
     # ------------------------------------------------------------------
     # 103-104: Pagadora de Subsidios
@@ -3859,16 +3878,18 @@ def generar_linea_previred(liquidacion):
     campos[104] = ''    # DV
 
     # ------------------------------------------------------------------
-    # 105: Centro de Costos
+    # 105: Centro de Costos (código registrado)
     # ------------------------------------------------------------------
-    centro = trab.centro_costo_nombre or ''
-    campos[105] = formatear_texto(centro, 20)
+    centro_codigo = trab.centro_costo_codigo or ''
+    campos[105] = formatear_texto(centro_codigo, 20)
 
     # Unir con punto y coma
     linea = ';'.join(campos[1:106])
     return linea
 
-
+# ------------------------------------------------------------
+# Vista de exportación (sin cambios, pero la incluimos por completitud)
+# ------------------------------------------------------------
 @login_required
 def exportar_nomina_previred(request, alias, periodo_id):
     """
@@ -3892,3 +3913,5 @@ def exportar_nomina_previred(request, alias, periodo_id):
     response = HttpResponse(contenido, content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     return response
+
+

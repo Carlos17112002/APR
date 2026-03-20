@@ -223,7 +223,6 @@
             animation-delay: 0.2s;
         }
         
-        /* Nueva animación para el cuarto módulo */
         .animate-delay-300 {
             animation-delay: 0.3s;
         }
@@ -253,9 +252,9 @@
 </head>
 <body class="text-gray-800 antialiased">
 
-    <!-- Navbar con nombre de empresa y botón volver -->
+    <!-- Navbar con nombre de empresa y botón volver (ancho completo) -->
     <nav class="gradient-navbar text-white sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-4">
                     <!-- Botón Volver -->
@@ -295,8 +294,8 @@
         </div>
     </nav>
 
-    <!-- Contenido principal -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Contenido principal (ancho completo) -->
+    <main class="w-full px-4 sm:px-6 lg:px-8 py-8">
         <!-- Barra de búsqueda y período actual (mobile) -->
         <div class="mb-6 md:hidden">
             <div class="flex flex-col space-y-4">
@@ -378,7 +377,7 @@
                 </div>
             </section>
             
-            <!-- Sección: Liquidaciones y Nómina (con 4 módulos, incluido Centro de Costo) -->
+            <!-- Sección: Liquidaciones y Nómina (con 4 módulos) -->
             <section class="animate-fade-in-up animate-delay-200">
                 <div class="mb-6">
                     <h2 class="text-xl font-bold text-gray-800 section-title">
@@ -522,8 +521,8 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
+    <!-- Footer (ancho completo) -->
+    <footer class="w-full px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200">
         <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
             <div class="mb-4 md:mb-0">
                 <span class="font-medium text-gray-700">{{ empresa.nombre }}</span> · Panel de Remuneraciones v2.0
