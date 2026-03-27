@@ -1760,3 +1760,129 @@ def editar_pozo(request, pozo_id):
             return JsonResponse({'error': 'Pozo no encontrado'}, status=404)
         messages.error(request, 'Pozo no encontrado')
         return redirect('dashboard_admin_ssr')
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from empresas.models import Empresa, Produccion, Pozo
+
+def api_listar_producciones(request, slug):
+    empresa = get_object_or_404(Empresa, slug=slug)
+    producciones = Produccion.objects.filter(empresa=empresa).select_related('pozo').order_by('-fecha')
+    data = []
+    for p in producciones:
+        data.append({
+            'id': p.id,
+            'fecha': p.fecha.strftime('%d/%m/%Y'),
+            'pozo_nombre': p.pozo.nombre if p.pozo else "Sin pozo",
+            'volumen': float(p.volumen),
+            'observacion': p.observacion,
+            'pozo': p.pozo.id if p.pozo else None,
+        })
+    return JsonResponse(data, safe=False)
+
+def api_detalle_produccion(request, slug, produccion_id):
+    empresa = get_object_or_404(Empresa, slug=slug)
+    produccion = get_object_or_404(Produccion, id=produccion_id, empresa=empresa)
+    data = {
+        'id': produccion.id,
+        'fecha': produccion.fecha.strftime('%Y-%m-%d'),
+        'pozo': produccion.pozo.id if produccion.pozo else None,
+        'volumen': float(produccion.volumen),
+        'observacion': produccion.observacion,
+    }
+    return JsonResponse(data)
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import json
+
+@require_POST
+@csrf_exempt
+def editar_produccion(request, slug, produccion_id):
+    empresa = get_object_or_404(Empresa, slug=slug)
+    produccion = get_object_or_404(Produccion, id=produccion_id, empresa=empresa)
+    data = json.loads(request.body)
+    produccion.pozo_id = data['pozo']
+    produccion.fecha = data['fecha']
+    produccion.volumen = data['volumen']
+    produccion.observacion = data.get('observacion', '')
+    produccion.save()
+    return JsonResponse({'success': True})
+
+@require_POST
+def eliminar_produccion(request, slug, produccion_id):
+    empresa = get_object_or_404(Empresa, slug=slug)
+    produccion = get_object_or_404(Produccion, id=produccion_id, empresa=empresa)
+    produccion.delete()
+    return JsonResponse({'success': True})
+
+from django.http import JsonResponse
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
+from datetime import timedelta
+from lecturas.models import LecturaMovil
+from .models import Empresa
+
+def datos_consumo_api(request, slug):
+    """API para obtener datos de consumo según rango (mes, trimestre, semestre, anual)"""
+    rango = request.GET.get('rango', 'mes')
+    hoy = timezone.now().date()
+    
+    # Definir cantidad de meses según rango
+    if rango == 'mes':
+        meses_atras = 1
+        formato = '%b %y'
+    elif rango == 'trimestre':
+        meses_atras = 3
+        formato = '%b %y'
+    elif rango == 'semestre':
+        meses_atras = 6
+        formato = '%b %y'
+    elif rango == 'anual':
+        meses_atras = 12
+        formato = '%b %y'
+    else:
+        meses_atras = 12
+        formato = '%b %y'
+    
+    fecha_inicio = hoy - timedelta(days=30 * meses_atras)
+    
+    # Obtener consumo agrupado por mes
+    consumo_qs = LecturaMovil.objects.filter(
+        empresa_slug=slug,
+        fecha_lectura__gte=fecha_inicio,
+        consumo__isnull=False
+    ).annotate(
+        mes=TruncMonth('fecha_lectura')
+    ).values('mes').annotate(
+        total=Sum('consumo')
+    ).order_by('mes')
+    
+    # Construir diccionario de consumo por mes (formato YYYY-MM)
+    consumo_dict = {}
+    for item in consumo_qs:
+        if item['mes']:
+            key = item['mes'].strftime('%Y-%m')
+            consumo_dict[key] = float(item['total'] or 0)
+    
+    # Generar etiquetas y datos para los últimos `meses_atras` meses
+    meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    
+    labels = []
+    datos = []
+    for i in range(meses_atras - 1, -1, -1):
+        fecha = hoy - timedelta(days=30 * i)
+        mes_num = fecha.month
+        anio_num = fecha.year
+        mes_nombre = meses_espanol[mes_num - 1]
+        anio_corto = str(anio_num)[2:]
+        labels.append(f"{mes_nombre} '{anio_corto}")
+        key = f"{anio_num}-{mes_num:02d}"
+        datos.append(consumo_dict.get(key, 0.0))
+    
+    return JsonResponse({
+        'labels': labels,
+        'datos': datos
+    })

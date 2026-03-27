@@ -1744,21 +1744,33 @@ def api_descargar_config_app(request, alias):
     
 from django.views.decorators.http import require_http_methods, require_POST, require_GET
         
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from decimal import Decimal
+from datetime import datetime
+from django.utils import timezone
+import logging
+
+from empresas.models import Empresa
+from clientes.models import Cliente
+from lecturas.models import LecturaMovil
+
+logger = logging.getLogger(__name__)
+
 @login_required
 @require_POST
 def registrar_lectura_ajax(request, alias, cliente_id):
     try:
-        # Obtener empresa (objeto completo, no solo slug)
         empresa_obj = get_object_or_404(Empresa, slug=alias)
         db_alias = f'db_{alias}'
         cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
 
-        # Obtener datos del POST
         fecha_str = request.POST.get('fecha')
         lectura_actual = request.POST.get('lectura_actual')
         observaciones = request.POST.get('observaciones', '')
 
-        # Validar lectura
         if not lectura_actual:
             return JsonResponse({'success': False, 'error': 'El valor de lectura es obligatorio.'})
         try:
@@ -1767,14 +1779,14 @@ def registrar_lectura_ajax(request, alias, cliente_id):
             return JsonResponse({'success': False, 'error': 'Valor de lectura inválido.'})
 
         # Procesar fecha
-        from datetime import datetime
         try:
             fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
         except:
             fecha = timezone.now().date()
 
-        # Obtener última lectura (usando el ID del cliente)
-        ultima_lectura = LecturaMovil.objects.using(db_alias).filter(
+        # Última lectura del cliente
+        ultima_lectura = LecturaMovil.objects.filter(
+            empresa_slug=alias,
             cliente=cliente.id
         ).order_by('-fecha_lectura').first()
 
@@ -1782,40 +1794,44 @@ def registrar_lectura_ajax(request, alias, cliente_id):
         consumo = lectura_actual - lectura_anterior
         if consumo < 0:
             consumo = Decimal('0')
-            estado = 'pendiente'   # Ajusta según tus choices
+            estado = 'pendiente'
         else:
             estado = 'cargada'
 
-        # Crear la lectura
-        nueva_lectura = LecturaMovil.objects.create(  # sin using
-        empresa_id=empresa_obj.id,
-        cliente=cliente.id,
-        fecha_lectura=fecha,
-        lectura_actual=lectura_actual,
-        lectura_anterior=lectura_anterior,
-        consumo=consumo,
-        estado=estado,
-        observaciones_app=observaciones,
-        usuario_app=request.user.username,
-        empresa_slug=alias,
-    )
+        # Crear nueva lectura
+        nueva_lectura = LecturaMovil.objects.create(
+            empresa_id=empresa_obj.id,
+            cliente=cliente.id,
+            fecha_lectura=fecha,
+            lectura_actual=lectura_actual,
+            lectura_anterior=lectura_anterior,
+            consumo=consumo,
+            estado=estado,
+            observaciones_app=observaciones,
+            usuario_app=request.user.username,
+            empresa_slug=alias,
+        )
 
-        # Respuesta JSON
-        data = {
-            'id': str(nueva_lectura.id),
-            'fecha': nueva_lectura.fecha_lectura.strftime('%d/%m/%Y'),
-            'lectura_anterior': str(nueva_lectura.lectura_anterior),
-            'lectura_actual': str(nueva_lectura.lectura_actual),
-            'consumo': str(nueva_lectura.consumo),
-            'estado': nueva_lectura.estado,
-            'observaciones': nueva_lectura.observaciones_app,
+        # Construir respuesta completa para la tabla
+        lectura_data = {
+            'id': nueva_lectura.id,
+            'periodo': nueva_lectura.fecha_lectura.strftime('%m/%Y'),
+            'fecha_lectura_anterior': ultima_lectura.fecha_lectura.strftime('%d/%m/%Y') if ultima_lectura else None,
+            'lectura_anterior': float(lectura_anterior),
+            'fecha_lectura_actual': nueva_lectura.fecha_lectura.strftime('%d/%m/%Y'),
+            'lectura_actual': float(lectura_actual),
+            'consumo': float(consumo),
+            'cambio_medidor': False,
+            'termino_medio': None,
+            'saldo_promedio_anterior': None,
+            'consumo_facturado': float(consumo),
+            'abono_proximo_periodo': None,
+            'codigo_lectura': None,
         }
-        return JsonResponse({'success': True, 'lectura': data})
+
+        return JsonResponse({'success': True, 'lectura': lectura_data})
 
     except Exception as e:
-        # Log del error
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error en registrar_lectura_ajax: {e}", exc_info=True)
         return JsonResponse({'success': False, 'error': str(e)})
     
@@ -1827,8 +1843,12 @@ def eliminar_lectura_ajax(request, alias, lectura_id):
     Elimina una lectura (solo si no está asociada a una boleta).
     """
     try:
-        db_alias = f'db_{alias}'
-        lectura = get_object_or_404(LecturaMovil.objects.using(db_alias), id=lectura_id)
+        # LecturaMovil está en la base de datos default, no en la base de la empresa
+        lectura = get_object_or_404(LecturaMovil, id=lectura_id)
+        
+        # Opcional: verificar que la lectura pertenece a la empresa (por seguridad)
+        if lectura.empresa_slug != alias:
+            return JsonResponse({'success': False, 'error': 'La lectura no pertenece a esta empresa.'})
         
         # Opcional: evitar eliminar si ya tiene boleta asociada
         if lectura.usada_para_boleta:
@@ -1838,3 +1858,303 @@ def eliminar_lectura_ajax(request, alias, lectura_id):
         return JsonResponse({'success': True, 'message': 'Lectura eliminada correctamente.'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+# lecturas/views.py
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth, TruncYear
+from datetime import datetime, timedelta
+
+from empresas.models import Empresa
+from lecturas.models import LecturaMovil
+from clientes.models import Cliente  # Importa el modelo Cliente
+
+
+def reporte_cambio_medidor(request, alias):
+    """
+    Excel report: readings where observation indicates meter change.
+    Filtra lecturas cuya observación contenga "cambio".
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    # Filtrar lecturas con observación que contiene "cambio"
+    lecturas = LecturaMovil.objects.filter(
+        empresa_slug=alias,
+        observaciones_app__icontains='cambio'
+    ).order_by('-fecha_lectura')
+
+    # Obtener clientes desde la base de datos de la empresa
+    client_ids = list(set(lecturas.values_list('cliente', flat=True)))
+    if client_ids:
+        clientes = Cliente.objects.using(db_alias).filter(id__in=client_ids)
+        cliente_dict = {c.id: c for c in clientes}
+    else:
+        cliente_dict = {}
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Cambio de Medidor"
+
+    # Estilos
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center')
+    cell_font = Font(size=10)
+    cell_alignment = Alignment(horizontal='left', vertical='center')
+    border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+    headers = ['Fecha', 'Cliente', 'RUT', 'Lectura Actual (m³)', 'Lectura Anterior (m³)', 'Consumo (m³)', 'Observación', 'Usuario']
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(1, col_idx, h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+
+    for row_idx, lectura in enumerate(lecturas, 2):
+        cliente = cliente_dict.get(lectura.cliente)
+        row_data = [
+            lectura.fecha_lectura.strftime('%d/%m/%Y'),
+            cliente.nombre if cliente else '',
+            cliente.rut if cliente else '',
+            lectura.lectura_actual,
+            lectura.lectura_anterior or '',
+            lectura.consumo or '',
+            lectura.observaciones_app,
+            lectura.usuario_app,
+        ]
+        for col_idx, val in enumerate(row_data, 1):
+            cell = ws.cell(row_idx, col_idx, val)
+            cell.font = cell_font
+            cell.alignment = cell_alignment
+            cell.border = border
+            if row_idx % 2 == 0:
+                cell.fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+        if lectura.consumo:
+            ws.cell(row_idx, 6).number_format = '#,##0.00'
+            ws.cell(row_idx, 4).number_format = '#,##0.00'
+            ws.cell(row_idx, 5).number_format = '#,##0.00'
+
+    # Ajustar ancho de columnas
+    for col_idx in range(1, len(headers)+1):
+        max_len = 0
+        col_letter = get_column_letter(col_idx)
+        for row in range(1, ws.max_row+1):
+            val = ws.cell(row, col_idx).value
+            if val:
+                max_len = max(max_len, len(str(val)))
+        ws.column_dimensions[col_letter].width = min(max_len+2, 50)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="cambio_medidor_{alias}.xlsx"'
+    wb.save(response)
+    return response
+
+
+def reporte_consumo_12_meses(request, alias):
+    """
+    Excel report: monthly consumption for the last 12 months (aggregated per month).
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    hoy = datetime.now().date()
+    fecha_inicio = hoy - timedelta(days=365)
+
+    lecturas = LecturaMovil.objects.filter(
+        empresa_slug=alias,
+        fecha_lectura__gte=fecha_inicio,
+        consumo__isnull=False
+    ).annotate(
+        mes=TruncMonth('fecha_lectura')
+    ).values('mes').annotate(
+        total_consumo=Sum('consumo')
+    ).order_by('mes')
+
+    # Generar últimos 12 meses (aunque no tengan datos)
+    meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    data = []
+    for i in range(11, -1, -1):
+        fecha = hoy - timedelta(days=30 * i)
+        mes_num = fecha.month
+        anio = fecha.year
+        mes_nombre = meses_espanol[mes_num - 1]
+        key = f"{anio}-{mes_num:02d}"
+        total = next((item['total_consumo'] for item in lecturas if item['mes'].strftime('%Y-%m') == key), 0)
+        data.append({'mes': f"{mes_nombre} {anio}", 'total': total})
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Consumo 12 Meses"
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
+    cell_font = Font(size=10)
+    border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+    ws.cell(1, 1, 'Mes').font = header_font
+    ws.cell(1, 1).fill = header_fill
+    ws.cell(1, 1).border = border
+    ws.cell(1, 2, 'Consumo (m³)').font = header_font
+    ws.cell(1, 2).fill = header_fill
+    ws.cell(1, 2).border = border
+
+    for idx, item in enumerate(data, start=2):
+        ws.cell(idx, 1, item['mes']).border = border
+        ws.cell(idx, 2, item['total']).border = border
+        ws.cell(idx, 2).number_format = '#,##0.00'
+        if idx % 2 == 0:
+            ws.cell(idx, 1).fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+            ws.cell(idx, 2).fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+
+    ws.column_dimensions['A'].width = 15
+    ws.column_dimensions['B'].width = 20
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="consumo_12_meses_{alias}.xlsx"'
+    wb.save(response)
+    return response
+
+
+def reporte_consumo_anual(request, alias):
+    """
+    Excel report: annual consumption summary (per year).
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    lecturas = LecturaMovil.objects.filter(
+        empresa_slug=alias,
+        consumo__isnull=False
+    ).annotate(
+        anio=TruncYear('fecha_lectura')
+    ).values('anio').annotate(
+        total_consumo=Sum('consumo')
+    ).order_by('anio')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Consumo Anual"
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
+    cell_font = Font(size=10)
+    border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+    ws.cell(1, 1, 'Año').font = header_font
+    ws.cell(1, 1).fill = header_fill
+    ws.cell(1, 1).border = border
+    ws.cell(1, 2, 'Consumo Total (m³)').font = header_font
+    ws.cell(1, 2).fill = header_fill
+    ws.cell(1, 2).border = border
+
+    for idx, item in enumerate(lecturas, start=2):
+        anio = item['anio'].year if item['anio'] else ''
+        ws.cell(idx, 1, anio).border = border
+        ws.cell(idx, 2, item['total_consumo']).border = border
+        ws.cell(idx, 2).number_format = '#,##0.00'
+        if idx % 2 == 0:
+            ws.cell(idx, 1).fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+            ws.cell(idx, 2).fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 20
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="consumo_anual_{alias}.xlsx"'
+    wb.save(response)
+    return response
+
+
+def reporte_lecturas_por_periodo(request, alias):
+    """
+    Excel report: readings for a selected date range.
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    if request.method == 'POST':
+        fecha_inicio = request.POST.get('fecha_inicio')
+        fecha_fin = request.POST.get('fecha_fin')
+        if fecha_inicio and fecha_fin:
+            fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+
+            lecturas = LecturaMovil.objects.filter(
+                empresa_slug=alias,
+                fecha_lectura__range=[fecha_inicio, fecha_fin],
+                consumo__isnull=False
+            ).order_by('fecha_lectura')
+
+            # Obtener clientes desde la BD de la empresa
+            client_ids = list(set(lecturas.values_list('cliente', flat=True)))
+            if client_ids:
+                clientes = Cliente.objects.using(db_alias).filter(id__in=client_ids)
+                cliente_dict = {c.id: c for c in clientes}
+            else:
+                cliente_dict = {}
+
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Lecturas por Periodo"
+
+            header_font = Font(bold=True, color='FFFFFF')
+            header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
+            header_alignment = Alignment(horizontal='center', vertical='center')
+            cell_font = Font(size=10)
+            cell_alignment = Alignment(horizontal='left', vertical='center')
+            border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+            headers = ['Fecha', 'Cliente', 'RUT', 'Lectura Actual (m³)', 'Consumo (m³)', 'Estado', 'Usuario']
+            for col_idx, h in enumerate(headers, 1):
+                cell = ws.cell(1, col_idx, h)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
+                cell.border = border
+
+            for row_idx, lectura in enumerate(lecturas, 2):
+                cliente = cliente_dict.get(lectura.cliente)
+                row_data = [
+                    lectura.fecha_lectura.strftime('%d/%m/%Y'),
+                    cliente.nombre if cliente else '',
+                    cliente.rut if cliente else '',
+                    lectura.lectura_actual,
+                    lectura.consumo,
+                    lectura.estado,
+                    lectura.usuario_app,
+                ]
+                for col_idx, val in enumerate(row_data, 1):
+                    cell = ws.cell(row_idx, col_idx, val)
+                    cell.font = cell_font
+                    cell.alignment = cell_alignment
+                    cell.border = border
+                    if row_idx % 2 == 0:
+                        cell.fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+                if lectura.consumo:
+                    ws.cell(row_idx, 5).number_format = '#,##0.00'
+                    ws.cell(row_idx, 4).number_format = '#,##0.00'
+
+            # Ajustar columnas
+            for col_idx in range(1, len(headers)+1):
+                max_len = 0
+                col_letter = get_column_letter(col_idx)
+                for row in range(1, ws.max_row+1):
+                    val = ws.cell(row, col_idx).value
+                    if val:
+                        max_len = max(max_len, len(str(val)))
+                ws.column_dimensions[col_letter].width = min(max_len+2, 40)
+
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = f'attachment; filename="lecturas_periodo_{alias}.xlsx"'
+            wb.save(response)
+            return response
+
+    return render(request, 'informes/reporte_periodo.html', {'empresa': empresa, 'slug': alias})

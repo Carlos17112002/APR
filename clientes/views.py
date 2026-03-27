@@ -840,10 +840,15 @@ def exportar_clientes_csv(request, alias):
         return HttpResponseServerError(f"Error interno: {e}")
 
 
+import csv
+import io
+from datetime import datetime
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from empresas.models import Empresa
+from clientes.models import Cliente, Contrato
+
 def importar_clientes(request, alias):
-    """
-    Permite subir un archivo CSV para crear o actualizar clientes.
-    """
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
 
@@ -858,58 +863,156 @@ def importar_clientes(request, alias):
             return redirect('importar_clientes', alias=alias)
 
         try:
-            # Leer y decodificar el archivo
-            data = csv_file.read().decode('utf-8')
-            import io
+            # Leer archivo con UTF-8 con BOM
+            data = csv_file.read().decode('utf-8-sig')
             io_string = io.StringIO(data)
-            reader = csv.reader(io_string, delimiter=',')
-            next(reader)  # Saltar la fila de encabezados
+            reader = csv.DictReader(io_string, delimiter=';')
+
+            # Limpiar nombres de columnas
+            reader.fieldnames = [name.strip() for name in reader.fieldnames]
 
             creados = 0
             actualizados = 0
             errores = []
 
-            for fila_num, row in enumerate(reader, start=2):  # empezamos en línea 2 (después del header)
-                # Esperamos el orden: RUT, Nombre, Email, Teléfono, Dirección, Medidor, Sector, Latitud, Longitud
-                if len(row) < 3:  # Mínimo: RUT y Nombre
-                    errores.append(f"Fila {fila_num}: datos insuficientes")
-                    continue
+            mapping_cliente = {
+                'rut': 'rut',
+                'nombre': 'nombre',
+                'apellido_paterno': 'apellido_paterno',
+                'apellido_materno': 'apellido_materno',
+                'email': 'email',
+                'telefono': 'telefono',
+                'direccion': 'direccion',
+                'medidor': 'medidor',
+                'sector': 'sector',
+                'latitude': 'latitude',
+                'longitude': 'longitude',
+                'fecha_nacimiento': 'fecha_nacimiento',
+                'fecha_defuncion': 'fecha_defuncion',
+                'sexo': 'sexo',
+                'estado_civil': 'estado_civil',
+                'profesion': 'profesion',
+                'email_contacto': 'email_contacto',
+                'contacto1': 'contacto1',
+                'contacto2': 'contacto2',
+                'fecha_incorporacion': 'fecha_incorporacion',
+                'numero_libro': 'numero_libro',
+            }
 
-                rut = row[0].strip()
-                nombre = row[1].strip()
-                email = row[2].strip() if len(row) > 2 else ''
-                telefono = row[3].strip() if len(row) > 3 else ''
-                direccion = row[4].strip() if len(row) > 4 else ''
-                medidor = row[5].strip() if len(row) > 5 else ''
-                sector = row[6].strip() if len(row) > 6 else ''
-                latitud = row[7].strip() if len(row) > 7 else None
-                longitud = row[8].strip() if len(row) > 8 else None
+            mapping_contrato = {
+                'tipo_cliente': 'tipo_cliente',
+                'tipo_servicio_ssr': 'tipo_servicio_ssr',
+                'fecha_contrato': 'fecha_contrato',
+                'comuna': 'comuna',
+                'ciudad': 'ciudad',
+                'sector_arranque': 'sector_arranque',
+                'direccion_arranque': 'direccion_arranque',
+                'utm_norte': 'utm_norte',
+                'utm_este': 'utm_este',
+                'rol': 'rol',
+                'socio': 'socio',
+                'servicio': 'servicio',
+                'diametro': 'diametro',
+                'marca_medidor': 'marca_medidor',
+                'numero_medidor': 'numero_medidor',
+                'ano_medidor': 'ano_medidor',
+                'tipo_medidor': 'tipo_medidor',
+                'sello_medidor': 'sello_medidor',
+                'codigo_union_domiciliaria': 'codigo_union_domiciliaria',
+                'email_recepcion_documento': 'email_recepcion_documento',
+                'tarifa': 'tarifa',
+                'tipo_documento': 'tipo_documento',
+                'tipo_servicio': 'tipo_servicio',
+            }
 
+            # Función para limpiar valores (quitar comillas)
+            def limpiar_valor(val):
+                if not val:
+                    return ''
+                val = val.strip()
+                if val.startswith('"') and val.endswith('"'):
+                    val = val[1:-1]
+                return val
+
+            # Función para parsear fechas
+            def parse_fecha(val):
+                if not val:
+                    return None
+                val = val.strip()
+                # Quitar comillas
+                if val.startswith('"') and val.endswith('"'):
+                    val = val[1:-1]
+                # Reemplazar guiones por barras para unificar
+                val = val.replace('-', '/')
+                # Intentar parsear
+                try:
+                    return datetime.strptime(val, '%d/%m/%Y').date()
+                except ValueError:
+                    try:
+                        return datetime.strptime(val, '%Y/%m/%d').date()
+                    except ValueError:
+                        return None
+
+            for fila_num, row in enumerate(reader, start=2):
+                # Limpiar todos los valores
+                row = {k: limpiar_valor(v) for k, v in row.items()}
+
+                rut = row.get('rut', '').strip()
                 if not rut:
                     errores.append(f"Fila {fila_num}: RUT vacío")
                     continue
 
-                # Buscar o crear cliente
+                nombre = row.get('nombre', '').strip()
+                direccion = row.get('direccion', '').strip()
+                medidor = row.get('medidor', '').strip()
+
+                if not (nombre and direccion and medidor):
+                    errores.append(f"Fila {fila_num}: faltan campos obligatorios (nombre, direccion o medidor)")
+                    continue
+
+                # Datos del cliente
+                cliente_data = {}
+                for csv_key, model_field in mapping_cliente.items():
+                    if csv_key in row and row[csv_key]:
+                        value = row[csv_key]
+                        if model_field in ['latitude', 'longitude']:
+                            try:
+                                value = float(value.replace(',', '.'))
+                            except:
+                                value = None
+                        elif model_field in ['fecha_nacimiento', 'fecha_defuncion', 'fecha_incorporacion']:
+                            value = parse_fecha(value)
+                        cliente_data[model_field] = value
+
+                cliente_data['empresa_slug'] = alias
+
                 cliente, created = Cliente.objects.using(db_alias).update_or_create(
                     rut=rut,
-                    defaults={
-                        'nombre': nombre,
-                        'email': email,
-                        'telefono': telefono,
-                        'direccion': direccion,
-                        'medidor': medidor,
-                        'sector': sector,
-                        'latitude': latitud if latitud else None,
-                        'longitude': longitud if longitud else None,
-                        'empresa_slug': alias,  # Importante para multiempresa
-                    }
+                    defaults=cliente_data
                 )
+
                 if created:
                     creados += 1
                 else:
                     actualizados += 1
 
-            # Mensajes de resultado
+                # Contrato
+                contrato, _ = Contrato.objects.using(db_alias).get_or_create(cliente=cliente)
+                contrato_data = {}
+                for csv_key, model_field in mapping_contrato.items():
+                    if csv_key in row and row[csv_key]:
+                        value = row[csv_key]
+                        if model_field == 'socio':
+                            value = value.lower() in ('si', 'sí', 'true', '1', 'yes')
+                        elif model_field == 'fecha_contrato':
+                            value = parse_fecha(value)
+                        contrato_data[model_field] = value
+
+                if contrato_data:
+                    for field, val in contrato_data.items():
+                        setattr(contrato, field, val)
+                    contrato.save(using=db_alias)
+
             messages.success(request, f'Importación completada: {creados} creados, {actualizados} actualizados.')
             if errores:
                 messages.warning(request, f'Se encontraron {len(errores)} errores. Los primeros: {", ".join(errores[:3])}')
@@ -920,11 +1023,7 @@ def importar_clientes(request, alias):
             messages.error(request, f'Error al procesar el archivo: {str(e)}')
             return redirect('importar_clientes', alias=alias)
 
-    # GET: mostrar formulario
-    return render(request, 'importar_clientes.html', {
-        'empresa': empresa,
-        'slug': alias,
-    })
+    return render(request, 'importar_clientes.html', {'empresa': empresa, 'slug': alias})
 
 from django.db import connections
 from django.contrib.auth.decorators import login_required
@@ -964,3 +1063,481 @@ def mapa_clientes(request, alias):
         'total_clientes': len(puntos),
     }
     return render(request, 'clientes/mapa_clientes.html', context)
+
+# clientes/views.py
+
+import csv
+from datetime import date
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER
+from empresas.models import Empresa
+from clientes.models import Cliente, Contrato
+from django.utils import timezone
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from datetime import date
+
+def exportar_contratos_excel(request, alias):
+    """
+    Exporta todos los contratos a Excel con formato profesional.
+    Parámetros GET: order_by, direction (igual que en CSV)
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    # Obtener parámetros de ordenamiento
+    order_by = request.GET.get('order_by', 'apellido_paterno')
+    direction = request.GET.get('direction', 'asc')
+    if direction == 'desc':
+        order_by = f'-{order_by}'
+
+    allowed_fields = ['apellido_paterno', 'fecha_incorporacion', 'sector']
+    if order_by.lstrip('-') not in allowed_fields:
+        order_by = 'apellido_paterno'
+
+    clientes = Cliente.objects.using(db_alias).select_related('contrato').order_by(order_by)
+
+    # Crear libro de trabajo y hoja
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Contratos"
+
+    # Definir estilos
+    header_font = Font(name='Calibri', size=12, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    cell_font = Font(name='Calibri', size=10)
+    cell_alignment = Alignment(horizontal='left', vertical='center')
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # Encabezados completos (igual que en CSV)
+    headers = [
+        'Número', 'Sector', 'Ruta', 'Dirección', 'Comuna', 'Ciudad', 'Rol',
+        'Tipo Cliente', 'Contrato', 'Servicio', 'RUT', 'Nombre', 'Apellido Paterno',
+        'Apellido Materno', 'Sexo', 'Estado Civil', 'Fecha Nacimiento',
+        'Profesión / Oficio', 'Fecha Defunción', 'Fecha Contrato', 'Fecha Incorporación',
+        'Número Libro', 'Fono 1', 'Fono 2', 'Email Contacto', 'Email Recepción Documento',
+        'Tarifa', 'Diámetro', 'Tipo Servicio', 'Tipo SSR', 'Subsidio', 'Número Medidor',
+        'Marca Medidor', 'Año Medidor', 'Sello Medidor', 'Tipo Medidor',
+        'Código Unión Domiciliaria', 'UTM Norte', 'UTM Este', 'Documento', 'Razón Social', 'Socio'
+    ]
+
+    # Escribir encabezados
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+
+    # Llenar datos
+    for row_idx, cliente in enumerate(clientes, start=2):
+        contrato = getattr(cliente, 'contrato', None)
+
+        # Lista de valores en el mismo orden que los encabezados
+        row_data = [
+            cliente.id,
+            cliente.sector or '',
+            getattr(cliente, 'ruta', '') or '',
+            cliente.direccion or '',
+            getattr(contrato, 'comuna', '') or '',
+            getattr(contrato, 'ciudad', '') or '',
+            getattr(contrato, 'rol', '') or '',
+            contrato.tipo_cliente if contrato else '',
+            getattr(contrato, 'numero_contrato', '') or '',
+            getattr(contrato, 'servicio', '') or '',
+            cliente.rut or '',
+            cliente.nombre or '',
+            cliente.apellido_paterno or '',
+            cliente.apellido_materno or '',
+            cliente.sexo or '',
+            cliente.estado_civil or '',
+            cliente.fecha_nacimiento.strftime('%d/%m/%Y') if cliente.fecha_nacimiento else '',
+            cliente.profesion or '',
+            cliente.fecha_defuncion.strftime('%d/%m/%Y') if cliente.fecha_defuncion else '',
+            contrato.fecha_contrato.strftime('%d/%m/%Y') if contrato and contrato.fecha_contrato else '',
+            cliente.fecha_incorporacion.strftime('%d/%m/%Y') if cliente.fecha_incorporacion else '',
+            cliente.numero_libro or '',
+            cliente.telefono or '',
+            cliente.contacto2 or '',
+            cliente.email_contacto or '',
+            contrato.email_recepcion_documento if contrato else '',
+            contrato.tarifa if contrato else '',
+            contrato.diametro if contrato else '',
+            contrato.tipo_servicio if contrato else '',
+            contrato.tipo_servicio_ssr if contrato else '',
+            getattr(contrato, 'subsidio', '') or '',
+            cliente.medidor or '',
+            contrato.marca_medidor if contrato else '',
+            contrato.ano_medidor if contrato else '',
+            contrato.sello_medidor if contrato else '',
+            contrato.tipo_medidor if contrato else '',
+            contrato.codigo_union_domiciliaria if contrato else '',
+            contrato.utm_norte if contrato else '',
+            contrato.utm_este if contrato else '',
+            getattr(contrato, 'documento', '') or '',
+            getattr(cliente, 'razon_social', '') or '',
+            'Sí' if contrato and contrato.socio else 'No',
+        ]
+
+        for col_idx, value in enumerate(row_data, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.font = cell_font
+            cell.alignment = cell_alignment
+            cell.border = border
+
+            # Aplicar color de fondo a filas alternadas (opcional)
+            if row_idx % 2 == 0:
+                cell.fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
+
+    # Ajustar automáticamente el ancho de las columnas
+    for col_idx in range(1, len(headers) + 1):
+        max_length = 0
+        column = get_column_letter(col_idx)
+        for row in range(1, ws.max_row + 1):
+            cell_value = ws.cell(row, col_idx).value
+            if cell_value:
+                max_length = max(max_length, len(str(cell_value)))
+        adjusted_width = min(max_length + 2, 50)  # máximo 50 caracteres
+        ws.column_dimensions[column].width = adjusted_width
+
+    # Crear respuesta HTTP con el archivo Excel
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="contratos_{alias}_{date.today()}.xlsx"'
+    wb.save(response)
+    return response
+
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from empresas.models import Empresa
+from clientes.models import Cliente, Contrato
+from django.utils import timezone
+
+def generar_pdf_contrato(request, alias, cliente_id):
+    """
+    Genera un PDF con los datos del contrato de un cliente específico.
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+    cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+    try:
+        contrato = cliente.contrato
+    except Contrato.DoesNotExist:
+        contrato = None
+
+    # Respuesta PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="contrato_{cliente.id}.pdf"'
+
+    # Documento en orientación horizontal
+    doc = SimpleDocTemplate(response, pagesize=landscape(A4),
+                            rightMargin=72, leftMargin=72,
+                            topMargin=72, bottomMargin=72)
+
+    styles = getSampleStyleSheet()
+    style_title = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        alignment=TA_CENTER,
+        spaceAfter=30,
+        textColor=colors.HexColor('#059669')
+    )
+    style_heading = ParagraphStyle(
+        'Heading2',
+        parent=styles['Heading2'],
+        fontSize=12,
+        spaceAfter=12,
+        textColor=colors.HexColor('#374151')
+    )
+    # Estilo para contenido de tabla con fuente más pequeña
+    style_table = ParagraphStyle(
+        'TableContent',
+        parent=styles['Normal'],
+        fontSize=9,
+        leading=12
+    )
+
+    story = []
+
+    # Título
+    story.append(Paragraph(f"Informe de Contrato - {empresa.nombre}", style_title))
+    story.append(Spacer(1, 0.25*inch))
+
+    # ===================== DATOS DEL CLIENTE =====================
+    story.append(Paragraph("Datos del Cliente", style_heading))
+
+    # Lista de pares (etiqueta, valor)
+    campos_cliente = [
+        ("Nombre", cliente.nombre),
+        ("RUT", cliente.rut),
+        ("Apellido Paterno", cliente.apellido_paterno or '-'),
+        ("Apellido Materno", cliente.apellido_materno or '-'),
+        ("Dirección", cliente.direccion or '-'),
+        ("Sector", cliente.sector or '-'),
+        ("Comuna", getattr(cliente, 'comuna', '-')),
+        ("Ciudad", getattr(cliente, 'ciudad', '-')),
+        ("Teléfono", cliente.telefono or '-'),
+        ("Email", cliente.email or '-'),
+        ("Fecha Nacimiento", cliente.fecha_nacimiento.strftime('%d/%m/%Y') if cliente.fecha_nacimiento else '-'),
+        ("Sexo", cliente.sexo or '-'),
+        ("Estado Civil", cliente.estado_civil or '-'),
+        ("Profesión", cliente.profesion or '-'),
+        ("Fecha Incorporación", cliente.fecha_incorporacion.strftime('%d/%m/%Y') if cliente.fecha_incorporacion else '-'),
+        ("Número Libro", cliente.numero_libro or '-'),
+    ]
+
+    # Construir tabla con 4 columnas (etiqueta1, valor1, etiqueta2, valor2)
+    data_cliente = []
+    for i in range(0, len(campos_cliente), 2):
+        fila = []
+        # Primera columna (par i)
+        if i < len(campos_cliente):
+            label = f"<b>{campos_cliente[i][0]}</b>"
+            value = str(campos_cliente[i][1]) if campos_cliente[i][1] is not None else '-'
+            fila.append(Paragraph(label, style_table))
+            fila.append(Paragraph(value, style_table))
+        else:
+            fila.append("")
+            fila.append("")
+        # Segunda columna (par i+1)
+        if i+1 < len(campos_cliente):
+            label = f"<b>{campos_cliente[i+1][0]}</b>"
+            value = str(campos_cliente[i+1][1]) if campos_cliente[i+1][1] is not None else '-'
+            fila.append(Paragraph(label, style_table))
+            fila.append(Paragraph(value, style_table))
+        else:
+            fila.append("")
+            fila.append("")
+        data_cliente.append(fila)
+
+    # Anchos de columna (4 columnas)
+    col_widths = [2.2*inch, 2.8*inch, 2.2*inch, 2.8*inch]  # Total ~10 pulgadas (A4 landscape mide 11.69")
+    table_cliente = Table(data_cliente, colWidths=col_widths)
+    table_cliente.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    story.append(table_cliente)
+    story.append(Spacer(1, 0.25*inch))
+
+    # ===================== DATOS DEL CONTRATO =====================
+    if contrato:
+        story.append(Paragraph("Datos del Contrato", style_heading))
+        campos_contrato = [
+            ("Tipo Cliente", contrato.tipo_cliente or '-'),
+            ("Tipo Servicio SSR", contrato.tipo_servicio_ssr or '-'),
+            ("Fecha Contrato", contrato.fecha_contrato.strftime('%d/%m/%Y') if contrato.fecha_contrato else '-'),
+            ("Tarifa", contrato.tarifa or '-'),
+            ("Diámetro", str(contrato.diametro) if contrato.diametro else '-'),
+            ("Tipo Servicio", contrato.tipo_servicio or '-'),
+            ("Marca Medidor", contrato.marca_medidor or '-'),
+            ("Número Medidor", contrato.numero_medidor or '-'),
+            ("Año Medidor", str(contrato.ano_medidor) if contrato.ano_medidor else '-'),
+            ("Tipo Medidor", contrato.tipo_medidor or '-'),
+            ("Sello Medidor", contrato.sello_medidor or '-'),
+            ("Código Unión Domiciliaria", contrato.codigo_union_domiciliaria or '-'),
+            ("UTM Norte", contrato.utm_norte or '-'),
+            ("UTM Este", contrato.utm_este or '-'),
+            ("Email Recepción Documento", contrato.email_recepcion_documento or '-'),
+            ("Socio", "Sí" if contrato.socio else "No"),
+        ]
+
+        data_contrato = []
+        for i in range(0, len(campos_contrato), 1):
+            fila = []
+            if i < len(campos_contrato):
+                label = f"<b>{campos_contrato[i][0]}</b>"
+                value = str(campos_contrato[i][1]) if campos_contrato[i][1] is not None else '-'
+                fila.append(Paragraph(label, style_table))
+                fila.append(Paragraph(value, style_table))
+            else:
+                fila.append("")
+                fila.append("")
+            if i+1 < len(campos_contrato):
+                label = f"<b>{campos_contrato[i+1][0]}</b>"
+                value = str(campos_contrato[i+1][1]) if campos_contrato[i+1][1] is not None else '-'
+                fila.append(Paragraph(label, style_table))
+                fila.append(Paragraph(value, style_table))
+            else:
+                fila.append("")
+                fila.append("")
+            data_contrato.append(fila)
+
+        table_contrato = Table(data_contrato, colWidths=col_widths)
+        table_contrato.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('PADDING', (0,0), (-1,-1), 6),
+        ]))
+        story.append(table_contrato)
+    else:
+        story.append(Paragraph("No existe contrato asociado", styles['Normal']))
+
+    # Pie de página
+    
+
+    doc.build(story)
+    return response
+
+def informe_contratos(request, alias):
+    """Página para generar el informe de contratos con opciones de ordenamiento."""
+    empresa = get_object_or_404(Empresa, slug=alias)
+    return render(request, 'informe_contratos.html', {
+        'empresa': empresa,
+        'slug': alias,
+    })
+
+def informe_socios(request, alias):
+    empresa = get_object_or_404(Empresa, slug=alias)
+    return render(request, 'informe_socios.html', {
+        'empresa': empresa,
+        'slug': alias,
+    })
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
+from empresas.models import Empresa
+from clientes.models import Cliente
+from datetime import date
+
+def exportar_socios_excel(request, alias):
+    """
+    Exporta a Excel la lista de socios (contrato.socio = True)
+    con los campos solicitados.
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    # Obtener parámetros de ordenamiento
+    order_by = request.GET.get('order_by', 'apellido_paterno')
+    direction = request.GET.get('direction', 'asc')
+    if direction == 'desc':
+        order_by = f'-{order_by}'
+
+    allowed_fields = ['apellido_paterno', 'fecha_incorporacion', 'sector']
+    if order_by.lstrip('-') not in allowed_fields:
+        order_by = 'apellido_paterno'
+
+    # Filtrar solo socios y traer contrato asociado
+    clientes = Cliente.objects.using(db_alias).filter(
+        contrato__socio=True
+    ).select_related('contrato').order_by(order_by)
+
+    # Crear libro y hoja
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Socios"
+
+    # Estilos
+    header_font = Font(name='Calibri', size=12, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    cell_font = Font(name='Calibri', size=10)
+    cell_alignment = Alignment(horizontal='left', vertical='center')
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # Encabezados según los campos solicitados
+    headers = [
+        'Sector', 'Ruta', 'Número Libro', 'Contrato', 'Rut',
+        'Socio Nombre', 'Apellido Paterno', 'Apellido Materno',
+        'Fecha Incorporación', 'Fecha Contrato', 'Sexo',
+        'Dirección Arranque', 'Dirección Socio', 'Servicio', 'Total Contratos'
+    ]
+
+    # Escribir encabezados
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+
+    # Llenar datos
+    for row_idx, cliente in enumerate(clientes, start=2):
+        contrato = cliente.contrato
+
+        # Construir nombre completo del socio
+        socio_nombre = cliente.nombre or ''
+        if cliente.apellido_paterno:
+            socio_nombre += ' ' + cliente.apellido_paterno
+        if cliente.apellido_materno:
+            socio_nombre += ' ' + cliente.apellido_materno
+        socio_nombre = socio_nombre.strip() or '-'
+
+        row_data = [
+            cliente.sector or '',
+            getattr(cliente, 'ruta', '') or '',
+            cliente.numero_libro or '',
+            getattr(contrato, 'numero_contrato', str(contrato.id) if contrato else ''),
+            cliente.rut or '',
+            socio_nombre,
+            cliente.apellido_paterno or '',
+            cliente.apellido_materno or '',
+            cliente.fecha_incorporacion.strftime('%d/%m/%Y') if cliente.fecha_incorporacion else '',
+            contrato.fecha_contrato.strftime('%d/%m/%Y') if contrato and contrato.fecha_contrato else '',
+            cliente.sexo or '',
+            contrato.direccion_arranque if contrato else '',
+            cliente.direccion or '',
+            contrato.servicio if contrato else '',
+            1  # Cada socio tiene un contrato (relación uno a uno)
+        ]
+
+        for col_idx, value in enumerate(row_data, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.font = cell_font
+            cell.alignment = cell_alignment
+            cell.border = border
+            if row_idx % 2 == 0:
+                cell.fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
+
+    # Ajustar ancho de columnas
+    for col_idx in range(1, len(headers) + 1):
+        max_length = 0
+        column_letter = get_column_letter(col_idx)
+        for row in range(1, ws.max_row + 1):
+            cell_value = ws.cell(row, col_idx).value
+            if cell_value:
+                max_length = max(max_length, len(str(cell_value)))
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Congelar fila de encabezados
+    ws.freeze_panes = 'A2'
+
+    # Respuesta HTTP
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="socios_{alias}_{date.today()}.xlsx"'
+    wb.save(response)
+    return response

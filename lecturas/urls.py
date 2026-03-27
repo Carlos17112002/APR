@@ -33,4 +33,10 @@ urlpatterns = [
     path('clientes/<uuid:cliente_uuid>/', views_api.api_obtener_cliente_por_uuid, name='obtener-cliente-uuid'),
     path('cliente/<uuid:cliente_uuid>/', views_api.api_obtener_cliente_por_uuid, name='obtener-cliente-uuid-alt'),
     path('<slug:alias>/lecturas/<uuid:lectura_id>/eliminar/', views.eliminar_lectura_ajax, name='eliminar_lectura_ajax'),
+    path('<slug:alias>/reporte-cambio-medidor/', views.reporte_cambio_medidor, name='reporte_cambio_medidor'),
+    path('<slug:alias>/reporte-consumo-12-meses/', views.reporte_consumo_12_meses, name='reporte_consumo_12_meses'),
+    path('<slug:alias>/reporte-consumo-anual/', views.reporte_consumo_anual, name='reporte_consumo_anual'),
+    path('<slug:alias>/reporte-lecturas-periodo/', views.reporte_lecturas_por_periodo, name='reporte_lecturas_periodo'),
+
+
 ]

@@ -12,4 +12,9 @@ urlpatterns = [
     path('exportar/', views.exportar_clientes_csv, name='exportar_clientes'),
     path('importar/', views.importar_clientes, name='importar_clientes'),
     path('mapa-clientes/', views.mapa_clientes, name='mapa_clientes'),
+    path('pdf-contrato/<int:cliente_id>/', views.generar_pdf_contrato, name='pdf_contrato_cliente'),
+    path('informe-contratos/', views.informe_contratos, name='informe_contratos_socios'),
+    path('exportar-contratos-excel/', views.exportar_contratos_excel, name='exportar_contratos_excel'),
+    path('informe-socios/', views.informe_socios, name='informe_socios_nuevo'),
+    path('exportar-socios-excel/', views.exportar_socios_excel, name='exportar_socios_excel'),
 ]

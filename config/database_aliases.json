@@ -20,24 +20,42 @@
   },
   "apr-vaticano": {
     "alias": "db_apr-vaticano",
-    "nombre": "APR VATICANO",
-    "rut": "76.232.132-3",
+    "nombre": "APR-VATICANO",
+    "rut": "65.456.766-5",
     "direccion": "SECTOR EL VATICANO N1",
     "telefono": "72323342",
     "celular": "996578664",
     "centros_costo": [
-      "ADMINISTRACION",
-      "INFORMATICA",
-      "LECTURAS",
-      "CONTABILIDAD"
+      "EJEMPLO"
+    ],
+    "sectores": [
+      "VATICANO",
+      "LAS CABRAS",
+      "LAS BANDURRIAS",
+      "LAS MERCEDES",
+      "CARRETERA"
+    ],
+    "db_path": "C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-vaticano.sqlite3",
+    "fecha_creacion": "2026-03-23T12:13:12.207460+00:00"
+  },
+  "vaticano-apr": {
+    "alias": "db_vaticano-apr",
+    "nombre": "VATICANO-APR",
+    "rut": "43.569.459-6",
+    "direccion": "SECTOR EL VATICANO N1",
+    "telefono": "72323342",
+    "celular": "996578664",
+    "centros_costo": [
+      "E"
     ],
     "sectores": [
       "VATICANO",
       "LAS MERCEDES",
-      "LAS CABRAS",
-      "LAS BANDURRIAS"
+      "LAS BANDURRIAS",
+      "CARRETERA",
+      "LAS CABRAS"
     ],
-    "db_path": "C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-vaticano.sqlite3",
-    "fecha_creacion": "2026-02-12T16:19:17.934099+00:00"
+    "db_path": "C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_vaticano-apr.sqlite3",
+    "fecha_creacion": "2026-03-23T12:15:16.969164+00:00"
   }
 }

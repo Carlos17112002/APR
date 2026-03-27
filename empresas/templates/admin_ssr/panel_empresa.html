@@ -272,7 +272,9 @@
             <div id="informesMenu" class="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-gray-100 hidden z-30 transition-all duration-200">
               <div class="py-2">
                 <div class="px-4 py-1.5 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200 mb-1">Informes Disponibles</div>
-                <a href="{% url 'informe_cargo_descuento' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                
+                <!-- Informes existentes -->
+                <!--<a href="{% url 'informe_cargo_descuento' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
                   <i class="fas fa-exchange-alt w-5 text-emerald-600"></i> Cargo y Descuento
                 </a>
                 <a href="{% url 'informe_cierre_caja' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
@@ -280,8 +282,31 @@
                 </a>
                 <a href="{% url 'informe_contabilidad' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
                   <i class="fas fa-balance-scale w-5 text-emerald-600"></i> Contabilidad
+                </a> -->
+                <a href="{% url 'informe_contratos_socios' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                  <i class="fas fa-file-contract w-5 text-emerald-600"></i> Contratos
                 </a>
-                <!-- ... resto de informes ... -->
+                <a href="{% url 'informe_socios_nuevo' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                  <i class="fas fa-users w-5 text-emerald-600"></i> Socios
+                </a>
+
+                <!-- Separador y título de la nueva sección -->
+                <div class="border-t border-gray-200 my-2"></div>
+                <div class="px-4 py-1 text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Informes de Lecturas</div>
+
+                <!-- Nuevos informes de lecturas -->
+                <a href="{% url 'reporte_cambio_medidor' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                  <i class="fas fa-exchange-alt w-5 text-emerald-600"></i> Cambio de Medidor
+                </a>
+                <a href="{% url 'reporte_consumo_12_meses' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                  <i class="fas fa-chart-line w-5 text-emerald-600"></i> Consumo 12 Meses
+                </a>
+                <a href="{% url 'reporte_consumo_anual' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                  <i class="fas fa-calendar-alt w-5 text-emerald-600"></i> Resumen Consumo Anual
+                </a>
+                <a href="{% url 'reporte_lecturas_periodo' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                  <i class="fas fa-calendar-week w-5 text-emerald-600"></i> Lecturas por Periodo
+                </a>
               </div>
             </div>
           </div>
@@ -336,8 +361,8 @@
       </div>
     </div>
 
-    <!-- TARJETAS DE ESTADÍSTICAS con animación escalonada -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <!-- TARJETAS DE ESTADÍSTICAS con animación escalonada (solo Clientes y Lecturas) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <!-- Clientes -->
       <a href="{% url 'listado_clientes' alias=slug %}" class="stats-card bg-white rounded-xl p-5 block animate-fade-in-up" style="animation-delay: 0.1s;">
         <div class="flex items-start justify-between">
@@ -374,44 +399,6 @@
           <div class="progress-bar mt-1.5">
             <div class="progress-fill bg-emerald-500" style="width: {{ porcentaje_lecturas_completadas|default:0 }}%"></div>
           </div>
-        </div>
-      </a>
-
-      <!-- Avisos Activos -->
-      <a href="{% url 'avisos' slug=slug %}" class="stats-card bg-white rounded-xl p-5 block animate-fade-in-up" style="animation-delay: 0.3s;">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-500">Avisos</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">{{ avisos_activos|default:"0" }}</p>
-          </div>
-          <div class="h-12 w-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-            <i class="fas fa-bell text-xl"></i>
-          </div>
-        </div>
-        <div class="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 flex items-center justify-between">
-          <span>Activos</span>
-          {% if avisos_activos|default:0 > 0 %}
-            <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{{ avisos_activos }} pendientes</span>
-          {% else %}
-            <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">Sin novedades</span>
-          {% endif %}
-        </div>
-      </a>
-
-      <!-- Preguntas Frecuentes -->
-      <a href="{% url 'faq_listado' slug=slug %}" class="stats-card bg-white rounded-xl p-5 block animate-fade-in-up" style="animation-delay: 0.4s;">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-500">FAQ</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">{{ total_faq|default:"0" }}</p>
-          </div>
-          <div class="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-            <i class="fas fa-question-circle text-xl"></i>
-          </div>
-        </div>
-        <div class="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 flex items-center justify-between">
-          <span>Artículos</span>
-          <span class="font-medium text-gray-700">Ver base →</span>
         </div>
       </a>
     </div>
@@ -532,12 +519,76 @@
       </div>
     </div>
 
-    <!-- Botón para abrir modal de producción -->
-    <div class="flex justify-end mb-4">
+    <!-- Botón para abrir modal de producción (solo superadmin) -->
+    <div class="flex justify-end gap-3 mb-4">
         <button onclick="abrirModalProduccion()" 
                 class="btn-3d bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
             <i class="fas fa-flask"></i> Registrar Producción
         </button>
+        {% if request.user.is_superuser %}
+        <button onclick="abrirModalListaProduccion()" 
+                class="btn-3d bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+            <i class="fas fa-list"></i> Listar Producción
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Modal para listar producción -->
+    <div id="modalListaProduccion" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-5xl w-full max-h-[85vh] overflow-y-auto p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Registros de Producción</h3>
+                <button onclick="cerrarModalListaProduccion()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="contenedorTablaProduccion" class="overflow-x-auto">
+                <p class="text-center text-gray-500 py-4">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar producción -->
+    <div id="modalEditarProduccion" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Editar Producción</h3>
+                <button onclick="cerrarModalEditarProduccion()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="formEditarProduccion" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editProduccionId" name="produccion_id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pozo *</label>
+                        <select id="editPozo" name="pozo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="">Seleccione un pozo</option>
+                            {% for pozo in pozos %}
+                                <option value="{{ pozo.id }}">{{ pozo.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                        <input type="date" id="editFecha" name="fecha" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Volumen (m³) *</label>
+                        <input type="number" step="0.01" id="editVolumen" name="volumen" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Observación</label>
+                        <textarea id="editObservacion" name="observacion" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="cerrarModalEditarProduccion()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Actualizar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- SECCIÓN: GRÁFICOS con diseño mejorado -->
@@ -584,8 +635,6 @@
           <p class="text-xs text-gray-500 mt-0.5">Comparativa por período (m³)</p>
         </div>
         <div class="flex items-center gap-2 text-xs">
-          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-emerald-500 rounded-full"></span> Consumo</span>
-          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-blue-500 rounded-full"></span> Producción</span>
           {% if total_pozos %}
             <span class="bg-gray-100 px-2 py-1 rounded-full text-gray-700" title="Pozos activos">
               <i class="fas fa-water mr-1"></i> {{ total_pozos }} pozos
@@ -678,7 +727,7 @@
         <h3 class="font-semibold text-gray-900">Accesos Rápidos</h3>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        <!-- Liquidaciones (ajusta la URL si existe) -->
+        <!-- Liquidaciones -->
         <a href="{% url 'panel_remuneraciones' alias=empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
           <i class="fas fa-file-invoice text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Liquidaciones</p>
@@ -722,18 +771,6 @@
           <i class="fas fa-history text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Historial</p>
         </a>
-
-        <!-- Avisos -->
-        <a href="{% url 'avisos' slug=slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-bell text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Avisos</p>
-        </a>
-
-        <!-- FAQ -->
-        <a href="{% url 'faq_listado' slug=slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-question-circle text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">FAQ</p>
-        </a>
       </div>
     </div>
 
@@ -765,7 +802,7 @@
     </div>
   </div>
 
-  <!-- MODAL: iOS TestFlight (mejorado) -->
+  <!-- MODAL: iOS TestFlight -->
   <div id="modalIOS" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 transform transition-all duration-300 scale-95 opacity-0" id="modalIOSContent">
       <div class="flex items-center justify-between mb-4">
@@ -795,7 +832,7 @@
     </div>
   </div>
 
-  <!-- TOAST: Generación de boletas (mejorado) -->
+  <!-- TOAST: Generación de boletas -->
   <div id="toastBoleta" class="fixed bottom-6 right-6 bg-white shadow-xl rounded-lg border-l-4 border-emerald-500 w-80 hidden toast-animation z-50">
     <div class="p-4">
       <div class="flex items-start gap-3">
@@ -825,10 +862,8 @@
                   <i class="fas fa-times"></i>
               </button>
           </div>
-          
           <form id="formProduccion" method="post" action="{% url 'agregar_produccion' slug=empresa.slug %}">
               {% csrf_token %}
-              
               <div class="space-y-4">
                   <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1">Pozo *</label>
@@ -839,40 +874,29 @@
                           {% endfor %}
                       </select>
                   </div>
-                  
                   <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
-                      <input type="date" name="fecha" required value="{% now 'Y-m-d' %}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                      <input type="date" name="fecha" required value="{% now 'Y-m-d' %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                   </div>
-                  
                   <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1">Volumen (m³) *</label>
-                      <input type="number" step="0.01" name="volumen" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                      <input type="number" step="0.01" name="volumen" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                   </div>
-                  
                   <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1">Observación</label>
                       <textarea name="observacion" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
                   </div>
               </div>
-              
               <div class="flex gap-3 mt-6">
-                  <button type="button" onclick="cerrarModalProduccion()" 
-                          class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                      Cancelar
-                  </button>
-                  <button type="submit" 
-                          class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                      Guardar
-                  </button>
+                  <button type="button" onclick="cerrarModalProduccion()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                  <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
               </div>
           </form>
       </div>
   </div>
 
   <script>
+  // =========== MODAL PRODUCCIÓN ===========
   function abrirModalProduccion() {
       document.getElementById('modalProduccion').classList.remove('hidden');
       document.getElementById('modalProduccion').classList.add('flex');
@@ -883,365 +907,562 @@
       document.getElementById('modalProduccion').classList.remove('flex');
   }
 
-  // Cerrar modal al hacer clic fuera
   document.getElementById('modalProduccion').addEventListener('click', function(e) {
-      if (e.target === this) {
-          cerrarModalProduccion();
-      }
+      if (e.target === this) cerrarModalProduccion();
   });
-  </script>
+</script>
 
-  <script>
-    // =========== VARIABLES GLOBALES ===========
-    const empresaSlug = '{{ slug|escapejs }}';
-    const puntosClientes = {{ puntos_clientes|safe }};
+<script>
+  // =========== VARIABLES GLOBALES ===========
+  const empresaSlug = '{{ slug|escapejs }}';
+  const puntosClientes = {{ puntos_clientes|safe }};
 
-    // =========== DATOS ESTÁTICOS PARA GRÁFICOS FIJOS ===========
-    const datosReales = {
-      meses: JSON.parse('{{ meses_grafico|escapejs|default:"[]" }}'),
-      consumoMensual: JSON.parse('{{ consumo_mensual|escapejs|default:"[]" }}'),
-      tendenciaAnual: {
-        consumo: JSON.parse('{{ tendencia_consumo|escapejs|default:"[]" }}'),
-        lecturas: JSON.parse('{{ tendencia_lecturas|escapejs|default:"[]" }}')
-      },
-      estadoLecturas: {
-        completadas: {{ lecturas_completadas|default:"0" }},
-        pendientes: {{ lecturas_pendientes|default:"0" }}
-      },
-      distribucion: { labels: [], data: [], porcentajes: [] },
-    };
+  // Datos estáticos para gráficos que NO se actualizan dinámicamente
+  const datosReales = {
+    // El gráfico de consumo ya no usa estos datos, se mantienen por si otros usos
+    meses: JSON.parse('{{ meses_grafico|escapejs|default:"[]" }}'),
+    consumoMensual: JSON.parse('{{ consumo_mensual|escapejs|default:"[]" }}'),
+    tendenciaAnual: {
+      consumo: JSON.parse('{{ tendencia_consumo|escapejs|default:"[]" }}'),
+      lecturas: JSON.parse('{{ tendencia_lecturas|escapejs|default:"[]" }}')
+    },
+    estadoLecturas: {
+      completadas: {{ lecturas_completadas|default:"0" }},
+      pendientes: {{ lecturas_pendientes|default:"0" }}
+    },
+    distribucion: { labels: [], data: [], porcentajes: [] }
+  };
 
-    try {
-      const distribucionData = JSON.parse('{{ distribucion_sectores|escapejs|default:"[]" }}');
-      if (distribucionData.length) {
-        datosReales.distribucion.labels = distribucionData.map(i => i.tipo);
-        datosReales.distribucion.data = distribucionData.map(i => i.total);
-        datosReales.distribucion.porcentajes = distribucionData.map(i => i.porcentaje);
-      }
-    } catch (e) { console.error('Error distribución:', e); }
+  try {
+    const distribucionData = JSON.parse('{{ distribucion_sectores|escapejs|default:"[]" }}');
+    if (distribucionData.length) {
+      datosReales.distribucion.labels = distribucionData.map(i => i.tipo);
+      datosReales.distribucion.data = distribucionData.map(i => i.total);
+      datosReales.distribucion.porcentajes = distribucionData.map(i => i.porcentaje);
+    }
+  } catch (e) { console.error('Error distribución:', e); }
 
-    // Variables globales de gráficos
-    let mapaClientes = null, capaClientes = null;
-    let graficoConsumo = null;
-    let graficoDistribucion = null;
-    let graficoProdVsCons = null;
-    let progressInterval = null;
+  // Variables de gráficos
+  let mapaClientes = null, capaClientes = null;
+  let graficoConsumo = null;          // gráfico dinámico de consumo
+  let graficoDistribucion = null;     // gráfico fijo (doughnut)
+  let graficoProdVsCons = null;       // gráfico dinámico de producción vs consumo
+  let progressInterval = null;
 
-    // =========== INICIALIZACIÓN ===========
-    document.addEventListener('DOMContentLoaded', function() {
-      // Menú de informes
-      const toggle = document.getElementById('informesToggle');
-      const menu = document.getElementById('informesMenu');
-      
-      if (toggle && menu) {
-        toggle.addEventListener('click', function(e) {
-          e.stopPropagation();
-          e.preventDefault();
-          menu.classList.toggle('hidden');
-        });
-        
-        document.addEventListener('click', function(e) {
-          if (!menu.contains(e.target) && !toggle.contains(e.target)) {
-            menu.classList.add('hidden');
-          }
-        });
-        
-        menu.addEventListener('click', e => e.stopPropagation());
-      }
+  // =========== INICIALIZACIÓN ===========
+  document.addEventListener('DOMContentLoaded', function() {
+    // Menú de informes
+    const toggle = document.getElementById('informesToggle');
+    const menu = document.getElementById('informesMenu');
+    if (toggle && menu) {
+      toggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        menu.classList.toggle('hidden');
+      });
+      document.addEventListener('click', function(e) {
+        if (!menu.contains(e.target) && !toggle.contains(e.target)) menu.classList.add('hidden');
+      });
+      menu.addEventListener('click', e => e.stopPropagation());
+    }
 
-      // Inicializar gráficos fijos
-      if (datosReales.meses.length) inicializarGraficos();
-      
-      // Inicializar gráfico de producción vs consumo (dinámico)
-      inicializarGraficoProdVsConsDesdeAPI();
+    // Inicializar gráfico de distribución (fijo)
+    inicializarGraficoDistribucion();
 
-      // Eventos para filtros del gráfico dinámico
-      const filtroPozo = document.getElementById('filtroPozo');
-      const filtroPeriodo = document.getElementById('filtroPeriodo');
-      if (filtroPozo && filtroPeriodo) {
-        filtroPozo.addEventListener('change', actualizarGraficoProdVsCons);
-        filtroPeriodo.addEventListener('change', actualizarGraficoProdVsCons);
-      }
+    // Inicializar gráfico de consumo (dinámico)
+    actualizarGraficos();
 
-      // Animar modales al abrir
-      document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('transitionend', function() {
-          const content = modal.querySelector('div');
-          if (modal.classList.contains('hidden')) {
-            content.classList.add('scale-95', 'opacity-0');
-          } else {
-            setTimeout(() => {
-              content.classList.remove('scale-95', 'opacity-0');
-              content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-          }
-        });
+    // Inicializar gráfico de producción vs consumo
+    inicializarGraficoProdVsConsDesdeAPI();
+
+    // Eventos para filtros del gráfico producción vs consumo
+    const filtroPozo = document.getElementById('filtroPozo');
+    const filtroPeriodo = document.getElementById('filtroPeriodo');
+    if (filtroPozo && filtroPeriodo) {
+      filtroPozo.addEventListener('change', actualizarGraficoProdVsCons);
+      filtroPeriodo.addEventListener('change', actualizarGraficoProdVsCons);
+    }
+
+    // Animación modales
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+      modal.addEventListener('transitionend', function() {
+        const content = modal.querySelector('div');
+        if (modal.classList.contains('hidden')) {
+          content.classList.add('scale-95', 'opacity-0');
+        } else {
+          setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+          }, 10);
+        }
       });
     });
+  });
 
-    // =========== GRÁFICOS FIJOS ===========
-    function inicializarGraficos() {
-      // Consumo Mensual
-      const ctxConsumo = document.getElementById('graficoConsumoMensual');
-      if (ctxConsumo) {
-        if (graficoConsumo) graficoConsumo.destroy();
-        graficoConsumo = new Chart(ctxConsumo, {
-          type: 'line',
-          data: {
-            labels: datosReales.meses,
-            datasets: [{
-              label: 'Consumo m³',
-              data: datosReales.consumoMensual.map(v => parseFloat(v) || 0),
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16,185,129,0.05)',
-              borderWidth: 2,
-              tension: 0.3,
-              fill: true,
-              pointRadius: 3,
-              pointHoverRadius: 5
-            }]
+  // =========== GRÁFICO DISTRIBUCIÓN (FIJO) ===========
+  function inicializarGraficoDistribucion() {
+    const ctxDist = document.getElementById('graficoDistribucion');
+    if (ctxDist && datosReales.distribucion.labels.length) {
+      if (graficoDistribucion) graficoDistribucion.destroy();
+      graficoDistribucion = new Chart(ctxDist, {
+        type: 'doughnut',
+        data: {
+          labels: datosReales.distribucion.labels,
+          datasets: [{
+            data: datosReales.distribucion.data,
+            backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } }
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, grid: { color: '#f3f4f6' } } },
-            animation: { duration: 1000, easing: 'easeInOutQuad' }
-          }
-        });
-      }
-
-      // Distribución por Sector
-      const ctxDist = document.getElementById('graficoDistribucion');
-      if (ctxDist && datosReales.distribucion.labels.length) {
-        if (graficoDistribucion) graficoDistribucion.destroy();
-        graficoDistribucion = new Chart(ctxDist, {
-          type: 'doughnut',
-          data: {
-            labels: datosReales.distribucion.labels,
-            datasets: [{
-              data: datosReales.distribucion.data,
-              backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } }
-            },
-            animation: { duration: 1000, easing: 'easeInOutQuad' }
-          }
-        });
-      }
-    }
-
-    // =========== GRÁFICO DINÁMICO PRODUCCIÓN VS CONSUMO ===========
-    async function inicializarGraficoProdVsConsDesdeAPI() {
-      // Cargar datos con filtros por defecto
-      await actualizarGraficoProdVsCons();
-    }
-
-    async function actualizarGraficoProdVsCons() {
-      const pozoId = document.getElementById('filtroPozo')?.value || 'todos';
-      const periodo = document.getElementById('filtroPeriodo')?.value || 'mes';
-      const canvas = document.getElementById('graficoProduccionVsConsumo');
-      
-      if (!canvas) return;
-      
-      // Indicador de carga
-      canvas.style.opacity = '0.5';
-      
-      try {
-        const url = "{% url 'api_datos_produccion_consumo' slug=slug %}?periodo=" + periodo + "&pozo=" + pozoId;
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data.error) {
-          console.error('Error API:', data.error);
-          return;
+          animation: { duration: 1000, easing: 'easeInOutQuad' }
         }
-        
-        // Destruir gráfico anterior si existe
-        if (graficoProdVsCons) graficoProdVsCons.destroy();
-        
-        // Crear nuevo gráfico
-        const ctx = canvas.getContext('2d');
-        graficoProdVsCons = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: data.labels,
-            datasets: [
-              {
-                label: 'Consumo (m³)',
-                data: data.consumo,
-                backgroundColor: '#10b981',
-                borderRadius: 6,
-                barPercentage: 0.6,
-              },
-              {
-                label: 'Producción (m³)',
-                data: data.produccion,
-                backgroundColor: '#3b82f6',
-                borderRadius: 6,
-                barPercentage: 0.6,
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: { mode: 'index', intersect: false }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: '#f3f4f6' },
-                title: { display: true, text: 'm³' }
-              },
-              x: {
-                grid: { display: false }
-              }
-            },
-            animation: { duration: 1000, easing: 'easeInOutQuad' }
-          }
-        });
-      } catch (error) {
-        console.error('Error al cargar datos:', error);
-      } finally {
-        canvas.style.opacity = '1';
-      }
-    }
-
-    function actualizarGraficos() {
-      const rango = document.getElementById('rangoTiempo')?.value || 'mes';
-      console.log('Actualizar gráficos para:', rango);
-      // Aquí podrías recargar los datos con fetch y actualizar los gráficos
-    }
-
-    // =========== MAPA DE CLIENTES ===========
-    function mostrarMapaClientes() {
-      const modal = document.getElementById('modalMapaClientes');
-      const content = document.getElementById('modalMapaClientesContent');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      document.body.style.overflow = 'hidden';
-      
-      setTimeout(() => {
-        content.classList.remove('scale-95', 'opacity-0');
-        content.classList.add('scale-100', 'opacity-100');
-      }, 10);
-      
-      setTimeout(() => {
-        if (!mapaClientes) {
-          mapaClientes = L.map('mapaClientes').setView([-34.3, -70.9], 11);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-          }).addTo(mapaClientes);
-          capaClientes = L.layerGroup().addTo(mapaClientes);
-        }
-        mapaClientes.invalidateSize();
-        
-        if (capaClientes) {
-          capaClientes.clearLayers();
-          puntosClientes.forEach(p => {
-            const marker = L.marker([p.lat, p.lng]).addTo(capaClientes);
-            const popupContent = `
-              <div style="font-family: Arial, sans-serif;">
-                <strong>${p.nombre}</strong><br>
-                Medidor: ${p.medidor || '—'}<br>
-                Dirección: ${p.direccion || '—'}<br>
-                <hr class="my-2">
-                <a href="/empresa/{{ slug }}/clientes/${p.id}/" 
-                   style="display: inline-block; background-color: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.9rem;">
-                  Ver detalle
-                </a>
-              </div>
-            `;
-            marker.bindPopup(popupContent);
-          });
-        }
-      }, 100);
-    }
-
-    function cerrarMapaClientes() {
-      const modal = document.getElementById('modalMapaClientes');
-      const content = document.getElementById('modalMapaClientesContent');
-      content.classList.remove('scale-100', 'opacity-100');
-      content.classList.add('scale-95', 'opacity-0');
-      setTimeout(() => {
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-      }, 300);
-    }
-
-    // =========== MODALES iOS ===========
-    function mostrarModalIOS() {
-      const modal = document.getElementById('modalIOS');
-      const content = document.getElementById('modalIOSContent');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      document.body.style.overflow = 'hidden';
-      setTimeout(() => {
-        content.classList.remove('scale-95', 'opacity-0');
-        content.classList.add('scale-100', 'opacity-100');
-      }, 10);
-    }
-
-    function cerrarModalIOS() {
-      const modal = document.getElementById('modalIOS');
-      const content = document.getElementById('modalIOSContent');
-      content.classList.remove('scale-100', 'opacity-100');
-      content.classList.add('scale-95', 'opacity-0');
-      setTimeout(() => {
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-      }, 300);
-    }
-
-    // =========== GENERACIÓN DE BOLETAS ===========
-    function mostrarModalBoleta() {
-      const toast = document.getElementById('toastBoleta');
-      toast.classList.remove('hidden');
-      
-      let progress = 0;
-      const progressFill = document.getElementById('progressFill');
-      if (progressInterval) clearInterval(progressInterval);
-      
-      progressInterval = setInterval(() => {
-        progress += 5;
-        if (progress <= 100) {
-          progressFill.style.width = progress + '%';
-        } else {
-          clearInterval(progressInterval);
-          const icon = toast.querySelector('.fa-cog');
-          icon.className = 'fas fa-check text-emerald-600';
-          icon.classList.remove('animate-spin');
-          toast.querySelector('.text-sm.font-semibold').textContent = 'Boletas generadas';
-          toast.querySelector('.text-xs').textContent = 'Redirigiendo...';
-          setTimeout(() => {
-            document.getElementById('formBoleta').submit();
-          }, 1500);
-        }
-      }, 80);
-    }
-
-    function cerrarToast() {
-      document.getElementById('toastBoleta').classList.add('hidden');
-      if (progressInterval) clearInterval(progressInterval);
-    }
-
-    // Confirmación de boletas
-    const formBoleta = document.getElementById('formBoleta');
-    if (formBoleta) {
-      formBoleta.addEventListener('submit', (e) => {
-        if (!confirm('¿Generar boletas del mes?')) e.preventDefault();
       });
     }
-  </script>
+  }
+
+  // =========== GRÁFICO DE CONSUMO DINÁMICO ===========
+  async function actualizarGraficos() {
+    const rango = document.getElementById('rangoTiempo')?.value || 'mes';
+    const canvas = document.getElementById('graficoConsumoMensual');
+    if (!canvas) return;
+
+    canvas.style.opacity = '0.5';
+    try {
+      const url = "{% url 'api_datos_consumo' slug=slug %}?rango=" + rango;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Error API:', data.error);
+        return;
+      }
+
+      if (graficoConsumo) graficoConsumo.destroy();
+
+      const ctx = canvas.getContext('2d');
+      graficoConsumo = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: 'Consumo m³',
+            data: data.datos,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16,185,129,0.05)',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 3,
+            pointHoverRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, grid: { color: '#f3f4f6' } } },
+          animation: { duration: 1000, easing: 'easeInOutQuad' }
+        }
+      });
+    } catch (error) {
+      console.error('Error al cargar datos de consumo:', error);
+    } finally {
+      canvas.style.opacity = '1';
+    }
+  }
+
+  // =========== GRÁFICO PRODUCCIÓN VS CONSUMO (DINÁMICO) ===========
+  async function inicializarGraficoProdVsConsDesdeAPI() {
+    await actualizarGraficoProdVsCons();
+  }
+
+  async function actualizarGraficoProdVsCons() {
+    const pozoId = document.getElementById('filtroPozo')?.value || 'todos';
+    const periodo = document.getElementById('filtroPeriodo')?.value || 'mes';
+    const canvas = document.getElementById('graficoProduccionVsConsumo');
+    if (!canvas) return;
+
+    canvas.style.opacity = '0.5';
+    try {
+      const url = "{% url 'api_datos_produccion_consumo' slug=slug %}?periodo=" + periodo + "&pozo=" + pozoId;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Error API:', data.error);
+        return;
+      }
+
+      if (graficoProdVsCons) graficoProdVsCons.destroy();
+
+      const ctx = canvas.getContext('2d');
+      graficoProdVsCons = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              label: 'Consumo (m³)',
+              data: data.consumo,
+              backgroundColor: '#10b981',
+              borderRadius: 6,
+              barPercentage: 0.6,
+            },
+            {
+              label: 'Producción (m³)',
+              data: data.produccion,
+              backgroundColor: '#3b82f6',
+              borderRadius: 6,
+              barPercentage: 0.6,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                font: { size: 11 },
+                usePointStyle: true,
+              },
+              onClick: (e, legendItem, legend) => {
+                const index = legendItem.datasetIndex;
+                const ci = legend.chart;
+                const meta = ci.getDatasetMeta(index);
+                meta.hidden = !meta.hidden;
+                ci.update();
+              }
+            },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#f3f4f6' },
+              title: { display: true, text: 'm³' }
+            },
+            x: {
+              grid: { display: false }
+            }
+          },
+          animation: { duration: 1000, easing: 'easeInOutQuad' }
+        }
+      });
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+    } finally {
+      canvas.style.opacity = '1';
+    }
+  }
+
+  // =========== MAPA DE CLIENTES ===========
+  function mostrarMapaClientes() {
+    const modal = document.getElementById('modalMapaClientes');
+    const content = document.getElementById('modalMapaClientesContent');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+
+    setTimeout(() => {
+      content.classList.remove('scale-95', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+
+    setTimeout(() => {
+      if (!mapaClientes) {
+        mapaClientes = L.map('mapaClientes').setView([-34.3, -70.9], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(mapaClientes);
+        capaClientes = L.layerGroup().addTo(mapaClientes);
+      }
+      mapaClientes.invalidateSize();
+
+      if (capaClientes) {
+        capaClientes.clearLayers();
+        puntosClientes.forEach(p => {
+          const marker = L.marker([p.lat, p.lng]).addTo(capaClientes);
+          const popupContent = `
+            <div style="font-family: Arial, sans-serif;">
+              <strong>${p.nombre}</strong><br>
+              Medidor: ${p.medidor || '—'}<br>
+              Dirección: ${p.direccion || '—'}<br>
+              <hr class="my-2">
+              <a href="/empresa/{{ slug }}/clientes/${p.id}/" 
+                 style="display: inline-block; background-color: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.9rem;">
+                Ver detalle
+              </a>
+            </div>
+          `;
+          marker.bindPopup(popupContent);
+        });
+      }
+    }, 100);
+  }
+
+  function cerrarMapaClientes() {
+    const modal = document.getElementById('modalMapaClientes');
+    const content = document.getElementById('modalMapaClientesContent');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }, 300);
+  }
+
+  // =========== MODALES iOS ===========
+  function mostrarModalIOS() {
+    const modal = document.getElementById('modalIOS');
+    const content = document.getElementById('modalIOSContent');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      content.classList.remove('scale-95', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  function cerrarModalIOS() {
+    const modal = document.getElementById('modalIOS');
+    const content = document.getElementById('modalIOSContent');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }, 300);
+  }
+
+  // =========== GENERACIÓN DE BOLETAS ===========
+  function mostrarModalBoleta() {
+    const toast = document.getElementById('toastBoleta');
+    toast.classList.remove('hidden');
+    let progress = 0;
+    const progressFill = document.getElementById('progressFill');
+    if (progressInterval) clearInterval(progressInterval);
+    progressInterval = setInterval(() => {
+      progress += 5;
+      if (progress <= 100) {
+        progressFill.style.width = progress + '%';
+      } else {
+        clearInterval(progressInterval);
+        const icon = toast.querySelector('.fa-cog');
+        icon.className = 'fas fa-check text-emerald-600';
+        icon.classList.remove('animate-spin');
+        toast.querySelector('.text-sm.font-semibold').textContent = 'Boletas generadas';
+        toast.querySelector('.text-xs').textContent = 'Redirigiendo...';
+        setTimeout(() => {
+          document.getElementById('formBoleta').submit();
+        }, 1500);
+      }
+    }, 80);
+  }
+
+  function cerrarToast() {
+    document.getElementById('toastBoleta').classList.add('hidden');
+    if (progressInterval) clearInterval(progressInterval);
+  }
+
+  const formBoleta = document.getElementById('formBoleta');
+  if (formBoleta) {
+    formBoleta.addEventListener('submit', (e) => {
+      if (!confirm('¿Generar boletas del mes?')) e.preventDefault();
+    });
+  }
+
+  // =========== LISTAR, EDITAR, ELIMINAR PRODUCCIÓN ===========
+  function abrirModalListaProduccion() {
+    document.getElementById('modalListaProduccion').classList.remove('hidden');
+    document.getElementById('modalListaProduccion').classList.add('flex');
+    cargarProducciones();
+  }
+
+  function cerrarModalListaProduccion() {
+    document.getElementById('modalListaProduccion').classList.add('hidden');
+    document.getElementById('modalListaProduccion').classList.remove('flex');
+  }
+
+  async function cargarProducciones() {
+    const contenedor = document.getElementById('contenedorTablaProduccion');
+    contenedor.innerHTML = '<p class="text-center text-gray-500 py-4">Cargando...</p>';
+    try {
+      const url = "{% url 'api_listar_producciones' slug=slug %}";
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.error) {
+        contenedor.innerHTML = `<p class="text-center text-red-500 py-4">${data.error}</p>`;
+        return;
+      }
+      if (data.length === 0) {
+        contenedor.innerHTML = '<p class="text-center text-gray-500 py-4">No hay registros de producción.</p>';
+        return;
+      }
+      let html = `
+        <table class="min-w-full bg-white border border-gray-200">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="py-2 px-4 border-b">Fecha</th>
+              <th class="py-2 px-4 border-b">Pozo</th>
+              <th class="py-2 px-4 border-b">Volumen (m³)</th>
+              <th class="py-2 px-4 border-b">Observación</th>
+              <th class="py-2 px-4 border-b">Acciones</th>
+             </thead>
+          <tbody>
+      `;
+      data.forEach(p => {
+        html += `
+          <tr class="border-b hover:bg-gray-50">
+            <td class="py-2 px-4">${p.fecha}</td>
+            <td class="py-2 px-4">${escapeHtml(p.pozo_nombre)}</td>
+            <td class="py-2 px-4">${p.volumen}</td>
+            <td class="py-2 px-4">${escapeHtml(p.observacion || '-')}</td>
+            <td class="py-2 px-4">
+              <button onclick="editarProduccion(${p.id})" class="text-blue-600 hover:text-blue-800 mr-2"><i class="fas fa-edit"></i></button>
+              <button onclick="eliminarProduccion(${p.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+      html += `</tbody>
+        </table>`;
+      contenedor.innerHTML = html;
+    } catch (error) {
+      contenedor.innerHTML = `<p class="text-center text-red-500 py-4">Error al cargar los datos.</p>`;
+      console.error(error);
+    }
+  }
+
+  async function editarProduccion(id) {
+    try {
+      const url = "{% url 'api_detalle_produccion' slug=slug produccion_id=999999 %}".replace('999999', id);
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+      document.getElementById('editProduccionId').value = data.id;
+      document.getElementById('editPozo').value = data.pozo;
+      document.getElementById('editFecha').value = data.fecha;
+      document.getElementById('editVolumen').value = data.volumen;
+      document.getElementById('editObservacion').value = data.observacion || '';
+      document.getElementById('modalEditarProduccion').classList.remove('hidden');
+      document.getElementById('modalEditarProduccion').classList.add('flex');
+    } catch (error) {
+      alert('Error al cargar los datos de la producción');
+      console.error(error);
+    }
+  }
+
+  function cerrarModalEditarProduccion() {
+    document.getElementById('modalEditarProduccion').classList.add('hidden');
+    document.getElementById('modalEditarProduccion').classList.remove('flex');
+  }
+
+  document.getElementById('formEditarProduccion').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const id = document.getElementById('editProduccionId').value;
+    const formData = new FormData(this);
+    const data = {
+      pozo: formData.get('pozo'),
+      fecha: formData.get('fecha'),
+      volumen: formData.get('volumen'),
+      observacion: formData.get('observacion'),
+    };
+    try {
+      const url = "{% url 'editar_produccion' slug=slug produccion_id=999999 %}".replace('999999', id);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error HTTP:', response.status, errorText);
+        alert(`Error del servidor: ${response.status}\n${errorText.substring(0, 200)}`);
+        return;
+      }
+      const result = await response.json();
+      if (result.success) {
+        cerrarModalEditarProduccion();
+        mostrarToast('Producción actualizada correctamente', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      alert('Error de conexión');
+      console.error(error);
+    }
+  });
+
+  async function eliminarProduccion(id) {
+    if (!confirm('¿Está seguro de eliminar este registro de producción?')) return;
+    try {
+      const url = "{% url 'eliminar_produccion' slug=slug produccion_id=999999 %}".replace('999999', id);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error HTTP:', response.status, errorText);
+        alert(`Error del servidor: ${response.status}\n${errorText.substring(0, 200)}`);
+        return;
+      }
+      const result = await response.json();
+      if (result.success) {
+        mostrarToast('Producción eliminada correctamente', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      alert('Error de conexión');
+      console.error(error);
+    }
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  function mostrarToast(mensaje, tipo = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-6 right-6 bg-white shadow-lg rounded-lg border-l-4 border-emerald-500 px-4 py-3 z-50 animate-slideIn`;
+    toast.innerHTML = `<div class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500"></i><p class="text-sm text-gray-700">${mensaje}</p></div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      toast.style.transition = 'all 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+</script>
 </body>
 </html>

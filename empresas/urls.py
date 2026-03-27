@@ -22,4 +22,9 @@ urlpatterns = [
     path('api/pozo/<int:pozo_id>/', views.api_pozo_detalle, name='api_pozo_detalle'),
     path('editar-pozo/<int:pozo_id>/', views.editar_pozo_api, name='editar_pozo'),
     path('editar-pozo/<int:pozo_id>/', editar_pozo, name='editar_pozo'),
+    path('api/produccion/<slug:slug>/', views.api_listar_producciones, name='api_listar_producciones'),
+    path('api/produccion/<slug:slug>/<int:produccion_id>/', views.api_detalle_produccion, name='api_detalle_produccion'),
+    path('api/produccion/<slug:slug>/<int:produccion_id>/editar/', views.editar_produccion, name='editar_produccion'),
+    path('api/produccion/<slug:slug>/<int:produccion_id>/eliminar/', views.eliminar_produccion, name='eliminar_produccion'),
+    path('api/datos-consumo/<slug:slug>/', views.datos_consumo_api, name='api_datos_consumo'),
 ]
