@@ -1,17 +1,18 @@
 {
-  "app_name": "SSR APR VATICANO",
-  "empresa_nombre": "APR VATICANO",
+  "app_name": "SSR APR-VATICANO",
+  "empresa_nombre": "APR-VATICANO",
   "empresa_slug": "apr-vaticano",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "primary_color": "#1E40AF",
   "secondary_color": "#DC2626",
   "base_url": "http://localhost:8000/api/apr-vaticano/",
-  "api_key": "e261112bbbc287365956273b9b6233a4e2892c36c9ea3b05a32f3175aa7be4cd",
+  "api_key": "423f8167964eed466fb487930f97a322ac45d8d2e80af4cae0a7008f02d3d9fc",
   "sectores": [
+    "CARRETERA",
     "LAS BANDURRIAS",
     "VATICANO",
-    "LAS CABRAS",
-    "LAS MERCEDES"
+    "LAS MERCEDES",
+    "LAS CABRAS"
   ],
   "habilitar_mapa": true,
   "habilitar_offline": true,

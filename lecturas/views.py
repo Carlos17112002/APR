@@ -37,6 +37,15 @@ from empresas.models import Empresa
 from lecturas.models import LecturaMovil
 from clientes.models import Cliente
 
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.db.models import Q
+from django.db.models.functions import ExtractYear
+from empresas.models import Empresa
+from lecturas.models import LecturaMovil
+from clientes.models import Cliente
+
 @login_required
 def listado_lecturas_app(request, alias):
     """
@@ -46,14 +55,36 @@ def listado_lecturas_app(request, alias):
     
     # Verificar que el usuario tiene acceso a esta empresa (implementar según tu lógica)
 
+    # --- Obtener parámetros GET con valores por defecto ---
+    mes_param = request.GET.get('mes')
+    anio_param = request.GET.get('anio')
+    estado_param = request.GET.get('estado', '')
+    usuario_param = request.GET.get('usuario', '')
+
+    # Si no hay parámetro 'mes', usamos el mes actual
+    if mes_param is None:
+        mes_default = str(timezone.now().month)
+    else:
+        mes_default = mes_param
+
+    # Si no hay parámetro 'anio', usamos el año actual (solo si el mes no es 'all')
+    if anio_param is None:
+        # Si el mes es 'all', no forzamos año (así no limitamos la consulta)
+        if mes_default == 'all':
+            anio_default = 'all'
+        else:
+            anio_default = str(timezone.now().year)
+    else:
+        anio_default = anio_param
+
     filtros = {
-        'mes': request.GET.get('mes', 'all'),
-        'anio': request.GET.get('anio', 'all'),
-        'estado': request.GET.get('estado', ''),
-        'usuario': request.GET.get('usuario', ''),
+        'mes': mes_default,
+        'anio': anio_default,
+        'estado': estado_param,
+        'usuario': usuario_param,
     }
     
-    # Construir query usando empresa_slug en lugar de empresa
+    # --- Construir query usando empresa_slug ---
     query = Q(empresa_slug=alias)
     
     if filtros['mes'] != 'all':
@@ -76,10 +107,10 @@ def listado_lecturas_app(request, alias):
     if filtros['usuario']:
         query &= Q(usuario_app__icontains=filtros['usuario'])
     
-    # Obtener lecturas
+    # --- Obtener lecturas ---
     lecturas = LecturaMovil.objects.filter(query).order_by('-fecha_lectura', '-fecha_sincronizacion')
     
-    # Estadísticas
+    # --- Estadísticas rápidas ---
     hoy = timezone.now().date()
     inicio_mes = hoy.replace(day=1)
     
@@ -93,17 +124,17 @@ def listado_lecturas_app(request, alias):
         fecha_sincronizacion__date__gte=inicio_mes
     ).count()
     
-    # Obtener usuarios únicos
+    # --- Usuarios únicos ---
     usuarios = LecturaMovil.objects.filter(
         empresa_slug=alias
     ).values_list('usuario_app', flat=True).distinct()
     
-    # Obtener estados únicos para filtro
+    # --- Estados únicos para filtro ---
     estados_filtro = LecturaMovil.objects.filter(
         empresa_slug=alias
     ).values_list('estado', flat=True).distinct()
     
-    # Obtener información de clientes desde la BD específica usando el ORM
+    # --- Información de clientes (desde la BD de la empresa) ---
     cliente_info = {}
     try:
         db_alias = f'db_{alias}'
@@ -119,7 +150,7 @@ def listado_lecturas_app(request, alias):
         print(f"Error obteniendo info de clientes: {e}")
         cliente_info = {}
     
-    # Añadir información del cliente a cada lectura
+    # --- Añadir info de cliente a cada lectura ---
     lecturas_con_info = []
     for lectura in lecturas:
         cliente_valor = str(lectura.cliente)
@@ -138,7 +169,7 @@ def listado_lecturas_app(request, alias):
             'cliente_info': info_cliente
         })
     
-    # Opciones para filtros - MESES
+    # --- Opciones para filtros ---
     meses = [
         (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
         (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
@@ -162,8 +193,9 @@ def listado_lecturas_app(request, alias):
         current_year = timezone.now().year
         anios = list(range(current_year - 4, current_year + 1))
     
+    # --- Contexto para el template ---
     context = {
-        'empresa': empresa_obj,  # pasamos el objeto para usar en template
+        'empresa': empresa_obj,
         'slug': alias,
         'lecturas_con_info': lecturas_con_info,
         'lecturas_hoy': lecturas_hoy,

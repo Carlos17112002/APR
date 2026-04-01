@@ -2,10 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>Editar {{ cliente.nombre }} - {{ empresa.nombre }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS y JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -42,6 +46,13 @@
             margin-bottom: 1.25rem;
             padding-bottom: 0.75rem;
             border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .map-container {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1rem;
         }
     </style>
 </head>
@@ -202,13 +213,27 @@
                 </div>
             </div>
 
-            <!-- Datos Arranque (campos de Contrato) -->
+            <!-- Datos Arranque (campos de Contrato) - con campo Número de Contrato -->
             <div class="form-section card-shadow">
                 <div class="form-section-title">
                     <i class="fas fa-tools mr-2 text-amber-600"></i>
                     Datos Arranque
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- NUEVO CAMPO: Número de Contrato -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Contrato</label>
+                        <input type="text" name="numero_contrato" list="contrato-numbers"
+                               value="{{ contrato.numero_contrato|default:'' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus"
+                               placeholder="Ingrese o seleccione un número">
+                        <datalist id="contrato-numbers">
+                            {% for num in suggested_contrato_numbers %}
+                                <option value="{{ num }}">{{ num }}</option>
+                            {% endfor %}
+                        </datalist>
+                        <p class="text-xs text-gray-500 mt-1">Puede elegir un número existente o escribir uno nuevo (debe ser único).</p>
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo Cliente</label>
                         <select name="tipo_cliente" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
@@ -315,7 +340,7 @@
                 </div>
             </div>
 
-            <!-- Ubicación Geográfica (coordenadas, campos de Cliente) -->
+            <!-- Ubicación Geográfica con mapa interactivo -->
             <div class="form-section card-shadow">
                 <div class="form-section-title">
                     <i class="fas fa-map-marked-alt mr-2 text-purple-600"></i>
@@ -324,14 +349,39 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
-                        <input type="text" name="latitude" value="{{ cliente.latitude }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                        <input type="text" name="latitude" id="latitude" value="{{ cliente.latitude|default:'' }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
-                        <input type="text" name="longitude" value="{{ cliente.longitude }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
+                        <input type="text" name="longitude" id="longitude" value="{{ cliente.longitude|default:'' }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus">
                     </div>
                 </div>
-                <p class="text-sm text-gray-500 mt-2">Si desea actualizar la ubicación, puede usar el mapa (no incluido en edición por simplicidad).</p>
+                <div class="mt-4">
+                    <p class="text-sm text-gray-600 mb-2">Haga clic en el mapa para seleccionar la ubicación exacta (o arrastre el marcador si existe).</p>
+                    <div class="map-container">
+                        <div id="map" class="w-full h-72 rounded-lg"></div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg mt-3">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-map-pin text-emerald-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Coordenadas seleccionadas</p>
+                                <div class="flex items-center space-x-4 mt-1">
+                                    <div class="text-sm">
+                                        <span class="text-gray-500">Latitud:</span>
+                                        <span id="latDisplay" class="font-mono text-gray-800 ml-1">{% if cliente.latitude %}{{ cliente.latitude }}{% else %}-{% endif %}</span>
+                                    </div>
+                                    <div class="text-sm">
+                                        <span class="text-gray-500">Longitud:</span>
+                                        <span id="lngDisplay" class="font-mono text-gray-800 ml-1">{% if cliente.longitude %}{{ cliente.longitude }}{% else %}-{% endif %}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Campos ocultos -->
@@ -357,5 +407,81 @@
             </div>
         </form>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer) return;
+
+            // Obtener coordenadas del cliente de forma segura
+            let initialLat = null;
+            let initialLng = null;
+
+            try {
+                // Usar JSON para evitar problemas con formato decimal
+                const latStr = '{{ cliente.latitude|default:'null'|safe }}';
+                const lngStr = '{{ cliente.longitude|default:'null'|safe }}';
+                if (latStr !== 'null' && lngStr !== 'null') {
+                    initialLat = parseFloat(latStr.replace(',', '.'));
+                    initialLng = parseFloat(lngStr.replace(',', '.'));
+                    if (isNaN(initialLat) || isNaN(initialLng)) {
+                        initialLat = null;
+                        initialLng = null;
+                    }
+                }
+            } catch(e) {
+                console.warn('Error parsing coordinates', e);
+            }
+
+            const hasCoords = initialLat !== null && initialLng !== null && !isNaN(initialLat) && !isNaN(initialLng);
+
+            // Crear mapa
+            const map = L.map('map').setView(hasCoords ? [initialLat, initialLng] : [-33.456, -70.648], 13);
+
+            // Capa de tiles confiable
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            let marker = null;
+
+            if (hasCoords) {
+                marker = L.marker([initialLat, initialLng], { draggable: true }).addTo(map);
+                marker.on('dragend', function(e) {
+                    const pos = marker.getLatLng();
+                    updateCoordinates(pos.lat, pos.lng);
+                });
+                updateCoordinates(initialLat, initialLng);
+            }
+
+            function updateCoordinates(lat, lng) {
+                const latInput = document.getElementById('latitude');
+                const lngInput = document.getElementById('longitude');
+                const latDisplay = document.getElementById('latDisplay');
+                const lngDisplay = document.getElementById('lngDisplay');
+                if (latInput) latInput.value = lat;
+                if (lngInput) lngInput.value = lng;
+                if (latDisplay) latDisplay.textContent = lat.toFixed(6);
+                if (lngDisplay) lngDisplay.textContent = lng.toFixed(6);
+            }
+
+            map.on('click', function(e) {
+                const { lat, lng } = e.latlng;
+                updateCoordinates(lat, lng);
+
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                marker.on('dragend', function(e) {
+                    const pos = marker.getLatLng();
+                    updateCoordinates(pos.lat, pos.lng);
+                });
+                map.setView([lat, lng], 15);
+            });
+        });
+    </script>
+
 </body>
 </html>

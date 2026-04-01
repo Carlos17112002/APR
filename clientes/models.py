@@ -47,7 +47,7 @@ class Contrato(models.Model):
     Relacionado uno a uno con Cliente.
     """
     cliente = models.OneToOneField(Cliente, on_delete=models.CASCADE, related_name='contrato')
-
+    numero_contrato = models.CharField(max_length=50, unique=True, null=True, blank=True, db_index=True)
     # Datos Arranque (según template)
     tipo_cliente = models.CharField(max_length=50, blank=True)
     tipo_servicio_ssr = models.CharField(max_length=50, blank=True)  # Tipo SSR

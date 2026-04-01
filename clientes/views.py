@@ -15,6 +15,30 @@ from empresas.models import Empresa
 # VISTAS PARA GESTIÓN DE CLIENTES (sin autenticación)
 # ============================================================================
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db.models import Max
+from decimal import Decimal
+from empresas.models import Empresa
+from clientes.models import Cliente, Contrato
+
+def obtener_proximo_numero_contrato(alias_db):
+    """
+    Obtiene el próximo número de contrato (incremental) basado en el máximo existente.
+    Solo considera números que sean enteros (ignora textos no numéricos).
+    Retorna el siguiente número como string.
+    """
+    contratos = Contrato.objects.using(alias_db).exclude(numero_contrato__isnull=True).exclude(numero_contrato='')
+    max_num = 0
+    for c in contratos:
+        try:
+            num = int(c.numero_contrato)
+            if num > max_num:
+                max_num = num
+        except ValueError:
+            continue
+    return str(max_num + 1)
+
 def crear_cliente(request, alias):
     slug = alias
     alias_db = f'db_{slug}'
@@ -36,7 +60,7 @@ def crear_cliente(request, alias):
         latitude = request.POST.get('latitude')
         longitude = request.POST.get('longitude')
 
-        # Sanitizar coordenadas (reemplazar coma por punto y convertir a float)
+        # Sanitizar coordenadas
         if latitude:
             latitude = latitude.replace(',', '.')
             try:
@@ -61,7 +85,7 @@ def crear_cliente(request, alias):
         fecha_incorporacion = request.POST.get('fecha_incorporacion') or None
         numero_libro = request.POST.get('numero_libro', '')
 
-        # --- Campos del Contrato (Arranque y Facturación) ---
+        # --- Campos del Contrato ---
         tipo_cliente = request.POST.get('tipo_cliente', '')
         tipo_servicio_ssr = request.POST.get('tipo_servicio_ssr', '')
         fecha_contrato = request.POST.get('fecha_contrato') or None
@@ -80,11 +104,13 @@ def crear_cliente(request, alias):
         tipo_medidor = request.POST.get('tipo_medidor', '')
         sello_medidor = request.POST.get('sello_medidor', '')
         codigo_union_domiciliaria = request.POST.get('codigo_union_domiciliaria', '')
-
         email_recepcion_documento = request.POST.get('email_recepcion_documento', '')
         tarifa = request.POST.get('tarifa', '')
         tipo_documento = request.POST.get('tipo_documento', '')
         tipo_servicio = request.POST.get('tipo_servicio', '')
+
+        # Número de contrato (si viene del formulario)
+        numero_contrato_manual = request.POST.get('numero_contrato', '').strip()
 
         # Validar campos obligatorios del cliente
         if not all([rut, nombre, direccion, medidor]):
@@ -120,15 +146,27 @@ def crear_cliente(request, alias):
                     numero_libro=numero_libro,
                 )
 
+                # Determinar número de contrato
+                if numero_contrato_manual:
+                    numero_contrato = numero_contrato_manual
+                    # Validar unicidad si se proporcionó manualmente
+                    if Contrato.objects.using(alias_db).filter(numero_contrato=numero_contrato).exists():
+                        error = f'El número de contrato {numero_contrato} ya está en uso.'
+                        cliente.delete()  # Eliminar cliente creado para no dejar datos huérfanos
+                        raise Exception(error)
+                else:
+                    numero_contrato = obtener_proximo_numero_contrato(alias_db)
+
                 # Crear contrato asociado
                 Contrato.objects.using(alias_db).create(
                     cliente=cliente,
+                    numero_contrato=numero_contrato,
                     tipo_cliente=tipo_cliente,
                     tipo_servicio_ssr=tipo_servicio_ssr,
                     fecha_contrato=fecha_contrato,
                     comuna=comuna,
                     ciudad=ciudad,
-                    sector_arranque=sector,  # Usamos el mismo sector por defecto
+                    sector_arranque=sector,
                     direccion_arranque=direccion_arranque,
                     utm_norte=utm_norte,
                     utm_este=utm_este,
@@ -148,10 +186,12 @@ def crear_cliente(request, alias):
                     tipo_servicio=tipo_servicio,
                 )
 
-                messages.success(request, 'Cliente creado exitosamente.')
+                messages.success(request, f'Cliente creado exitosamente. N° Contrato: {numero_contrato}')
                 return redirect('listado_clientes', alias=slug)
+
             except Exception as e:
-                error = f'Error al registrar el cliente: {str(e)}'
+                if error is None:
+                    error = f'Error al registrar el cliente: {str(e)}'
 
     return render(request, 'crear_cliente.html', {
         'empresa': empresa,
@@ -164,56 +204,56 @@ def crear_cliente(request, alias):
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from empresas.models import Empresa
-from clientes.models import Cliente
+from clientes.models import Cliente, Contrato
 from boletas.models import Boleta
 
 def listado_clientes(request, alias):
     slug = alias
-    db_alias = f'db_{slug}'                     # Base de datos de la empresa
+    db_alias = f'db_{slug}'
     empresa = get_object_or_404(Empresa, slug=slug)
 
-    # Obtener sectores (método de Empresa)
-    sectores = empresa.sectores()  # Asegúrate de que este método existe
-
-    # Obtener clientes desde la BD de la empresa
+    sectores = empresa.sectores()
     clientes = Cliente.objects.using(db_alias).all()
 
-    # Filtros (aplicados en la BD de la empresa)
+    # Obtener parámetros de búsqueda (incluyendo número de contrato)
     sector = request.GET.get('sector')
     rut = request.GET.get('rut')
     nombre = request.GET.get('nombre')
+    numero_contrato = request.GET.get('numero_contrato')  # NUEVO
+
+    # Aplicar filtros
     if sector:
         clientes = clientes.filter(sector=sector)
     if rut:
         clientes = clientes.filter(rut__icontains=rut)
     if nombre:
         clientes = clientes.filter(nombre__icontains=nombre)
+    if numero_contrato:
+        # Filtrar por número de contrato a través de la relación OneToOne
+        clientes = clientes.filter(contrato__numero_contrato__icontains=numero_contrato)
 
     clientes = clientes.order_by('nombre')
 
-    # Período actual en formato YYYY-MM
+    # Obtener contratos relacionados en una sola consulta (evita N+1)
+    contratos = Contrato.objects.using(db_alias).filter(cliente__in=clientes)
+    contratos_dict = {c.cliente_id: c for c in contratos}
+
+    # Período actual y boletas
     hoy = timezone.now()
     periodo_actual = f"{hoy.year}-{hoy.month:02d}"
-
-    # Obtener boletas del mes en la BD de la empresa
     boletas_del_mes = Boleta.objects.using(db_alias).filter(
         empresa_slug=empresa.slug,
         periodo=periodo_actual
-    ).values('cliente_id', 'id')   # Obtenemos tanto el ID del cliente como el de la boleta
-
-    # Crear diccionarios para acceso rápido
+    ).values('cliente_id', 'id')
     clientes_con_boleta = {b['cliente_id']: b['id'] for b in boletas_del_mes}
 
-    # Asignar atributos a cada cliente
+    # Enriquecer clientes con datos adicionales
     for cliente in clientes:
-        if cliente.id in clientes_con_boleta:
-            cliente.boleta_mes = True
-            cliente.boleta_id = clientes_con_boleta[cliente.id]
-        else:
-            cliente.boleta_mes = False
-            cliente.boleta_id = None
+        cliente.boleta_mes = cliente.id in clientes_con_boleta
+        cliente.boleta_id = clientes_con_boleta.get(cliente.id)
+        contrato = contratos_dict.get(cliente.id)
+        cliente.numero_contrato = contrato.numero_contrato if contrato else ''
 
-    # Calcular cantidad de clientes con email (estadística opcional)
     clientes_con_email = clientes.exclude(email='').count()
 
     context = {
@@ -221,7 +261,8 @@ def listado_clientes(request, alias):
         'slug': slug,
         'clientes': clientes,
         'sectores': sectores,
-        'clientes_con_email': clientes_con_email,  # para la tarjeta de estadísticas
+        'clientes_con_email': clientes_con_email,
+        'filtro_numero_contrato': numero_contrato,  # para mantener el valor en el campo de búsqueda
     }
     return render(request, 'listado_clientes.html', context)
 
@@ -396,6 +437,8 @@ def detalle_cliente(request, alias, cliente_id):
     return render(request, 'clientes/detalle_cliente.html', context)
 
 
+from django.db.models import Q, Max
+
 def editar_cliente(request, alias, cliente_id):
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
@@ -409,8 +452,24 @@ def editar_cliente(request, alias, cliente_id):
     sectores = empresa.sectores()
     error = None
 
+    # --- Obtener números de contrato sugeridos (excluyendo el actual) ---
+    existing_contratos = Contrato.objects.using(db_alias).exclude(cliente=cliente).exclude(
+        Q(numero_contrato__isnull=True) | Q(numero_contrato='')
+    ).values_list('numero_contrato', flat=True).distinct()
+    
+    # Calcular el siguiente número disponible (máximo + 1)
+    max_num = Contrato.objects.using(db_alias).exclude(numero_contrato__isnull=True).exclude(numero_contrato='').aggregate(Max('numero_contrato'))['numero_contrato__max']
+    if max_num:
+        try:
+            next_num = int(max_num) + 1
+            suggested_numbers = list(existing_contratos) + [str(next_num)]
+        except ValueError:
+            suggested_numbers = list(existing_contratos)
+    else:
+        suggested_numbers = list(existing_contratos) + ['1']
+
     if request.method == 'POST':
-        # Campos de Cliente
+        # --- Campos de Cliente ---
         rut = request.POST.get('rut')
         nombre = request.POST.get('nombre')
         apellido_paterno = request.POST.get('apellido_paterno', '')
@@ -437,7 +496,6 @@ def editar_cliente(request, alias, cliente_id):
             except (ValueError, TypeError):
                 longitude = None
 
-        # Resto de campos de cliente (fechas, etc.)
         fecha_nacimiento = request.POST.get('fecha_nacimiento') or None
         fecha_defuncion = request.POST.get('fecha_defuncion') or None
         sexo = request.POST.get('sexo', '')
@@ -449,7 +507,7 @@ def editar_cliente(request, alias, cliente_id):
         fecha_incorporacion = request.POST.get('fecha_incorporacion') or None
         numero_libro = request.POST.get('numero_libro', '')
 
-        # Campos del contrato
+        # --- Campos del contrato ---
         tipo_cliente = request.POST.get('tipo_cliente', '')
         tipo_servicio_ssr = request.POST.get('tipo_servicio_ssr', '')
         fecha_contrato = request.POST.get('fecha_contrato') or None
@@ -468,13 +526,15 @@ def editar_cliente(request, alias, cliente_id):
         tipo_medidor = request.POST.get('tipo_medidor', '')
         sello_medidor = request.POST.get('sello_medidor', '')
         codigo_union_domiciliaria = request.POST.get('codigo_union_domiciliaria', '')
-
         email_recepcion_documento = request.POST.get('email_recepcion_documento', '')
         tarifa = request.POST.get('tarifa', '')
         tipo_documento = request.POST.get('tipo_documento', '')
         tipo_servicio = request.POST.get('tipo_servicio', '')
 
-        # Validar campos obligatorios
+        # --- Número de contrato (con validación de unicidad) ---
+        numero_contrato = request.POST.get('numero_contrato', '').strip()
+
+        # Validar campos obligatorios del cliente
         if not all([rut, nombre, direccion, medidor]):
             error = 'Los campos RUT, Nombre, Dirección y Medidor son obligatorios.'
         else:
@@ -503,7 +563,15 @@ def editar_cliente(request, alias, cliente_id):
                 cliente.numero_libro = numero_libro
                 cliente.save(using=db_alias)
 
-                # Actualizar contrato
+                # Actualizar contrato (validar número si se cambió)
+                if numero_contrato and contrato.numero_contrato != numero_contrato:
+                    if Contrato.objects.using(db_alias).filter(numero_contrato=numero_contrato).exists():
+                        error = f'El número de contrato "{numero_contrato}" ya está en uso.'
+                    else:
+                        contrato.numero_contrato = numero_contrato
+                elif not numero_contrato:
+                    contrato.numero_contrato = None  # o puedes mantener el anterior si prefieres
+                # Actualizar demás campos del contrato
                 contrato.tipo_cliente = tipo_cliente
                 contrato.tipo_servicio_ssr = tipo_servicio_ssr
                 contrato.fecha_contrato = fecha_contrato
@@ -527,10 +595,12 @@ def editar_cliente(request, alias, cliente_id):
                 contrato.tarifa = tarifa
                 contrato.tipo_documento = tipo_documento
                 contrato.tipo_servicio = tipo_servicio
-                contrato.save(using=db_alias)
 
-                messages.success(request, f'Cliente {cliente.nombre} actualizado correctamente.')
-                return redirect('detalle_cliente', alias=alias, cliente_id=cliente.id)
+                if not error:
+                    contrato.save(using=db_alias)
+                    messages.success(request, f'Cliente {cliente.nombre} actualizado correctamente.')
+                    return redirect('detalle_cliente', alias=alias, cliente_id=cliente.id)
+
             except Exception as e:
                 error = f'Error al actualizar el cliente: {str(e)}'
 
@@ -541,6 +611,7 @@ def editar_cliente(request, alias, cliente_id):
         'contrato': contrato,
         'sectores': sectores,
         'error': error,
+        'suggested_contrato_numbers': suggested_numbers,  # para el datalist
     }
     return render(request, 'clientes/editar_cliente.html', context)
 
@@ -782,62 +853,117 @@ def generar_boleta_individual(request, empresa_slug, cliente_id, lectura_id=None
     messages.success(request, f"Boleta generada para {cliente.nombre} por ${total}.")
     return redirect('ver_boleta', boleta_id=boleta.id)
 
-import csv
-import logging
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
 from datetime import date
-from django.http import HttpResponse, HttpResponseServerError
-from django.shortcuts import get_object_or_404
-from empresas.models import Empresa
-from clientes.models import Cliente
 
-logger = logging.getLogger(__name__)
+def exportarclientes_excel(request, alias):
+    """
+    Exporta la lista de clientes a Excel con formato profesional.
+    Respeta los filtros GET: sector, rut, nombre.
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
 
-def exportar_clientes_csv(request, alias):
-    try:
-        db_alias = f'db_{alias}'
-        empresa = get_object_or_404(Empresa, slug=alias)
+    # Obtener clientes con los mismos filtros que en el listado
+    clientes = Cliente.objects.using(db_alias).all()
 
-        # Obtener clientes con los mismos filtros que en el listado
-        clientes = Cliente.objects.using(db_alias).all()
+    sector = request.GET.get('sector')
+    rut = request.GET.get('rut')
+    nombre = request.GET.get('nombre')
+    if sector:
+        clientes = clientes.filter(sector=sector)
+    if rut:
+        clientes = clientes.filter(rut__icontains=rut)
+    if nombre:
+        clientes = clientes.filter(nombre__icontains=nombre)
 
-        sector = request.GET.get('sector')
-        rut = request.GET.get('rut')
-        nombre = request.GET.get('nombre')
-        if sector:
-            clientes = clientes.filter(sector=sector)
-        if rut:
-            clientes = clientes.filter(rut__icontains=rut)
-        if nombre:
-            clientes = clientes.filter(nombre__icontains=nombre)
+    clientes = clientes.order_by('nombre')
 
-        clientes = clientes.order_by('nombre')
+    # Obtener contratos relacionados en una sola consulta (para número de contrato)
+    contratos = Contrato.objects.using(db_alias).filter(cliente__in=clientes)
+    contratos_dict = {c.cliente_id: c for c in contratos}
 
-        # Crear respuesta CSV
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="clientes_{alias}_{date.today()}.csv"'
+    # Crear libro y hoja
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Clientes"
 
-        writer = csv.writer(response)
-        # Encabezados (sin fecha_creacion)
-        writer.writerow(['ID', 'RUT', 'Nombre', 'Email', 'Teléfono', 'Dirección', 'Medidor', 'Sector', 'Latitud', 'Longitud'])
+    # Estilos (igual que en otros informes)
+    header_font = Font(name='Calibri', size=12, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    cell_font = Font(name='Calibri', size=10)
+    cell_alignment = Alignment(horizontal='left', vertical='center')
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
 
-        for cliente in clientes:
-            writer.writerow([
-                cliente.id,
-                cliente.rut or '',
-                cliente.nombre or '',
-                cliente.email or '',
-                cliente.telefono or '',
-                cliente.direccion or '',
-                cliente.medidor or '',
-                cliente.sector or '',
-                cliente.latitude or '',
-                cliente.longitude or '',
-            ])
+    # Encabezados (incluyendo N° Contrato)
+    headers = [
+        'ID', 'RUT', 'Nombre', 'Apellido Paterno', 'Apellido Materno',
+        'Email', 'Teléfono', 'Dirección', 'Sector', 'N° Medidor',
+        'N° Contrato', 'Latitud', 'Longitud'
+    ]
 
-        return response
-    except Exception as e:
-        logger.error(f"Error exportando clientes para {alias}: {e}", exc_info=True)
-        return HttpResponseServerError(f"Error interno: {e}")
+    # Escribir encabezados
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+
+    # Llenar datos
+    for row_idx, cliente in enumerate(clientes, start=2):
+        contrato = contratos_dict.get(cliente.id)
+        row_data = [
+            cliente.id,
+            cliente.rut or '',
+            cliente.nombre or '',
+            cliente.apellido_paterno or '',
+            cliente.apellido_materno or '',
+            cliente.email or '',
+            cliente.telefono or '',
+            cliente.direccion or '',
+            cliente.sector or '',
+            cliente.medidor or '',
+            contrato.numero_contrato if contrato else '',
+            cliente.latitude or '',
+            cliente.longitude or '',
+        ]
+        for col_idx, value in enumerate(row_data, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.font = cell_font
+            cell.alignment = cell_alignment
+            cell.border = border
+            if row_idx % 2 == 0:
+                cell.fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
+
+    # Ajustar ancho de columnas
+    for col_idx in range(1, len(headers) + 1):
+        max_length = 0
+        column_letter = get_column_letter(col_idx)
+        for row in range(1, ws.max_row + 1):
+            cell_value = ws.cell(row, col_idx).value
+            if cell_value:
+                max_length = max(max_length, len(str(cell_value)))
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Congelar primera fila (opcional)
+    ws.freeze_panes = 'A2'
+
+    # Crear respuesta HTTP
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="clientes_{alias}_{date.today()}.xlsx"'
+    wb.save(response)
+    return response
 
 
 import csv
