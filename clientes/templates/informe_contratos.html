@@ -8,7 +8,7 @@
 </head>
 <body class="bg-gray-100">
     <div class="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow">
-        <h1 class="text-2xl font-bold text-emerald-700 mb-4">Exportar Contratos</h1>
+        <h1 class="text-2xl font-bold text-emerald-700 mb-4">Informe Contratos</h1>
         <p class="mb-6 text-gray-600">Seleccione el criterio de ordenamiento para el archivo CSV.</p>
 
         <form action="{% url 'exportar_contratos_excel' alias=slug %}" method="get" class="space-y-4">
@@ -30,7 +30,7 @@
             <div class="flex justify-between gap-4 pt-4">
                 <a href="{% url 'panel_empresa' slug=slug %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Cancelar</a>
                 <button type="submit" name="formato" value="excel" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2">
-                    <i class="fas fa-file-excel"></i> Excel
+                    <i class="fas fa-file-excel"></i>Descargar Informe
                 </button>
             </div>
         </form>

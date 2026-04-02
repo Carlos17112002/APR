@@ -743,11 +743,11 @@
           </button>
         </form>
 
-        <!-- Informes (activa el menú desplegable) -->
-        <a href="#" onclick="document.getElementById('informesMenu').classList.toggle('hidden'); return false;" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
+        <!-- Informes (activa el menú desplegable) 
+        <a id="informesToggle" onclick="document.getElementById('informesMenu').classList.toggle('hidden'); return false;" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
           <i class="fas fa-chart-bar text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Informes</p>
-        </a>
+        </a> -->
 
         <!-- Configuración App -->
         <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
@@ -755,23 +755,25 @@
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Config. App</p>
         </a>
 
-        <!-- Dispositivos Móviles -->
+        <!-- Dispositivos Móviles 
         <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
           <i class="fas fa-phone-alt text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Dispositivos</p>
-        </a>
+        </a> -->
 
-        <!-- Exportar Datos (placeholder) -->
+        <!-- Exportar Datos (placeholder) 
         <a href="#" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
           <i class="fas fa-download text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Exportar</p>
-        </a>
+        </a> -->
 
-        <!-- Historial de Lecturas -->
+        <!-- Historial de Lecturas 
         <a href="{% url 'listado_lecturas_app' alias=empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
           <i class="fas fa-history text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Historial</p>
-        </a>
+        </a> -->
+
+         <!-- Mapa de Clientes (abre modal) -->
       </div>
     </div>
 
