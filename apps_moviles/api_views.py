@@ -473,6 +473,14 @@ def registrar_dispositivo(request):
         'message': 'Usa POST para registrar dispositivo'
     }, status=405)
 
+import json
+from datetime import datetime
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from lecturas.models import LecturaMovil, DispositivoMovil
+from .models import TokenQR
+from clientes.models import Cliente
+
 @csrf_exempt
 def subir_lecturas(request):
     # Manejar preflight OPTIONS para CORS
@@ -486,30 +494,57 @@ def subir_lecturas(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-    # Verificar token del dispositivo
+    # Verificar token (puede ser de dispositivo o QR)
     token = request.headers.get('X-Dispositivo-Token')
     if not token:
         return JsonResponse({'error': 'Token no proporcionado'}, status=401)
 
+    dispositivo = None
+    empresa = None
+    usuario_app = None
+
+    # 1. Intentar como token de dispositivo (DispositivoMovil)
     try:
         dispositivo = DispositivoMovil.objects.get(token_acceso=token, activo=True)
+        empresa = dispositivo.empresa
+        usuario_app = dispositivo.usuario
+        print(f"🔑 Token de dispositivo válido: {dispositivo.usuario} (empresa: {empresa.slug})")
     except DispositivoMovil.DoesNotExist:
+        pass
+
+    # 2. Si no es dispositivo, intentar como token QR
+    if not dispositivo:
+        try:
+            token_qr = TokenQR.objects.get(token=token)
+            if not token_qr.is_valid():
+                return JsonResponse({'error': 'Token QR expirado'}, status=401)
+            empresa = token_qr.empresa
+            usuario_app = f"qr_{empresa.slug}"
+            print(f"🔑 Token QR válido para empresa: {empresa.slug}")
+            # Crear un dispositivo virtual para mantener compatibilidad con el resto del código
+            # (no se guarda en BD, solo para tener un objeto con atributos necesarios)
+            dispositivo = type('DispositivoVirtual', (), {
+                'empresa': empresa,
+                'usuario': usuario_app,
+                'activo': True
+            })()
+        except TokenQR.DoesNotExist:
+            return JsonResponse({'error': 'Token inválido'}, status=401)
+
+    if not dispositivo:
         return JsonResponse({'error': 'Token inválido'}, status=401)
 
     try:
         data = json.loads(request.body)
         lecturas = data.get('lecturas', [])
-        print(f"📊 Recibiendo {len(lecturas)} lecturas de {dispositivo.usuario} (empresa: {dispositivo.empresa.slug})")
+        print(f"📊 Recibiendo {len(lecturas)} lecturas de {usuario_app} (empresa: {empresa.slug})")
 
-        alias_db = f'db_{dispositivo.empresa.slug}'
+        alias_db = f'db_{empresa.slug}'
 
         procesadas = 0
         rechazadas = 0
         errores = []
         ids_guardados = []
-
-        # Importar aquí para evitar dependencia circular
-        from clientes.models import Cliente
 
         for idx, lectura_data in enumerate(lecturas):
             try:
@@ -528,14 +563,13 @@ def subir_lecturas(request):
 
                 # Convertir fecha (string ISO a objeto date)
                 try:
-                    from datetime import datetime
                     fecha_lectura = datetime.fromisoformat(fecha_lectura_str).date()
                 except:
                     raise ValueError("Formato de fecha inválido")
 
-                # Crear objeto LecturaMovil usando empresa_id (IntegerField)
+                # Crear objeto LecturaMovil
                 nueva_lectura = LecturaMovil(
-                    empresa_id=dispositivo.empresa.id,  # ← ¡CORREGIDO!
+                    empresa_id=empresa.id,
                     cliente=cliente_id,
                     fecha_lectura=fecha_lectura,
                     lectura_actual=lectura_actual,
@@ -545,13 +579,14 @@ def subir_lecturas(request):
                     latitud=lectura_data.get('latitud'),
                     longitud=lectura_data.get('longitud'),
                     foto_medidor=lectura_data.get('foto_url'),
-                    estado='pendiente',  # Estado inicial
-                    usuario_app=dispositivo.usuario,
-                    empresa_slug=dispositivo.empresa.slug,
+                    estado='pendiente',
+                    usuario_app=usuario_app,
+                    empresa_slug=empresa.slug,
                 )
                 nueva_lectura.save(using=alias_db)
                 procesadas += 1
-                ids_guardados.append(str(nueva_lectura.id))
+                # Guardamos el ID como entero (sin convertir a string)
+                ids_guardados.append(nueva_lectura.id)
                 print(f"✅ Lectura {idx} guardada en {alias_db} con ID {nueva_lectura.id}")
 
             except Exception as e:
