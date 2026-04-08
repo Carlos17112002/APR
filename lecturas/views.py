@@ -1867,7 +1867,6 @@ def registrar_lectura_ajax(request, alias, cliente_id):
         logger.error(f"Error en registrar_lectura_ajax: {e}", exc_info=True)
         return JsonResponse({'success': False, 'error': str(e)})
     
-    
 @login_required
 @require_POST
 def eliminar_lectura_ajax(request, alias, lectura_id):

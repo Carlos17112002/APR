@@ -39,13 +39,11 @@ def get_local_ip():
     return ip
 
 def get_base_url(request):
-    """Retorna la URL base del sitio según el entorno."""
     if settings.DEBUG:
-        # En desarrollo, usar IP local (ajusta si prefieres 10.0.2.2 para emulador)
-        local_ip = get_local_ip()
+        # Reemplaza con tu IP real (no 0.0.0.0)
+        local_ip = '192.168.1.30'  # <-- cámbiala por la que obtuviste
         return f"http://{local_ip}:8000"
     else:
-        # En producción, usar el dominio real
         return f"{request.scheme}://{request.get_host()}"
 
 def _qr_a_base64(qr_img):
@@ -766,7 +764,8 @@ def descargar_clientes_completo(request, empresa_slug):
                 'nombre': cliente.nombre,
                 'direccion': cliente.direccion or '',
                 'sector': cliente.sector or 'Sin Sector',
-                'numero_medidor': cliente.medidor or f"MED-{cliente.id:05d}",
+                'medidor': cliente.medidor or f"MED-{cliente.id:05d}",   # ← clave corregida
+                'numero_medidor': cliente.medidor or f"MED-{cliente.id:05d}", # opcional
                 'latitud': cliente.latitude or 0.0,
                 'longitud': cliente.longitude or 0.0,
                 'estado': 'Activo',
@@ -806,17 +805,18 @@ def descargar_clientes_segmento(request, empresa_slug):
         total_clientes = Cliente.objects.using(alias_db).count()
         clientes_qs = Cliente.objects.using(alias_db).all()[offset:offset + limit]
         for cliente in clientes_qs:
-            clientes.append({
-                'id': cliente.id,
-                'codigo': cliente.rut or f"CL-{cliente.id:04d}",
-                'nombre': cliente.nombre,
-                'direccion': cliente.direccion or '',
-                'sector': cliente.sector or 'Sin Sector',
-                'numero_medidor': cliente.medidor or f"MED-{cliente.id:05d}",
-                'latitud': cliente.latitude or 0.0,
-                'longitud': cliente.longitude or 0.0,
-                'estado': 'Activo',
-            })
+                clientes.append({
+                    'id': cliente.id,
+                    'codigo': cliente.rut or f"CL-{cliente.id:04d}",
+                    'nombre': cliente.nombre,
+                    'direccion': cliente.direccion or '',
+                    'sector': cliente.sector or 'Sin Sector',
+                    'medidor': cliente.medidor or f"MED-{cliente.id:05d}",   # ← clave corregida
+                    'numero_medidor': cliente.medidor or f"MED-{cliente.id:05d}", # opcional
+                    'latitud': cliente.latitude or 0.0,
+                    'longitud': cliente.longitude or 0.0,
+                    'estado': 'Activo',
+                })
         next_offset = offset + limit if offset + limit < total_clientes else None
         response_data = {
             'empresa': empresa.nombre,
