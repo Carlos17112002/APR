@@ -2,44 +2,30 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Mapa de Clientes - {{ empresa.nombre }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    #map {
-      height: 600px;
-      width: 100%;
-    }
-    .leaflet-popup-content {
-      width: 250px;
-    }
+    #map { height: 600px; width: 100%; }
+    .leaflet-popup-content { width: 280px; }
     .popup-form input, .popup-form textarea {
-      width: 100%;
-      margin-bottom: 6px;
-      padding: 4px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      width: 100%; margin-bottom: 6px; padding: 6px;
+      border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem;
     }
     .popup-form button {
-      background-color: #16a34a;
-      color: white;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+      background-color: #16a34a; color: white; padding: 6px 12px;
+      border: none; border-radius: 4px; cursor: pointer; width: 100%;
     }
-    .popup-form button:hover {
-      background-color: #15803d;
-    }
+    .popup-form button:hover { background-color: #15803d; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
-
   <div class="max-w-6xl mx-auto py-8 px-4">
     <h1 class="text-3xl font-bold text-green-700 mb-4">📍 Mapa de Clientes - {{ empresa.nombre }}</h1>
-    
     {% if clientes %}
       <div id="map" class="rounded shadow border border-gray-300"></div>
     {% else %}
@@ -47,22 +33,31 @@
         No hay clientes con coordenadas para mostrar en el mapa.
       </div>
     {% endif %}
-    
     <div class="mt-6 text-right">
       <a href="{% url 'listado_lecturas_app' alias=slug %}" class="text-blue-600 hover:underline">⬅️ Volver</a>
     </div>
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    console.log('CSRF Token:', csrfToken ? 'Sí' : 'No');
+
+    document.addEventListener("DOMContentLoaded", function() {
       {% if clientes %}
-        // Inicializar mapa
-        const map = L.map('map').setView([-33.7, -70.7], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
+        const map = L.map('map').setView([-33.45694, -70.64827], 11);
+        
+        // Usar tile server de Stamen (no requiere referer y es muy estable)
+        L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png', {
+          attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.',
+          subdomains: 'abcd',
+          minZoom: 1,
+          maxZoom: 19,
+          detectRetina: true
         }).addTo(map);
 
-        // Array para guardar los marcadores y ajustar el zoom después
+        // Forzar redibujado
+        map.on('zoomend', () => map.invalidateSize());
+
         const markers = [];
 
         {% for cliente in clientes %}
@@ -70,44 +65,43 @@
             (function() {
               const lat = {{ cliente.latitude|safe }};
               const lng = {{ cliente.longitude|safe }};
-              
-              // Validar que sean números
-              if (!isNaN(lat) && !isNaN(lng)) {
+              if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
                 const marker = L.marker([lat, lng]).addTo(map);
-                marker.bindPopup(`
-                  <strong>{{ cliente.nombre }}</strong><br>
-                  Medidor: {{ cliente.medidor }}<br>
-                  Dirección: {{ cliente.direccion|default:"—" }}<br>
-                  <hr class="my-2">
-                  <form method="post" action="{% url 'crear_lectura' alias=slug %}" class="popup-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
-                    <label class="block text-xs font-bold">Fecha:</label>
-                    <input type="date" name="fecha" required>
-                    <label class="block text-xs font-bold">Valor (m³):</label>
-                    <input type="number" step="0.01" name="valor" required>
-                    <label class="block text-xs font-bold">Observación:</label>
-                    <textarea name="observacion" rows="2"></textarea>
-                    <button type="submit" class="w-full mt-2">Guardar Lectura</button>
-                  </form>
-                `);
+                const popupContent = `
+                  <div style="min-width: 200px;">
+                    <strong>{{ cliente.nombre|escapejs }}</strong><br>
+                    Medidor: {{ cliente.medidor|escapejs }}<br>
+                    Dirección: {{ cliente.direccion|default:"—"|escapejs }}<br>
+                    <hr class="my-2">
+                    <form method="post" action="{% url 'crear_lectura' alias=slug %}" class="popup-form">
+                      <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                      <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                      <label>Fecha:</label>
+                      <input type="date" name="fecha" required>
+                      <label>Valor (m³):</label>
+                      <input type="number" step="0.01" name="valor" required>
+                      <label>Observación:</label>
+                      <textarea name="observacion" rows="2"></textarea>
+                      <button type="submit">Guardar Lectura</button>
+                    </form>
+                  </div>
+                `;
+                marker.bindPopup(popupContent);
                 markers.push(marker);
               }
             })();
           {% endif %}
         {% endfor %}
 
-        // Ajustar el mapa para que muestre todos los marcadores
         if (markers.length > 0) {
           const group = L.featureGroup(markers);
-          map.fitBounds(group.getBounds().pad(0.1));
+          map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 15 });
+          console.log(`${markers.length} marcadores cargados`);
         } else {
-          // Si no hay marcadores válidos, mostrar mensaje en consola
-          console.log("No se encontraron marcadores con coordenadas válidas.");
+          map.setView([-33.45694, -70.64827], 11);
         }
       {% endif %}
     });
   </script>
-
 </body>
 </html>
