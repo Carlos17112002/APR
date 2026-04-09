@@ -8,6 +8,7 @@ from django.conf import settings
 from empresas.models import Empresa
 from clientes.models import Cliente
 from lecturas.models import LecturaMovil, DispositivoMovil
+from .models import TokenQR
 from datetime import datetime
 
 def obtener_url_base(request, for_qr=False):
@@ -23,13 +24,10 @@ def obtener_url_base(request, for_qr=False):
     
     # Si es para generar un QR o detectamos que viene de un móvil
     if for_qr or request.headers.get('User-Agent', '').lower().find('mobile') != -1:
-        # Usar URL pública de Render
         return RENDER_URL
-    elif 'localhost' in host or '127.0.0.1' in host or '192.168.' in host:
-        # Si estamos en desarrollo local y es una petición directa
+    elif 'localhost' in host or '127.0.0.1' in host or '192.168.1.30' in host:
         return f"{scheme}://{host}"
     else:
-        # En producción o si ya es una URL pública
         return f"{scheme}://{host}"
 
 @csrf_exempt
@@ -48,30 +46,24 @@ def api_config_app(request, empresa_slug):
                 'message': 'La aplicación móvil no ha sido generada para esta empresa.'
             }, status=404)
         
-        # DETECTAR SI ES LLAMADA DESDE APP MÓVIL
         user_agent = request.headers.get('User-Agent', '').lower()
         es_app_movil = any(term in user_agent for term in ['dart', 'flutter', 'okhttp', 'mobile'])
         
-        # Obtener URL base CORRECTA (pública para móviles)
         base_url = obtener_url_base(request, for_qr=es_app_movil)
         
         print(f"🌐 URL base detectada: {base_url}")
         print(f"📱 User-Agent: {user_agent}")
         print(f"📱 ¿Es app móvil?: {es_app_movil}")
         
-        # Obtener información de clientes
+        # Obtener información de clientes (desde la BD específica de la empresa)
         alias_db = f'db_{empresa.slug}'
-        
         try:
             total_clientes = Cliente.objects.using(alias_db).count()
-            
-            # Obtener sectores únicos
             sectores_qs = Cliente.objects.using(alias_db).values_list('sector', flat=True).distinct()
             sectores = [str(sector) for sector in sectores_qs if sector]
             
-            # Obtener último período de lectura (usando LecturaMovil)
             try:
-                ultima_lectura = LecturaMovil.objects.using(alias_db).order_by('-fecha_creacion').first()
+                ultima_lectura = LecturaMovil.objects.order_by('-fecha_creacion').first()  # default
                 if ultima_lectura and hasattr(ultima_lectura, 'periodo'):
                     ultimo_periodo = ultima_lectura.periodo
                 elif ultima_lectura and hasattr(ultima_lectura, 'fecha_lectura'):
@@ -87,30 +79,15 @@ def api_config_app(request, empresa_slug):
             sectores = []
             ultimo_periodo = timezone.now().strftime('%Y-%m')
         
-        # ===================================================================
-        # ESTRUCTURA CON URLs PÚBLICAS PARA APP MÓVIL
-        # ===================================================================
-        
         config = {
-            # Información de la empresa
             'empresa_nombre': empresa.nombre,
             'empresa_slug': empresa.slug,
             'empresa_id': empresa.id,
-            
-            # Configuración de colores
             'color_primario': getattr(empresa, 'color_app_primario', '#10b981'),
             'color_secundario': getattr(empresa, 'color_app_secundario', '#047857'),
-            
-            # Versión
             'version_app': getattr(empresa, 'version_app', '1.0.0'),
-            
-            # URL base - IMPORTANTE: usar URL pública
             'base_url': f"{base_url}/api/{empresa.slug}/",
-            
-            # Logo (manejar si no existe)
             'logo_url': None,
-            
-            # Configuración de la app
             'configuracion': {
                 'modo_offline': True,
                 'validar_gps': True,
@@ -124,8 +101,6 @@ def api_config_app(request, empresa_slug):
                 'mostrar_logo': True,
                 'mensaje_bienvenida': f'Bienvenido a {empresa.nombre}',
             },
-            
-            # Información del servidor - URLs PÚBLICAS (prefijo apps_moviles)
             'servidor': {
                 'url': base_url,
                 'api_base': f"{base_url}/apps_moviles/api/",
@@ -138,26 +113,18 @@ def api_config_app(request, empresa_slug):
                     'segmentos': f"{base_url}/apps_moviles/api/segmentos/{empresa.slug}/",
                 }
             },
-            
-            # Datos iniciales
             'datos': {
                 'total_clientes': total_clientes,
                 'sectores': sectores,
                 'ultimo_periodo': ultimo_periodo,
                 'fecha_actualizacion': timezone.now().isoformat(),
             },
-            
-            # Endpoints para descargar clientes - URLs PÚBLICAS
             'endpoints': {
                 'clientes': f"{base_url}/apps_moviles/api/clientes/{empresa.slug}/",
                 'segmentos': f"{base_url}/apps_moviles/api/segmentos/{empresa.slug}/",
             },
-            
-            # Metadata
             'timestamp': timezone.now().isoformat(),
             'success': True,
-            
-            # Información de debug (solo en desarrollo)
             'debug_info': {
                 'url_base_utilizada': base_url,
                 'es_app_movil': es_app_movil,
@@ -167,14 +134,12 @@ def api_config_app(request, empresa_slug):
         }
         
         print(f"✅ Configuración generada con URL: {base_url}")
-        
         return JsonResponse(config, json_dumps_params={'indent': 2})
         
     except Exception as e:
         import traceback
         print(f"❌ Error en api_config_app: {e}")
         print(traceback.format_exc())
-        
         return JsonResponse({
             'success': False,
             'error': 'INTERNAL_ERROR',
@@ -185,7 +150,6 @@ def api_config_app(request, empresa_slug):
 def verificar_conexion(request):
     """Endpoint simple para verificar que la API está funcionando"""
     base_url = obtener_url_base(request)
-    
     return JsonResponse({
         'success': True,
         'message': '✅ API móvil funcionando correctamente',
@@ -206,250 +170,180 @@ def verificar_conexion(request):
 
 @csrf_exempt
 def redirect_to_public(request, empresa_slug):
-    """
-    Redirecciona de localhost a la URL pública de Render.
-    Útil cuando el QR fue generado con localhost pero se escanea desde móvil.
-    """
+    """Redirecciona de localhost a la URL pública de Render."""
     RENDER_URL = "https://apr-8nm9.onrender.com"
     public_url = f"{RENDER_URL}/apps_moviles/api/config/{empresa_slug}/"
-    
-    # Obtener todos los parámetros de la request original
     params = request.GET.copy()
-    
-    # Construir nueva URL con parámetros
     if params:
         public_url = f"{public_url}?{params.urlencode()}"
-    
-    # Redireccionar 301 (permanente) o 302 (temporal)
     from django.shortcuts import redirect
     return redirect(public_url, permanent=False)
 
 @csrf_exempt
 def api_clientes(request, empresa_slug):
-    """Devuelve TODOS los clientes para la app móvil"""
+    """Devuelve TODOS los clientes (desde la BD de la empresa)"""
     try:
         empresa = get_object_or_404(Empresa, slug=empresa_slug)
-        
         print(f"📱 Solicitando clientes para empresa: {empresa.nombre}")
         
         alias_db = f'db_{empresa.slug}'
+        clientes = Cliente.objects.using(alias_db).all()
+        total = clientes.count()
         
-        try:
-            # Obtener todos los clientes
-            clientes = Cliente.objects.using(alias_db).all()
-            total = clientes.count()
-            
-            clientes_data = []
-            for cliente in clientes:
-                # En tu modelo, el medidor está en el cliente mismo, no como modelo separado
-                # Extraer información del medidor del cliente
-                medidor_info = []
-                
-                # Si el cliente tiene campo 'medidor', lo usamos
-                if hasattr(cliente, 'medidor') and cliente.medidor:
-                    medidor_info.append({
-                        'id': cliente.id,  # Usamos el ID del cliente como ID del medidor
-                        'numero': cliente.medidor,
-                        'tipo': getattr(cliente, 'tipo_medidor', 'Agua'),
-                        'marca': getattr(cliente, 'marca_medidor', ''),
-                        'modelo': getattr(cliente, 'modelo_medidor', ''),
-                        'ubicacion': getattr(cliente, 'ubicacion_medidor', 'Exterior'),
-                        'estado': getattr(cliente, 'estado_medidor', 'Activo'),
-                    })
-                else:
-                    # Si no tiene medidor específico, creamos uno genérico
-                    medidor_info.append({
-                        'id': cliente.id,
-                        'numero': f"M{cliente.id:04d}",
-                        'tipo': 'Agua',
-                        'ubicacion': 'Exterior',
-                        'estado': 'Activo',
-                    })
-                
-                clientes_data.append({
+        clientes_data = []
+        for cliente in clientes:
+            medidor_info = []
+            if hasattr(cliente, 'medidor') and cliente.medidor:
+                medidor_info.append({
                     'id': cliente.id,
-                    'codigo': cliente.rut or getattr(cliente, 'codigo', f"CL{cliente.id:04d}"),
-                    'nombre': cliente.nombre,
-                    'direccion': cliente.direccion or '',
-                    'sector': cliente.sector or 'General',
-                    'comuna': getattr(cliente, 'comuna', ''),
-                    'telefono': cliente.telefono or '',
-                    'email': getattr(cliente, 'email', ''),
-                    'latitud': float(cliente.latitude) if cliente.latitude else -33.45694,
-                    'longitud': float(cliente.longitude) if cliente.longitude else -70.64827,
-                    'estado': getattr(cliente, 'estado', 'Activo'),
-                    'observaciones': getattr(cliente, 'observaciones', ''),
-                    'medidores': medidor_info,
-                    'metadata': {
-                        'tiene_coordenadas': bool(cliente.latitude and cliente.longitude),
-                        'tiene_medidor': bool(hasattr(cliente, 'medidor') and cliente.medidor),
-                        'ultima_lectura': getattr(cliente, 'ultima_lectura', None),
-                    }
+                    'numero': cliente.medidor,
+                    'tipo': getattr(cliente, 'tipo_medidor', 'Agua'),
+                    'marca': getattr(cliente, 'marca_medidor', ''),
+                    'modelo': getattr(cliente, 'modelo_medidor', ''),
+                    'ubicacion': getattr(cliente, 'ubicacion_medidor', 'Exterior'),
+                    'estado': getattr(cliente, 'estado_medidor', 'Activo'),
+                })
+            else:
+                medidor_info.append({
+                    'id': cliente.id,
+                    'numero': f"M{cliente.id:04d}",
+                    'tipo': 'Agua',
+                    'ubicacion': 'Exterior',
+                    'estado': 'Activo',
                 })
             
-            print(f"✅ Enviando {len(clientes_data)} clientes para {empresa.nombre}")
-            
-            return JsonResponse({
-                'success': True,
-                'empresa': empresa.nombre,
-                'empresa_slug': empresa.slug,
-                'total': total,
-                'clientes': clientes_data,
-                'timestamp': timezone.now().isoformat(),
-                'pagination': {
-                    'total': total,
-                    'returned': len(clientes_data),
-                    'has_more': False,  # Enviamos todos
+            clientes_data.append({
+                'id': cliente.id,
+                'codigo': cliente.rut or getattr(cliente, 'codigo', f"CL{cliente.id:04d}"),
+                'nombre': cliente.nombre,
+                'direccion': cliente.direccion or '',
+                'sector': cliente.sector or 'General',
+                'comuna': getattr(cliente, 'comuna', ''),
+                'telefono': cliente.telefono or '',
+                'email': getattr(cliente, 'email', ''),
+                'latitud': float(cliente.latitude) if cliente.latitude else -33.45694,
+                'longitud': float(cliente.longitude) if cliente.longitude else -70.64827,
+                'estado': getattr(cliente, 'estado', 'Activo'),
+                'observaciones': getattr(cliente, 'observaciones', ''),
+                'medidores': medidor_info,
+                'metadata': {
+                    'tiene_coordenadas': bool(cliente.latitude and cliente.longitude),
+                    'tiene_medidor': bool(hasattr(cliente, 'medidor') and cliente.medidor),
+                    'ultima_lectura': getattr(cliente, 'ultima_lectura', None),
                 }
-            }, json_dumps_params={'indent': 2})
-            
-        except Exception as e:
-            import traceback
-            print(f"❌ Error en api_clientes: {e}")
-            print(traceback.format_exc())
-            
-            # Datos de ejemplo para debug
-            return JsonResponse({
-                'success': True,
-                'empresa': empresa.nombre,
-                'total': 1,
-                'clientes': [{
-                    'id': 1,
-                    'codigo': 'TEST001',
-                    'nombre': 'Cliente de Prueba',
-                    'direccion': 'Dirección de prueba, EL VATICANO',
-                    'sector': 'EL VATICANO',
-                    'latitud': -33.45694,
-                    'longitud': -70.64827,
-                    'estado': 'Activo',
-                    'medidores': [{
-                        'id': 1,
-                        'numero': 'MED001',
-                        'tipo': 'Agua',
-                        'ubicacion': 'Exterior',
-                    }],
-                    'metadata': {
-                        'tiene_coordenadas': True,
-                        'tiene_medidor': True,
-                    }
-                }],
-                'timestamp': timezone.now().isoformat(),
-                'note': 'Datos de ejemplo por error en base de datos'
             })
-            
+        
+        print(f"✅ Enviando {len(clientes_data)} clientes para {empresa.nombre}")
+        return JsonResponse({
+            'success': True,
+            'empresa': empresa.nombre,
+            'empresa_slug': empresa.slug,
+            'total': total,
+            'clientes': clientes_data,
+            'timestamp': timezone.now().isoformat(),
+            'pagination': {
+                'total': total,
+                'returned': len(clientes_data),
+                'has_more': False,
+            }
+        }, json_dumps_params={'indent': 2})
+        
     except Exception as e:
         import traceback
-        print(f"❌ Error general en api_clientes: {e}")
+        print(f"❌ Error en api_clientes: {e}")
         print(traceback.format_exc())
-        
         return JsonResponse({
-            'success': False,
-            'error': str(e),
+            'success': True,
+            'empresa': empresa.nombre,
+            'total': 1,
+            'clientes': [{
+                'id': 1,
+                'codigo': 'TEST001',
+                'nombre': 'Cliente de Prueba',
+                'direccion': 'Dirección de prueba, EL VATICANO',
+                'sector': 'EL VATICANO',
+                'latitud': -33.45694,
+                'longitud': -70.64827,
+                'estado': 'Activo',
+                'medidores': [{'id': 1, 'numero': 'MED001', 'tipo': 'Agua', 'ubicacion': 'Exterior'}],
+                'metadata': {'tiene_coordenadas': True, 'tiene_medidor': True}
+            }],
             'timestamp': timezone.now().isoformat(),
-        }, status=500)
+            'note': 'Datos de ejemplo por error en base de datos'
+        })
 
 @csrf_exempt
 def api_segmentos(request, empresa_slug):
-    """Devuelve segmentos de clientes (paginación)"""
+    """Devuelve segmentos de clientes (paginación) desde BD empresa"""
     try:
         empresa = get_object_or_404(Empresa, slug=empresa_slug)
-        
-        # Parámetros de paginación
         offset = int(request.GET.get('offset', 0))
-        limit = min(int(request.GET.get('limit', 50)), 100)  # Máximo 100 por segmento
-        
+        limit = min(int(request.GET.get('limit', 50)), 100)
         print(f"📱 Segmentos: empresa={empresa.nombre}, offset={offset}, limit={limit}")
         
         alias_db = f'db_{empresa.slug}'
+        clientes = Cliente.objects.using(alias_db).all()[offset:offset + limit]
+        total = Cliente.objects.using(alias_db).count()
         
-        try:
-            # Obtener segmento de clientes
-            clientes = Cliente.objects.using(alias_db).all()[offset:offset + limit]
-            total = Cliente.objects.using(alias_db).count()
-            
-            clientes_data = []
-            for cliente in clientes:
-                clientes_data.append({
-                    'id': cliente.id,
-                    'codigo': cliente.rut or getattr(cliente, 'codigo', f"CL{cliente.id:04d}"),
-                    'nombre': cliente.nombre,
-                    'direccion': cliente.direccion or '',
-                    'sector': cliente.sector or 'General',
-                    'latitud': float(cliente.latitude) if cliente.latitude else -33.45694,
-                    'longitud': float(cliente.longitude) if cliente.longitude else -70.64827,
-                    'estado': getattr(cliente, 'estado', 'Activo'),
-                    'medidor': getattr(cliente, 'medidor', f"M{cliente.id:04d}"),
-                })
-            
-            next_offset = offset + limit if offset + limit < total else None
-            
-            print(f"✅ Enviando segmento {offset}-{offset+limit} ({len(clientes_data)} clientes)")
-            
-            return JsonResponse({
-                'success': True,
-                'empresa': empresa.nombre,
-                'segment': {
-                    'offset': offset,
-                    'limit': limit,
-                    'count': len(clientes_data),
-                },
-                'total_clientes': total,
-                'clientes': clientes_data,
-                'next_offset': next_offset,
-                'has_more': next_offset is not None,
-                'timestamp': timezone.now().isoformat(),
-            }, json_dumps_params={'indent': 2})
-            
-        except Exception as e:
-            print(f"❌ Error obteniendo segmentos: {e}")
-            import traceback
-            traceback.print_exc()
-            
-            # Datos de ejemplo
-            return JsonResponse({
-                'success': True,
-                'empresa': empresa.nombre,
-                'segment': {
-                    'offset': offset,
-                    'limit': limit,
-                    'count': 1,
-                },
-                'total_clientes': 1,
-                'clientes': [{
-                    'id': 1,
-                    'codigo': 'EJEMPLO001',
-                    'nombre': 'Cliente Ejemplo',
-                    'direccion': 'Calle Ejemplo 123, EL VATICANO',
-                    'sector': 'EL VATICANO',
-                    'latitud': -33.45694,
-                    'longitud': -70.64827,
-                    'estado': 'Activo',
-                    'medidor': 'MED001',
-                }],
-                'next_offset': None,
-                'has_more': False,
-                'timestamp': timezone.now().isoformat(),
-                'note': 'Datos de ejemplo por error en base de datos'
+        clientes_data = []
+        for cliente in clientes:
+            clientes_data.append({
+                'id': cliente.id,
+                'codigo': cliente.rut or getattr(cliente, 'codigo', f"CL{cliente.id:04d}"),
+                'nombre': cliente.nombre,
+                'direccion': cliente.direccion or '',
+                'sector': cliente.sector or 'General',
+                'latitud': float(cliente.latitude) if cliente.latitude else -33.45694,
+                'longitud': float(cliente.longitude) if cliente.longitude else -70.64827,
+                'estado': getattr(cliente, 'estado', 'Activo'),
+                'medidor': getattr(cliente, 'medidor', f"M{cliente.id:04d}"),
             })
-            
-    except Exception as e:
-        print(f"❌ Error general en segmentos: {e}")
-        import traceback
-        traceback.print_exc()
         
+        next_offset = offset + limit if offset + limit < total else None
+        print(f"✅ Enviando segmento {offset}-{offset+limit} ({len(clientes_data)} clientes)")
         return JsonResponse({
-            'success': False,
-            'error': str(e),
+            'success': True,
+            'empresa': empresa.nombre,
+            'segment': {'offset': offset, 'limit': limit, 'count': len(clientes_data)},
+            'total_clientes': total,
+            'clientes': clientes_data,
+            'next_offset': next_offset,
+            'has_more': next_offset is not None,
             'timestamp': timezone.now().isoformat(),
-        }, status=500)
+        }, json_dumps_params={'indent': 2})
+        
+    except Exception as e:
+        import traceback
+        print(f"❌ Error en segmentos: {e}")
+        traceback.print_exc()
+        return JsonResponse({
+            'success': True,
+            'empresa': empresa.nombre,
+            'segment': {'offset': offset, 'limit': limit, 'count': 1},
+            'total_clientes': 1,
+            'clientes': [{
+                'id': 1,
+                'codigo': 'EJEMPLO001',
+                'nombre': 'Cliente Ejemplo',
+                'direccion': 'Calle Ejemplo 123, EL VATICANO',
+                'sector': 'EL VATICANO',
+                'latitud': -33.45694,
+                'longitud': -70.64827,
+                'estado': 'Activo',
+                'medidor': 'MED001',
+            }],
+            'next_offset': None,
+            'has_more': False,
+            'timestamp': timezone.now().isoformat(),
+            'note': 'Datos de ejemplo por error en base de datos'
+        })
 
 @csrf_exempt
 def registrar_dispositivo(request):
-    """Registra un dispositivo móvil"""
+    """Registra un dispositivo móvil (simple)"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            
             return JsonResponse({
                 'success': True,
                 'message': '✅ Dispositivo registrado exitosamente',
@@ -466,24 +360,15 @@ def registrar_dispositivo(request):
                 'timestamp': timezone.now().isoformat(),
                 'note': f'Error parseando JSON: {str(e)}'
             })
-    
     return JsonResponse({
         'success': False,
         'error': 'METHOD_NOT_ALLOWED',
         'message': 'Usa POST para registrar dispositivo'
     }, status=405)
 
-import json
-from datetime import datetime
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from lecturas.models import LecturaMovil, DispositivoMovil
-from .models import TokenQR
-from clientes.models import Cliente
-
 @csrf_exempt
 def subir_lecturas(request):
-    # Manejar preflight OPTIONS para CORS
+    """Recibe lecturas y las guarda en la base de datos DEFAULT (no en db_empresa)"""
     if request.method == 'OPTIONS':
         response = JsonResponse({'message': 'OK'})
         response['Access-Control-Allow-Origin'] = '*'
@@ -494,7 +379,6 @@ def subir_lecturas(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-    # Verificar token (puede ser de dispositivo o QR)
     token = request.headers.get('X-Dispositivo-Token')
     if not token:
         return JsonResponse({'error': 'Token no proporcionado'}, status=401)
@@ -503,7 +387,7 @@ def subir_lecturas(request):
     empresa = None
     usuario_app = None
 
-    # 1. Intentar como token de dispositivo (DispositivoMovil)
+    # 1. Intentar como token de dispositivo
     try:
         dispositivo = DispositivoMovil.objects.get(token_acceso=token, activo=True)
         empresa = dispositivo.empresa
@@ -521,8 +405,6 @@ def subir_lecturas(request):
             empresa = token_qr.empresa
             usuario_app = f"qr_{empresa.slug}"
             print(f"🔑 Token QR válido para empresa: {empresa.slug}")
-            # Crear un dispositivo virtual para mantener compatibilidad con el resto del código
-            # (no se guarda en BD, solo para tener un objeto con atributos necesarios)
             dispositivo = type('DispositivoVirtual', (), {
                 'empresa': empresa,
                 'usuario': usuario_app,
@@ -539,6 +421,7 @@ def subir_lecturas(request):
         lecturas = data.get('lecturas', [])
         print(f"📊 Recibiendo {len(lecturas)} lecturas de {usuario_app} (empresa: {empresa.slug})")
 
+        # Necesitamos alias_db solo para validar clientes
         alias_db = f'db_{empresa.slug}'
 
         procesadas = 0
@@ -555,19 +438,18 @@ def subir_lecturas(request):
                 if not cliente_id or lectura_actual is None or not fecha_lectura_str:
                     raise ValueError("Faltan campos requeridos (cliente_id, lectura_actual, fecha_lectura)")
 
-                # Verificar que el cliente existe en la BD de la empresa
+                # Validar cliente en la BD de la empresa
                 try:
                     cliente = Cliente.objects.using(alias_db).get(id=cliente_id)
                 except Cliente.DoesNotExist:
                     raise ValueError(f"El cliente con ID {cliente_id} no existe en la base de datos de la empresa")
 
-                # Convertir fecha (string ISO a objeto date)
                 try:
                     fecha_lectura = datetime.fromisoformat(fecha_lectura_str).date()
                 except:
                     raise ValueError("Formato de fecha inválido")
 
-                # Crear objeto LecturaMovil
+                # Crear la lectura en la base DEFAULT (sin using)
                 nueva_lectura = LecturaMovil(
                     empresa_id=empresa.id,
                     cliente=cliente_id,
@@ -583,11 +465,10 @@ def subir_lecturas(request):
                     usuario_app=usuario_app,
                     empresa_slug=empresa.slug,
                 )
-                nueva_lectura.save(using=alias_db)
+                nueva_lectura.save()  # 👈 Guarda en default
                 procesadas += 1
-                # Guardamos el ID como entero (sin convertir a string)
                 ids_guardados.append(nueva_lectura.id)
-                print(f"✅ Lectura {idx} guardada en {alias_db} con ID {nueva_lectura.id}")
+                print(f"✅ Lectura {idx} guardada en default con ID {nueva_lectura.id}")
 
             except Exception as e:
                 rechazadas += 1
@@ -609,19 +490,18 @@ def subir_lecturas(request):
     except Exception as e:
         print(f"❌ Error general en subir_lecturas: {e}")
         return JsonResponse({'error': str(e)}, status=400)
-    
+
 @csrf_exempt
 def debug_lecturas(request, empresa_slug):
-    """Endpoint para depuración: lista las lecturas de una empresa (solo con token simple)"""
-    # Autenticación simple para evitar acceso público (cambia el token por uno seguro)
+    """Endpoint para depuración: lista lecturas (desde default) con token simple"""
     auth_header = request.headers.get('Authorization', '')
-    if auth_header != 'Bearer debug-token-123':  # Puedes cambiarlo
+    if auth_header != 'Bearer debug-token-123':
         return JsonResponse({'error': 'No autorizado'}, status=401)
 
     try:
         empresa = Empresa.objects.get(slug=empresa_slug)
-        alias_db = f'db_{empresa.slug}'
-        lecturas = LecturaMovil.objects.using(alias_db).all().order_by('-fecha_lectura')[:20]
+        # Leer lecturas desde default
+        lecturas = LecturaMovil.objects.filter(empresa_slug=empresa_slug).order_by('-fecha_lectura')[:20]
         data = []
         for l in lecturas:
             data.append({
@@ -638,15 +518,10 @@ def debug_lecturas(request, empresa_slug):
 
 @csrf_exempt
 def sincronizar_datos(request, empresa_slug):
-    """Sincroniza datos con el servidor"""
+    """Sincroniza datos (placeholder)"""
     try:
         empresa = get_object_or_404(Empresa, slug=empresa_slug)
-        
         print(f"🔄 Sincronizando datos para {empresa.nombre}")
-        
-        # Aquí implementarías la lógica de sincronización usando LecturaMovil
-        # Por ahora solo devolvemos confirmación
-        
         return JsonResponse({
             'success': True,
             'message': f'✅ Datos sincronizados para {empresa.nombre}',
@@ -660,12 +535,9 @@ def sincronizar_datos(request, empresa_slug):
                 'errors': 0,
             }
         })
-        
     except Exception as e:
-        print(f"❌ Error en sincronizar_datos: {e}")
         import traceback
         traceback.print_exc()
-        
         return JsonResponse({
             'success': False,
             'error': 'SYNC_ERROR',
@@ -677,7 +549,6 @@ def sincronizar_datos(request, empresa_slug):
 def api_test_simple(request):
     """Endpoint simple de prueba"""
     base_url = obtener_url_base(request)
-    
     return JsonResponse({
         'success': True,
         'message': '✅ API móvil funcionando correctamente',
@@ -705,7 +576,6 @@ def api_test_simple(request):
 def debug_info(request):
     """Información de debug para troubleshooting"""
     base_url = obtener_url_base(request)
-    
     return JsonResponse({
         'status': 'debug',
         'timestamp': timezone.now().isoformat(),
@@ -746,7 +616,6 @@ def debug_info(request):
 def public_diagnostic(request):
     """Endpoint público de diagnóstico"""
     RENDER_URL = "https://apr-8nm9.onrender.com"
-    
     return JsonResponse({
         'status': 'online',
         'service': 'SSR Mobile API',

@@ -662,6 +662,31 @@
       </div>
     </div>
 
+    <!-- NUEVO GRÁFICO: CONSUMO POR SECTOR (Volumen m³) -->
+    <div class="stats-card bg-white rounded-xl p-5 animate-fade-in-up" style="animation-delay: 0.75s;">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div>
+          <h3 class="font-semibold text-gray-900">Consumo por Sector</h3>
+          <p class="text-xs text-gray-500 mt-0.5">Volumen total consumido por sector (m³)</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-700" id="totalConsumoSector">
+            <i class="fas fa-chart-bar mr-1"></i> Cargando...
+          </span>
+          <!-- Filtro de período -->
+          <select id="filtroPeriodoSector" onchange="actualizarGraficoConsumoSector()" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-gray-50 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+            <option value="mes">Este mes</option>
+            <option value="trimestre">3 meses</option>
+            <option value="semestre">6 meses</option>
+            <option value="anual">12 meses</option>
+          </select>
+        </div>
+      </div>
+      <div class="h-72">
+        <canvas id="graficoConsumoPorSector"></canvas>
+      </div>
+    </div>
+
     <!-- SECCIÓN: MAPA DE CLIENTES Y TOP CONSUMIDORES -->
     <div class="grid lg:grid-cols-3 gap-6">
       <!-- Mapa de Clientes (usando puntos_clientes) -->
@@ -743,37 +768,11 @@
           </button>
         </form>
 
-        <!-- Informes (activa el menú desplegable) 
-        <a id="informesToggle" onclick="document.getElementById('informesMenu').classList.toggle('hidden'); return false;" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-chart-bar text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Informes</p>
-        </a> -->
-
         <!-- Configuración App -->
         <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
           <i class="fas fa-cog text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Config. App</p>
         </a>
-
-        <!-- Dispositivos Móviles 
-        <a href="{% url 'apps_moviles:gestionar_dispositivos' empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-phone-alt text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Dispositivos</p>
-        </a> -->
-
-        <!-- Exportar Datos (placeholder) 
-        <a href="#" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-download text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Exportar</p>
-        </a> -->
-
-        <!-- Historial de Lecturas 
-        <a href="{% url 'listado_lecturas_app' alias=empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
-          <i class="fas fa-history text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
-          <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Historial</p>
-        </a> -->
-
-         <!-- Mapa de Clientes (abre modal) -->
       </div>
     </div>
 
@@ -950,6 +949,7 @@
   let graficoConsumo = null;          // gráfico dinámico de consumo
   let graficoDistribucion = null;     // gráfico fijo (doughnut)
   let graficoProdVsCons = null;       // gráfico dinámico de producción vs consumo
+  let graficoConsumoSector = null;    // NUEVO: gráfico de consumo por sector
   let progressInterval = null;
 
   // =========== INICIALIZACIÓN ===========
@@ -977,6 +977,9 @@
 
     // Inicializar gráfico de producción vs consumo
     inicializarGraficoProdVsConsDesdeAPI();
+
+    // NUEVO: Inicializar gráfico de consumo por sector
+    actualizarGraficoConsumoSector();
 
     // Eventos para filtros del gráfico producción vs consumo
     const filtroPozo = document.getElementById('filtroPozo');
@@ -1164,6 +1167,96 @@
       });
     } catch (error) {
       console.error('Error al cargar datos:', error);
+    } finally {
+      canvas.style.opacity = '1';
+    }
+  }
+
+  // =========== NUEVO: GRÁFICO CONSUMO POR SECTOR ===========
+  async function actualizarGraficoConsumoSector() {
+    const periodo = document.getElementById('filtroPeriodoSector')?.value || 'mes';
+    const canvas = document.getElementById('graficoConsumoPorSector');
+    if (!canvas) return;
+
+    canvas.style.opacity = '0.5';
+    try {
+      // Ajusta esta URL según tu configuración de URLs en Django
+      const url = "{% url 'api_consumo_por_sector' slug=slug %}?periodo=" + periodo;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Error API Consumo Sector:', data.error);
+        return;
+      }
+
+      // Actualizar badge de total
+      const totalBadge = document.getElementById('totalConsumoSector');
+      if (totalBadge && data.total_general !== undefined) {
+        totalBadge.innerHTML = `<i class="fas fa-chart-bar mr-1"></i> Total: ${parseFloat(data.total_general).toFixed(1)} m³`;
+      }
+
+      if (graficoConsumoSector) graficoConsumoSector.destroy();
+
+      const ctx = canvas.getContext('2d');
+      
+      // Colores para los sectores
+      const colores = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
+      const backgroundColors = data.labels.map((_, i) => colores[i % colores.length]);
+
+      graficoConsumoSector = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: 'Consumo (m³)',
+            data: data.datos,
+            backgroundColor: backgroundColors,
+            borderRadius: 6,
+            barPercentage: 0.6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed.y;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                  return `${value} m³ (${percentage}%)`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#f3f4f6' },
+              title: { display: true, text: 'm³' }
+            },
+            x: {
+              grid: { display: false }
+            }
+          },
+          animation: { duration: 1000, easing: 'easeInOutQuad' }
+        }
+      });
+    } catch (error) {
+      console.error('Error al cargar consumo por sector:', error);
+      // Mostrar estado de error en el badge
+      const totalBadge = document.getElementById('totalConsumoSector');
+      if (totalBadge) {
+        totalBadge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Error`;
+        totalBadge.classList.remove('bg-gray-100', 'text-gray-700');
+        totalBadge.classList.add('bg-red-100', 'text-red-700');
+      }
     } finally {
       canvas.style.opacity = '1';
     }

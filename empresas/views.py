@@ -543,6 +543,86 @@ def panel_empresa(request, slug):
         print(f"Error completo: {traceback.format_exc()}")
         return redirect('dashboard_admin_ssr')
 
+# admin_ssr/views.py
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from dateutil.relativedelta import relativedelta
+from django.db.models import Sum, Q
+import os
+from django.conf import settings
+from empresas.models import Empresa
+
+def api_consumo_por_sector(request, slug):
+    """
+    Retorna JSON con el consumo total (m³) por sector según el período.
+    """
+    empresa = get_object_or_404(Empresa, slug=slug)
+    alias = f'db_{slug}'
+    db_path = os.path.join(settings.BASES_DIR, f'{alias}.sqlite3')
+
+    if not os.path.exists(db_path):
+        return JsonResponse({'error': 'Base de datos no encontrada'}, status=404)
+
+    periodo = request.GET.get('periodo', 'mes')
+    hoy = timezone.now().date()
+
+    if periodo == 'mes':
+        fecha_inicio = hoy.replace(day=1)
+    elif periodo == 'trimestre':
+        fecha_inicio = hoy - relativedelta(months=3)
+    elif periodo == 'semestre':
+        fecha_inicio = hoy - relativedelta(months=6)
+    else:  # anual
+        fecha_inicio = hoy - relativedelta(years=1)
+
+    try:
+        from clientes.models import Cliente
+        from lecturas.models import LecturaMovil
+
+        # Obtener todas las lecturas del período con consumo > 0
+        lecturas = LecturaMovil.objects.filter(
+            empresa_slug=slug,
+            fecha_lectura__gte=fecha_inicio,
+            consumo__isnull=False,
+            consumo__gt=0
+        ).values('cliente', 'consumo')  # Solo traemos cliente (ID) y consumo
+
+        # Diccionario para acumular consumo por sector
+        consumo_por_sector = {}
+        
+        # Para cada lectura, obtener el sector del cliente desde la BD de la empresa
+        for lectura in lecturas:
+            cliente_id = lectura['cliente']
+            consumo = float(lectura['consumo'])
+            
+            try:
+                # Consultar el cliente en la base de datos de la empresa
+                cliente = Cliente.objects.using(alias).only('sector').get(id=cliente_id)
+                sector = cliente.sector.strip() if cliente.sector else 'Sin sector'
+            except Cliente.DoesNotExist:
+                sector = 'Sin sector'
+            
+            consumo_por_sector[sector] = consumo_por_sector.get(sector, 0) + consumo
+
+        # Ordenar por mayor consumo
+        sectores_ordenados = sorted(consumo_por_sector.items(), key=lambda x: x[1], reverse=True)
+
+        labels = [item[0] for item in sectores_ordenados]
+        datos = [round(item[1], 2) for item in sectores_ordenados]
+        total_general = sum(datos)
+
+        return JsonResponse({
+            'labels': labels,
+            'datos': datos,
+            'total_general': round(total_general, 2)
+        })
+
+    except Exception as e:
+        import traceback
+        print("Error en api_consumo_por_sector:", traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=500)
 
 def agregar_produccion(request, slug):
     """

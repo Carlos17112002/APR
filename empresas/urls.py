@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/produccion/<slug:slug>/<int:produccion_id>/editar/', views.editar_produccion, name='editar_produccion'),
     path('api/produccion/<slug:slug>/<int:produccion_id>/eliminar/', views.eliminar_produccion, name='eliminar_produccion'),
     path('api/datos-consumo/<slug:slug>/', views.datos_consumo_api, name='api_datos_consumo'),
+    path('empresa/<slug:slug>/api/consumo-por-sector/', views.api_consumo_por_sector, name='api_consumo_por_sector'),
 ]
