@@ -1908,31 +1908,27 @@ from lecturas.models import LecturaMovil
 from clientes.models import Cliente  # Importa el modelo Cliente
 
 
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from empresas.models import Empresa
+from clientes.models import CambioMedidor, Cliente   # Asegurar que ambos modelos se importan
+
 def reporte_cambio_medidor(request, alias):
-    """
-    Excel report: readings where observation indicates meter change.
-    Filtra lecturas cuya observación contenga "cambio".
-    """
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
 
-    # Filtrar lecturas con observación que contiene "cambio"
-    lecturas = LecturaMovil.objects.filter(
-        empresa_slug=alias,
-        observaciones_app__icontains='cambio'
-    ).order_by('-fecha_lectura')
+    # Obtener cambios desde la BD de la empresa, igual que en detalle_cliente
+    cambios = CambioMedidor.objects.using(db_alias).order_by('-fecha_registro')
 
-    # Obtener clientes desde la base de datos de la empresa
-    client_ids = list(set(lecturas.values_list('cliente', flat=True)))
-    if client_ids:
-        clientes = Cliente.objects.using(db_alias).filter(id__in=client_ids)
-        cliente_dict = {c.id: c for c in clientes}
-    else:
-        cliente_dict = {}
+    # Depuración: imprimir cantidad de registros en consola del servidor
+    print(f"[DEBUG] Cambios encontrados en {db_alias}: {cambios.count()}")
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Cambio de Medidor"
+    ws.title = "Cambios de Medidor"
 
     # Estilos
     header_font = Font(bold=True, color='FFFFFF')
@@ -1942,47 +1938,76 @@ def reporte_cambio_medidor(request, alias):
     cell_alignment = Alignment(horizontal='left', vertical='center')
     border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
 
-    headers = ['Fecha', 'Cliente', 'RUT', 'Lectura Actual (m³)', 'Lectura Anterior (m³)', 'Consumo (m³)', 'Observación', 'Usuario']
-    for col_idx, h in enumerate(headers, 1):
-        cell = ws.cell(1, col_idx, h)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = header_alignment
-        cell.border = border
+    headers = [
+        'Fecha Registro', 'Usuario', 'Periodo',
+        'Cliente', 'RUT',
+        'Medidor Retirado Marca', 'N° Retirado', 'Año Retirado',
+        'Fecha Lectura Ant.', 'Lectura Ant.', 'Lectura Retiro', 'Consumo Final',
+        'Medidor Nuevo Marca', 'N° Nuevo', 'Año Nuevo',
+        'Fecha Instalación', 'Lectura Inicial'
+    ]
 
-    for row_idx, lectura in enumerate(lecturas, 2):
-        cliente = cliente_dict.get(lectura.cliente)
-        row_data = [
-            lectura.fecha_lectura.strftime('%d/%m/%Y'),
-            cliente.nombre if cliente else '',
-            cliente.rut if cliente else '',
-            lectura.lectura_actual,
-            lectura.lectura_anterior or '',
-            lectura.consumo or '',
-            lectura.observaciones_app,
-            lectura.usuario_app,
-        ]
-        for col_idx, val in enumerate(row_data, 1):
-            cell = ws.cell(row_idx, col_idx, val)
-            cell.font = cell_font
-            cell.alignment = cell_alignment
+    if cambios.exists():
+        # Escribir cabeceras
+        for col_idx, h in enumerate(headers, 1):
+            cell = ws.cell(1, col_idx, h)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
             cell.border = border
-            if row_idx % 2 == 0:
-                cell.fill = PatternFill(start_color='F9FAFB', fill_type='solid')
-        if lectura.consumo:
-            ws.cell(row_idx, 6).number_format = '#,##0.00'
-            ws.cell(row_idx, 4).number_format = '#,##0.00'
-            ws.cell(row_idx, 5).number_format = '#,##0.00'
 
-    # Ajustar ancho de columnas
-    for col_idx in range(1, len(headers)+1):
-        max_len = 0
-        col_letter = get_column_letter(col_idx)
-        for row in range(1, ws.max_row+1):
-            val = ws.cell(row, col_idx).value
-            if val:
-                max_len = max(max_len, len(str(val)))
-        ws.column_dimensions[col_letter].width = min(max_len+2, 50)
+        # Escribir datos
+        for row_idx, cambio in enumerate(cambios, 2):
+            cliente = cambio.cliente   # relación FK directa
+            row_data = [
+                cambio.fecha_registro.strftime('%d/%m/%Y %H:%M') if cambio.fecha_registro else '',
+                cambio.usuario or '',
+                cambio.periodo or '',
+                cliente.nombre if cliente else '',
+                cliente.rut if cliente else '',
+                cambio.medidor_retirado_marca or '',
+                cambio.medidor_retirado_numero,
+                cambio.medidor_retirado_anio or '',
+                cambio.fecha_lectura_anterior.strftime('%d/%m/%Y') if cambio.fecha_lectura_anterior else '',
+                float(cambio.lectura_anterior) if cambio.lectura_anterior else '',
+                float(cambio.lectura_retiro),
+                float(cambio.consumo_final) if cambio.consumo_final else '',
+                cambio.medidor_nuevo_marca or '',
+                cambio.medidor_nuevo_numero,
+                cambio.medidor_nuevo_anio or '',
+                cambio.fecha_instalacion.strftime('%d/%m/%Y') if cambio.fecha_instalacion else '',
+                float(cambio.lectura_inicial)
+            ]
+            for col_idx, val in enumerate(row_data, 1):
+                cell = ws.cell(row_idx, col_idx, val)
+                cell.font = cell_font
+                cell.alignment = cell_alignment
+                cell.border = border
+                if row_idx % 2 == 0:
+                    cell.fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+
+            # Formato numérico en columnas de lecturas
+            for col in [10, 11, 12, 17]:
+                cell = ws.cell(row_idx, col)
+                if cell.value and isinstance(cell.value, (int, float)):
+                    cell.number_format = '#,##0.00'
+
+        # Ajustar ancho de columnas
+        for col_idx in range(1, len(headers) + 1):
+            max_len = 0
+            col_letter = get_column_letter(col_idx)
+            for row in range(1, ws.max_row + 1):
+                val = ws.cell(row, col_idx).value
+                if val:
+                    max_len = max(max_len, len(str(val)))
+            ws.column_dimensions[col_letter].width = min(max_len + 2, 50)
+    else:
+        # Sin datos: mostrar mensaje en el Excel
+        ws.merge_cells('A1:Q1')
+        cell = ws.cell(1, 1, f'No hay cambios de medidor registrados para {empresa.nombre}.')
+        cell.font = Font(size=12, bold=True, color='FF0000')
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[1].height = 30
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="cambio_medidor_{alias}.xlsx"'
