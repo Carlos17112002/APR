@@ -1,5 +1,5 @@
-<!DOCTYPE html>
 {% load humanize %}
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -75,7 +75,7 @@
 </head>
 <body>
 
-    <!-- Header (sin límite de ancho) -->
+    <!-- Header -->
     <div class="gradient-primary text-white">
         <div class="px-4 sm:px-6 lg:px-8 py-6">
             <div class="flex justify-between items-center">
@@ -102,7 +102,7 @@
         </div>
     </div>
 
-    <!-- Contenido principal (ahora con ancho completo) -->
+    <!-- Contenido principal -->
     <div class="px-4 sm:px-6 lg:px-8 py-8 w-full">
         
         <!-- Mensajes del sistema -->
@@ -240,21 +240,21 @@
                         <tbody class="divide-y divide-gray-200">
                             {% for doc in documentos %}
                             <tr class="table-row-hover">
-                                <td class="px-6 py-4">{{ doc.periodo }}<\/td>
-                                <td class="px-6 py-4">${{ doc.monto|intcomma }}<\/td>
-                                <td class="px-6 py-4">{{ doc.documento }}<\/td>
-                                <td class="px-6 py-4">{{ doc.fecha_emision|date:"d/m/Y" }}<\/td>
-                                <td class="px-6 py-4">{{ doc.fecha_vencimiento|date:"d/m/Y" }}<\/td>
-                                <td class="px-6 py-4">{{ doc.fecha_pago|date:"d/m/Y"|default:"-" }}<\/td>
-                                <td class="px-6 py-4">{{ doc.consumo|floatformat:2 }} m³<\/td>
-                                <td class="px-6 py-4"><a href="{{ doc.url }}" target="_blank" class="text-emerald-600 hover:underline">Ver<\/a><\/td>
-                                <td class="px-6 py-4">{{ doc.pago|yesno:"Sí,No" }}<\/td>
-                                <td class="px-6 py-4">{{ doc.traza }}<\/td>
-                                <td class="px-6 py-4">{{ doc.usuario }}<\/td>
-                            <\/tr>
+                                <td class="px-6 py-4">{{ doc.periodo }}</td>
+                                <td class="px-6 py-4">${{ doc.monto|intcomma }}</td>
+                                <td class="px-6 py-4">{{ doc.documento }}</td>
+                                <td class="px-6 py-4">{{ doc.fecha_emision|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ doc.fecha_vencimiento|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ doc.fecha_pago|date:"d/m/Y"|default:"-" }}</td>
+                                <td class="px-6 py-4">{{ doc.consumo|floatformat:2 }} m³</td>
+                                <td class="px-6 py-4"><a href="{{ doc.url }}" target="_blank" class="text-emerald-600 hover:underline">Ver</a></td>
+                                <td class="px-6 py-4">{{ doc.pago|yesno:"Sí,No" }}</td>
+                                <td class="px-6 py-4">{{ doc.traza }}</td>
+                                <td class="px-6 py-4">{{ doc.usuario }}</td>
+                            </tr>
                             {% endfor %}
                         </tbody>
-                    <\/table>
+                    </table>
                 </div>
                 {% else %}
                 <div class="text-center py-12">
@@ -265,12 +265,11 @@
             </div>
         </div>
 
-        <!-- Contrato (ahora usa el objeto contrato) -->
+        <!-- Contrato -->
         <div id="contentContrato" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow p-6">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6">Datos del Contrato</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Datos Cliente (siguen en cliente) -->
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <h3 class="font-semibold text-emerald-700 mb-3">Datos Cliente</h3>
                         <div class="space-y-2 text-sm">
@@ -287,7 +286,6 @@
                             <p><span class="text-gray-500">Dirección Cliente:</span> {{ cliente.direccion|default:"-" }}</p>
                         </div>
                     </div>
-                    <!-- Datos Arranque (vienen del contrato) -->
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <h3 class="font-semibold text-emerald-700 mb-3">Datos Arranque</h3>
                         <div class="space-y-2 text-sm">
@@ -312,7 +310,6 @@
                             <p><span class="text-gray-500">Código Unión Domiciliaria:</span> {{ contrato.codigo_union_domiciliaria|default:"-" }}</p>
                         </div>
                     </div>
-                    <!-- Datos Facturación (vienen del contrato) -->
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <h3 class="font-semibold text-emerald-700 mb-3">Datos Facturación</h3>
                         <div class="space-y-2 text-sm">
@@ -326,7 +323,7 @@
             </div>
         </div>
 
-        <!-- Subsidio (sin cambios) -->
+        <!-- Subsidio -->
         <div id="contentSubsidio" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
@@ -379,7 +376,7 @@
             </div>
         </div>
 
-        <!-- Cargos y Descuentos (sin cambios) -->
+        <!-- Cargos y Descuentos -->
         <div id="contentCargosDescuentos" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex flex-wrap gap-2">
@@ -489,7 +486,7 @@
             </div>
         </div>
 
-        <!-- Convenios (sin cambios) -->
+        <!-- Convenios -->
         <div id="contentConvenios" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
@@ -584,14 +581,14 @@
                             <tr class="table-row-hover" data-lectura-id="{{ forloop.counter }}">
                                 <td class="px-6 py-4">{{ l.periodo }}</td>
                                 <td class="px-6 py-4">{{ l.fecha_lectura_anterior|date:"d/m/Y"|default:"-" }}</td>
-                                <td class="px-6 py-4">{{ l.lectura_anterior|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ l.lectura_anterior|floatformat:0 }}</td>
                                 <td class="px-6 py-4">{{ l.fecha_lectura_actual|date:"d/m/Y" }}</td>
-                                <td class="px-6 py-4">{{ l.lectura_actual|floatformat:2 }}</td>
-                                <td class="px-6 py-4">{{ l.consumo|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ l.lectura_actual|floatformat:0 }}</td>
+                                <td class="px-6 py-4">{{ l.consumo|floatformat:0 }}</td>
                                 <td class="px-6 py-4">{{ l.cambio_medidor|yesno:"Sí,No" }}</td>
                                 <td class="px-6 py-4">{{ l.termino_medio|default:"-" }}</td>
                                 <td class="px-6 py-4">{{ l.saldo_promedio_anterior|default:"-" }}</td>
-                                <td class="px-6 py-4">{{ l.consumo_facturado|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ l.consumo_facturado|floatformat:0 }}</td>
                                 <td class="px-6 py-4">{{ l.abono_proximo_periodo|default:"-" }}</td>
                                 <td class="px-6 py-4">{{ l.codigo_lectura|default:"-" }}</td>
                             </tr>
@@ -608,7 +605,7 @@
             </div>
         </div>
 
-        <!-- Otros Ingresos (sin cambios) -->
+        <!-- Otros Ingresos -->
         <div id="contentOtrosIngresos" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
@@ -649,12 +646,18 @@
             </div>
         </div>
 
-        <!-- Cambio Medidor (sin cambios) -->
+        <!-- Cambio Medidor (con botón y modal corregido) -->
         <div id="contentCambioMedidor" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
-                    <h2 class="text-xl font-semibold text-gray-900">Cambios de Medidor</h2>
-                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ cambios_medidor|length }} registro(s)</span>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Cambios de Medidor</h2>
+                        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ cambios_medidor|length }} registro(s)</span>
+                    </div>
+                    <button onclick="abrirModalCambioMedidor()" 
+                            class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                        <i class="fas fa-exchange-alt mr-2"></i> Registrar Cambio
+                    </button>
                 </div>
                 {% if cambios_medidor %}
                 <div class="overflow-x-auto">
@@ -677,7 +680,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
+                        <tbody id="tablaCambiosBody" class="divide-y divide-gray-200">
                             {% for cm in cambios_medidor %}
                             <tr class="table-row-hover">
                                 <td class="px-6 py-4">{{ forloop.counter }}</td>
@@ -685,14 +688,14 @@
                                 <td class="px-6 py-4">{{ cm.marca_retirado }}</td>
                                 <td class="px-6 py-4">{{ cm.numero_retirado }}</td>
                                 <td class="px-6 py-4">{{ cm.ano_retirado }}</td>
-                                <td class="px-6 py-4">{{ cm.fecha_lectura_anterior|date:"d/m/Y"|default:"-" }}</td>
-                                <td class="px-6 py-4">{{ cm.lectura_anterior|floatformat:2 }}</td>
-                                <td class="px-6 py-4">{{ cm.lectura_retiro|floatformat:2 }}</td>
-                                <td class="px-6 py-4">{{ cm.consumo|floatformat:2 }}</td>
-                                <td class="px-6 py-4">{{ cm.fecha_instalacion|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ cm.fecha_lectura_anterior|default:"-" }}</td>
+                                <td class="px-6 py-4">{{ cm.lectura_anterior|floatformat:0 }}</td>
+                                <td class="px-6 py-4">{{ cm.lectura_retiro|floatformat:0 }}</td>
+                                <td class="px-6 py-4">{{ cm.consumo|floatformat:0 }}</td>
+                                <td class="px-6 py-4">{{ cm.fecha_instalacion }}</td>
                                 <td class="px-6 py-4">{{ cm.numero_instalado }}</td>
                                 <td class="px-6 py-4">{{ cm.lectura_inicial|floatformat:2 }}</td>
-                                <td class="px-6 py-4">{{ cm.fecha_registro|date:"d/m/Y H:i" }}</td>
+                                <td class="px-6 py-4">{{ cm.fecha_registro }}</td>
                                 <td class="px-6 py-4">{{ cm.usuario }}</td>
                             </tr>
                             {% endfor %}
@@ -700,7 +703,7 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="text-center py-12">
+                <div id="sinCambiosPlaceholder" class="text-center py-12">
                     <i class="fas fa-exchange-alt text-4xl text-gray-300 mb-4"></i>
                     <p class="text-gray-500">No hay cambios de medidor.</p>
                 </div>
@@ -708,7 +711,7 @@
             </div>
         </div>
 
-        <!-- Corte y Reposición (con subpestañas) -->
+        <!-- Corte y Reposición -->
         <div id="contentCorteReposicion" class="tab-content hidden">
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex flex-wrap gap-2">
@@ -838,13 +841,109 @@
         </div>
     </div>
 
+    <!-- Modal de registro de cambio de medidor -->
+    <div id="modalCambioMedidor" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl modal-content max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Registrar Cambio de Medidor</h3>
+                    <button onclick="cerrarModalCambioMedidor()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form id="formCambioMedidor">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+
+                    <!-- Medidor Retirado -->
+                    <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-arrow-down text-red-500"></i> Medidor Retirado
+                        </h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Marca</label>
+                                <input type="text" name="medidor_retirado_marca" value="{{ contrato.marca_medidor|default:'' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Número *</label>
+                                <input type="text" name="medidor_retirado_numero" value="{{ cliente.medidor|default:'' }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Año</label>
+                                <input type="number" name="medidor_retirado_anio" value="{{ contrato.ano_medidor|default:'' }}" min="1980" max="2030" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Fecha Lectura Anterior</label>
+                                <input type="date" name="fecha_lectura_anterior" value="{% if ultima_lectura %}{{ ultima_lectura.fecha_lectura|date:'Y-m-d' }}{% endif %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Lectura Anterior (m³)</label>
+                                <input type="number" step="0.01" name="lectura_anterior" value="{% if ultima_lectura %}{{ ultima_lectura.lectura_actual|floatformat:0 }}{% endif %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Lectura Retiro (m³) *</label>
+                                <input type="number" step="0.01" name="lectura_retiro" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Consumo Final (m³)</label>
+                                <input type="text" name="consumo_final" readonly class="w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medidor Nuevo -->
+                    <div class="mb-6 bg-emerald-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-arrow-up text-emerald-600"></i> Medidor Nuevo
+                        </h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Marca</label>
+                                <input type="text" name="medidor_nuevo_marca" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Número *</label>
+                                <input type="text" name="medidor_nuevo_numero" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Año</label>
+                                <input type="number" name="medidor_nuevo_anio" min="1980" max="2030" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="2026">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Fecha Instalación *</label>
+                                <input type="date" name="fecha_instalacion" required value="{% now 'Y-m-d' %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Lectura Inicial (m³) *</label>
+                                <input type="number" step="0.01" name="lectura_inicial" required value="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalCambioMedidor()" 
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnGuardarCambio"
+                                class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center">
+                            <i class="fas fa-save mr-2"></i> Guardar Cambio
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script>
-        // Datos para el gráfico (pasados desde Django)
+        // Datos para el gráfico
         const fechas = {{ fechas_grafico|safe|default:"[]" }};
         const consumos = {{ consumos_grafico|safe|default:"[]" }};
 
-        // Función para cambiar de pestaña principal
+        // Funciones de pestañas
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             const content = document.getElementById('content' + tabName);
@@ -860,7 +959,6 @@
             }
         }
 
-        // Subpestañas para Cargos y Descuentos
         function switchSubTab(subtab) {
             document.querySelectorAll('[id^="subcontent"]').forEach(el => el.classList.add('hidden'));
             const subContent = document.getElementById('subcontent' + subtab);
@@ -876,7 +974,6 @@
             }
         }
 
-        // Subpestañas para Corte y Reposición
         function switchSubTabCorte(subtab) {
             document.getElementById('subcontentHistoricoCorte')?.classList.add('hidden');
             document.getElementById('subcontentAnulaciones')?.classList.add('hidden');
@@ -896,7 +993,7 @@
             }
         }
 
-        // Inicialización al cargar la página
+        // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             switchTab('Documentos');
             const ctx = document.getElementById('consumoChart');
@@ -925,8 +1022,8 @@
             }
         });
 
-        // ----- Modal de registro de lectura -----
-        let enviando = false;
+        // ----- Modal de lectura (existente) -----
+        let enviandoLectura = false;
 
         function abrirModalLectura() {
             document.getElementById('modalRegistrarLectura').style.display = 'flex';
@@ -941,8 +1038,8 @@
 
         document.getElementById('formRegistrarLectura').addEventListener('submit', function(e) {
             e.preventDefault();
-            if (enviando) return;
-            enviando = true;
+            if (enviandoLectura) return;
+            enviandoLectura = true;
 
             const btn = document.getElementById('btnGuardarLectura');
             btn.disabled = true;
@@ -971,7 +1068,7 @@
                 console.error(error);
             })
             .finally(() => {
-                enviando = false;
+                enviandoLectura = false;
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save mr-2"></i> Guardar Lectura';
             });
@@ -989,9 +1086,7 @@
             if (placeholder) {
                 const contenedor = placeholder.closest('.bg-white');
                 const tabla = contenedor.querySelector('table');
-                if (tabla) {
-                    tabla.classList.remove('hidden');
-                }
+                if (tabla) tabla.classList.remove('hidden');
                 placeholder.remove();
             }
             
@@ -1027,6 +1122,137 @@
             }
         }
 
+        // ----- Modal de cambio de medidor (CORREGIDO) -----
+        let enviandoCambio = false;
+
+        function abrirModalCambioMedidor() {
+            document.getElementById('modalCambioMedidor').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            // Activar cálculo automático al abrir
+            const lecturaAnt = document.querySelector('input[name="lectura_anterior"]');
+            const lecturaRet = document.querySelector('input[name="lectura_retiro"]');
+            const consumoFinal = document.querySelector('input[name="consumo_final"]');
+            
+            function calcular() {
+                const ant = parseFloat(lecturaAnt.value) || 0;
+                const ret = parseFloat(lecturaRet.value) || 0;
+                if (ret > 0 && ant >= 0) {
+                    const cons = ret - ant;
+                    consumoFinal.value = cons > 0 ? cons.toFixed(2) : '0.00';
+                } else {
+                    consumoFinal.value = '';
+                }
+            }
+            
+            if (lecturaAnt && lecturaRet) {
+                lecturaAnt.removeEventListener('input', calcular);
+                lecturaRet.removeEventListener('input', calcular);
+                lecturaAnt.addEventListener('input', calcular);
+                lecturaRet.addEventListener('input', calcular);
+                calcular();
+            }
+        }
+
+        function cerrarModalCambioMedidor() {
+            document.getElementById('modalCambioMedidor').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formCambioMedidor').reset();
+        }
+
+        document.getElementById('formCambioMedidor').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (enviandoCambio) return;
+            enviandoCambio = true;
+
+            const btn = document.getElementById('btnGuardarCambio');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+
+            const formData = new FormData(this);
+            const url = "{% url 'registrar_cambio_medidor_ajax' alias=slug cliente_id=cliente.id %}";
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalCambioMedidor();
+                    mostrarToast('Cambio de medidor registrado correctamente', 'success');
+                    agregarFilaCambioMedidor(data.cambio);
+                    const medidorSpan = document.querySelector('.font-mono.font-semibold.text-gray-900.mt-1');
+                    if (medidorSpan && data.cambio.numero_instalado) {
+                        medidorSpan.textContent = data.cambio.numero_instalado;
+                    }
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                mostrarToast('Error de conexión', 'error');
+                console.error(error);
+            })
+            .finally(() => {
+                enviandoCambio = false;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save mr-2"></i> Guardar Cambio';
+            });
+        });
+
+        function agregarFilaCambioMedidor(cambio) {
+            const tbody = document.getElementById('tablaCambiosBody');
+            const placeholder = document.getElementById('sinCambiosPlaceholder');
+            
+            if (!tbody) {
+                location.reload();
+                return;
+            }
+            
+            if (placeholder) {
+                placeholder.remove();
+                const tabla = document.querySelector('#contentCambioMedidor table');
+                if (tabla) tabla.classList.remove('hidden');
+            }
+            
+            const fila = document.createElement('tr');
+            fila.className = 'table-row-hover';
+            
+            const numFilas = tbody.children.length + 1;
+            
+            fila.innerHTML = `
+                <td class="px-6 py-4">${numFilas}</td>
+                <td class="px-6 py-4">${cambio.periodo}</td>
+                <td class="px-6 py-4">${cambio.marca_retirado || '-'}</td>
+                <td class="px-6 py-4">${cambio.numero_retirado}</td>
+                <td class="px-6 py-4">${cambio.ano_retirado || '-'}</td>
+                <td class="px-6 py-4">${cambio.fecha_lectura_anterior || '-'}</td>
+                <td class="px-6 py-4">${cambio.lectura_anterior}</td>
+                <td class="px-6 py-4">${cambio.lectura_retiro}</td>
+                <td class="px-6 py-4">${cambio.consumo}</td>
+                <td class="px-6 py-4">${cambio.fecha_instalacion}</td>
+                <td class="px-6 py-4">${cambio.numero_instalado}</td>
+                <td class="px-6 py-4">${cambio.lectura_inicial}</td>
+                <td class="px-6 py-4">${cambio.fecha_registro}</td>
+                <td class="px-6 py-4">${cambio.usuario}</td>
+            `;
+            
+            tbody.insertBefore(fila, tbody.firstChild);
+            
+            const contador = document.querySelector('#contentCambioMedidor .bg-emerald-100');
+            if (contador) {
+                let texto = contador.textContent;
+                let match = texto.match(/(\d+)/);
+                if (match) {
+                    let total = parseInt(match[0]) + 1;
+                    contador.textContent = total + ' registro(s)';
+                }
+            }
+        }
+
         function mostrarToast(mensaje, tipo) {
             const toast = document.createElement('div');
             toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${tipo === 'success' ? 'bg-emerald-600' : 'bg-red-600'} toast-animation z-50`;
@@ -1039,6 +1265,14 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
+
+        // Cerrar modales al hacer clic fuera
+        window.addEventListener('click', function(e) {
+            const modalLectura = document.getElementById('modalRegistrarLectura');
+            const modalCambio = document.getElementById('modalCambioMedidor');
+            if (e.target === modalLectura) cerrarModalLectura();
+            if (e.target === modalCambio) cerrarModalCambioMedidor();
+        });
     </script>
 </body>
 </html>

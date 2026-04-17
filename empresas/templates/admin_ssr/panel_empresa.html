@@ -249,22 +249,34 @@
           </div>
         </div>
 
-        <!-- Navegación principal con efectos hover -->
+        <!-- Navegación principal con efectos hover (CONDICIONAL POR PERMISOS) -->
         <div class="hidden md:flex items-center gap-6 text-sm">
+          {% if permisos_usuario is None or 'inventario' in permisos_usuario %}
           <a href="{% url 'inventario' slug=slug %}" class="hover:text-emerald-200 transition-all duration-300 flex items-center gap-1.5 group">
             <i class="fas fa-box text-xs group-hover:scale-110 transition-transform"></i> Inventario
           </a>
+          {% endif %}
+
+          {% if permisos_usuario is None or 'clientes' in permisos_usuario %}
           <a href="{% url 'listado_clientes' alias=slug %}" class="hover:text-emerald-200 transition-all duration-300 flex items-center gap-1.5 group">
             <i class="fas fa-users text-xs group-hover:scale-110 transition-transform"></i> Clientes
           </a>
+          {% endif %}
+
+          {% if permisos_usuario is None or 'lecturas' in permisos_usuario %}
           <a href="{% url 'listado_lecturas_app' alias=empresa.slug %}" class="hover:text-emerald-200 transition-all duration-300 flex items-center gap-1.5 group">
             <i class="fas fa-map-marker-alt text-xs group-hover:scale-110 transition-transform"></i> Lecturas
           </a>
+          {% endif %}
+
+          {% if permisos_usuario is None or 'contabilidad' in permisos_usuario %}
           <a href="{% url 'panel_libro_sii' alias=empresa.slug %}" class="hover:text-emerald-200 transition-all duration-300 flex items-center gap-1.5 group">
             <i class="fas fa-book text-xs group-hover:scale-110 transition-transform"></i> Contabilidad
           </a>
+          {% endif %}
 
-          <!-- MENÚ DE INFORMES con animación -->
+          <!-- MENÚ DE INFORMES (solo si tiene permiso) -->
+          {% if permisos_usuario is None or 'informes' in permisos_usuario %}
           <div class="relative">
             <button id="informesToggle" class="flex items-center gap-1.5 hover:text-emerald-200 transition-colors duration-300 group">
               <i class="fas fa-chart-bar text-xs group-hover:scale-110 transition-transform"></i> Informes
@@ -274,16 +286,6 @@
               <div class="py-2">
                 <div class="px-4 py-1.5 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200 mb-1">Informes Disponibles</div>
                 
-                <!-- Informes existentes -->
-                <!--<a href="{% url 'informe_cargo_descuento' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-exchange-alt w-5 text-emerald-600"></i> Cargo y Descuento
-                </a>
-                <a href="{% url 'informe_cierre_caja' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-cash-register w-5 text-emerald-600"></i> Cierre de Caja
-                </a>
-                <a href="{% url 'informe_contabilidad' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-balance-scale w-5 text-emerald-600"></i> Contabilidad
-                </a> -->
                 <a href="{% url 'informe_contratos_socios' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
                   <i class="fas fa-file-contract w-5 text-emerald-600"></i> Contratos
                 </a>
@@ -291,11 +293,9 @@
                   <i class="fas fa-users w-5 text-emerald-600"></i> Socios
                 </a>
 
-                <!-- Separador y título de la nueva sección -->
                 <div class="border-t border-gray-200 my-2"></div>
                 <div class="px-4 py-1 text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Informes de Lecturas</div>
 
-                <!-- Nuevos informes de lecturas -->
                 <a href="{% url 'reporte_cambio_medidor' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
                   <i class="fas fa-exchange-alt w-5 text-emerald-600"></i> Cambio de Medidor
                 </a>
@@ -311,6 +311,7 @@
               </div>
             </div>
           </div>
+          {% endif %}
         </div>
 
         <!-- Cerrar sesión con efecto -->
@@ -365,6 +366,7 @@
     <!-- TARJETAS DE ESTADÍSTICAS con animación escalonada (solo Clientes y Lecturas) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <!-- Clientes -->
+      {% if permisos_usuario is None or 'clientes' in permisos_usuario %}
       <a href="{% url 'listado_clientes' alias=slug %}" class="stats-card bg-white rounded-xl p-5 block animate-fade-in-up" style="animation-delay: 0.1s;">
         <div class="flex items-start justify-between">
           <div>
@@ -380,8 +382,10 @@
           <span class="font-medium text-gray-700 group-hover:translate-x-1 transition-transform">Ver todos →</span>
         </div>
       </a>
+      {% endif %}
 
       <!-- Lecturas del Mes -->
+      {% if permisos_usuario is None or 'lecturas' in permisos_usuario %}
       <a href="{% url 'listado_lecturas_app' alias=empresa.slug %}" class="stats-card bg-white rounded-xl p-5 block animate-fade-in-up" style="animation-delay: 0.2s;">
         <div class="flex items-start justify-between">
           <div>
@@ -402,9 +406,11 @@
           </div>
         </div>
       </a>
+      {% endif %}
     </div>
 
     <!-- SECCIÓN: APLICACIÓN MÓVIL con diseño moderno -->
+    {% if permisos_usuario is None or 'app_movil' in permisos_usuario %}
     <div class="app-card-3d bg-white/80 backdrop-blur-sm rounded-xl border border-gray-100 p-6 animate-fade-in-up" style="animation-delay: 0.5s;">
       <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div class="flex items-center gap-3">
@@ -519,8 +525,10 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
-    <!-- Botón para abrir modal de producción (solo superadmin) -->
+    <!-- Botón para abrir modal de producción (solo si tiene permiso) -->
+    {% if permisos_usuario is None or 'produccion' in permisos_usuario %}
     <div class="flex justify-end gap-3 mb-4">
         <button onclick="abrirModalProduccion()" 
                 class="btn-3d bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
@@ -531,8 +539,8 @@
                 class="btn-3d bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
             <i class="fas fa-list"></i> Listar Producción
         </button>
-        
     </div>
+    {% endif %}
 
     <!-- Modal para listar producción -->
     <div id="modalListaProduccion" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
@@ -737,14 +745,17 @@
           {% endfor %}
         </div>
         <div class="mt-4 pt-3 border-t border-gray-100">
+          {% if permisos_usuario is None or 'clientes' in permisos_usuario %}
           <a href="{% url 'listado_clientes' alias=slug %}" class="text-xs text-emerald-600 hover:text-emerald-800 font-medium flex items-center justify-center gap-1 group">
             Ver todos los clientes <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
           </a>
+          {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- SECCIÓN: ACCESOS RÁPIDOS (reemplaza acciones del sistema) -->
+    <!-- SECCIÓN: ACCESOS RÁPIDOS (con permisos) -->
+     {% if permisos_usuario is None or 'liquidaciones' in permisos_usuario or 'boletas' in permisos_usuario or 'configuracion' in permisos_usuario %}
     <div class="stats-card bg-white rounded-xl p-5 animate-fade-in-up" style="animation-delay: 1s;">
       <div class="flex items-center gap-3 mb-4">
         <div class="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
@@ -754,12 +765,15 @@
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <!-- Liquidaciones -->
+        {% if permisos_usuario is None or 'liquidaciones' in permisos_usuario %}
         <a href="{% url 'panel_remuneraciones' alias=empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
           <i class="fas fa-file-invoice text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Liquidaciones</p>
         </a>
+        {% endif %}
 
         <!-- Generar Boletas (con modal) -->
+        {% if permisos_usuario is None or 'boletas' in permisos_usuario %}
         <form id="formBoleta" method="post" action="{% url 'generar_boletas_ssr' slug=slug %}" class="contents">
           {% csrf_token %}
           <button type="button" onclick="mostrarModalBoleta()" class="btn-3d bg-emerald-50 hover:bg-emerald-100 p-3 rounded-lg text-center transition-all duration-200 group w-full">
@@ -767,14 +781,18 @@
             <p class="text-xs font-medium text-emerald-700">Generar Boletas</p>
           </button>
         </form>
+        {% endif %}
 
         <!-- Configuración App -->
+        {% if permisos_usuario is None or 'configuracion' in permisos_usuario %}
         <a href="{% url 'apps_moviles:detalle_app_empresa' empresa.slug %}" class="btn-3d bg-gray-50 hover:bg-gray-100 p-3 rounded-lg text-center transition-all duration-200 group">
           <i class="fas fa-cog text-gray-600 mb-1 group-hover:text-emerald-600 transition-colors"></i>
           <p class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">Config. App</p>
         </a>
+        {% endif %}
       </div>
     </div>
+    {% endif %}
 
     <!-- FOOTER -->
     <footer class="pt-6 border-t border-gray-200 text-xs text-gray-500 flex flex-wrap items-center justify-between animate-fade-in-up" style="animation-delay: 1.1s;">

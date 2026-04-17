@@ -1,0 +1,78 @@
+<!-- admin_ssr/templates/admin_ssr/editar_permisos.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Permisos · {{ usuario_admin.username }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f3f4f6; }
+    .glass-card {
+      background: rgba(255,255,255,0.98);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+    }
+    .checkbox-card {
+      transition: all 0.15s;
+      border: 2px solid transparent;
+    }
+    .checkbox-card:has(input:checked) {
+      border-color: #059669;
+      background-color: #ecfdf5;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+<div class="w-full max-w-2xl">
+  <div class="mb-6">
+    <a href="{% url 'lista_admins_empresa' slug=slug %}" class="text-emerald-600 hover:text-emerald-800">
+      <i class="fas fa-arrow-left mr-2"></i> Volver a la lista
+    </a>
+    <h1 class="text-2xl font-bold mt-2 flex items-center gap-3">
+      <i class="fas fa-user-edit text-emerald-600"></i>
+      Editar permisos de {{ usuario_admin.get_full_name|default:usuario_admin.username }}
+    </h1>
+    <p class="text-gray-600 mt-1">Empresa: <span class="font-mono bg-gray-100 px-2 py-0.5 rounded">{{ slug }}</span></p>
+  </div>
+
+  <div class="glass-card rounded-2xl p-8">
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-6">
+        <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-shield-alt text-emerald-600 mr-2"></i>
+          Módulos accesibles
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {% for modulo in modulos_disponibles %}
+          <label class="checkbox-card flex items-center p-4 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50">
+            <input type="checkbox" name="permisos" value="{{ modulo.0 }}" 
+                   {% if modulo.0 in permisos_actuales %}checked{% endif %}
+                   class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500">
+            <div class="ml-3">
+              <div class="font-medium text-gray-900">{{ modulo.1 }}</div>
+              <div class="text-xs text-gray-500"><i class="fas {{ modulo.2 }} mr-1"></i></div>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <a href="{% url 'lista_admins_empresa' slug=slug %}" 
+           class="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
+          Cancelar
+        </a>
+        <button type="submit" 
+                class="px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-md flex items-center gap-2">
+          <i class="fas fa-save"></i> Guardar cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>

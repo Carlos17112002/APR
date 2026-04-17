@@ -28,4 +28,11 @@ urlpatterns = [
     path('api/produccion/<slug:slug>/<int:produccion_id>/eliminar/', views.eliminar_produccion, name='eliminar_produccion'),
     path('api/datos-consumo/<slug:slug>/', views.datos_consumo_api, name='api_datos_consumo'),
     path('empresa/<slug:slug>/api/consumo-por-sector/', views.api_consumo_por_sector, name='api_consumo_por_sector'),
+     path('empresa/<slug:slug>/admins/', views.lista_admins_empresa, name='lista_admins_empresa'),
+    path('empresa/<slug:slug>/admins/<int:user_id>/editar/', views.editar_permisos_admin, name='editar_permisos_admin'),
+
+
+
+
+
 ]

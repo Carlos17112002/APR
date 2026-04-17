@@ -531,6 +531,19 @@ def panel_empresa(request, slug):
             'consumo_produccion': json.dumps(consumo_mensual),
             'produccion_por_pozo_json': json.dumps(produccion_por_pozo),
         }
+        # ========== PERMISOS DEL USUARIO ==========
+        from empresas.models import PerfilAdmin
+
+        if not request.user.is_superuser:
+            try:
+                perfil = PerfilAdmin.objects.get(usuario=request.user)
+                permisos_usuario = perfil.get_permisos_empresa(slug)
+            except PerfilAdmin.DoesNotExist:
+                permisos_usuario = []
+            context['permisos_usuario'] = permisos_usuario
+        else:
+            # None significa que es superusuario y tiene todos los permisos
+            context['permisos_usuario'] = None
 
         return render(request, 'admin_ssr/panel_empresa.html', context)
 
@@ -1017,24 +1030,55 @@ def actualizar_alias_json():
         json.dump(slugs, f, indent=2)
 
 
+# admin_ssr/views.py
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
+from django.contrib import messages
+from empresas.models import Empresa
+from .models import PerfilAdmin
+from .constants import MODULOS_DISPONIBLES
 
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
 def crear_admin_empresa(request, slug):
-    if request.method == 'POST' and request.user.is_superuser:
+    empresa = Empresa.objects.get(slug=slug)
+    
+    if request.method == 'POST':
         nombre = request.POST.get('nombre')
         email = request.POST.get('email')
-        password = User.objects.make_random_password()
-
-        usuario = User.objects.create_user(username=slug, email=email, password=password)
-        usuario.first_name = nombre
-        usuario.save()
-
-        # (Opcional) mostrar credenciales o enviarlas por email
+        password = request.POST.get('password')
+        permisos_seleccionados = request.POST.getlist('permisos')
+        
+        # Crear usuario con username = email o generar uno único
+        username = email.split('@')[0]
+        base_username = username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+        
+        # Crear usuario
+        usuario = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=nombre
+        )
+        
+        # Crear perfil con permisos
+        perfil = PerfilAdmin.objects.create(usuario=usuario)
+        perfil.set_permisos_empresa(slug, permisos_seleccionados)
+        
+        messages.success(request, f'Administrador {nombre} creado exitosamente para {empresa.nombre}')
         return redirect('dashboard_admin_ssr')
-
-    return render(request, 'admin_ssr/crear_admin.html', {'slug': slug})
-
-
+    
+    context = {
+        'slug': slug,
+        'empresa': empresa,
+        'modulos_disponibles': MODULOS_DISPONIBLES,
+    }
+    return render(request, 'admin_ssr/crear_admin.html', context)
 
 import os
 import json
@@ -1966,3 +2010,59 @@ def datos_consumo_api(request, slug):
         'labels': labels,
         'datos': datos
     })
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.contrib.auth.models import User
+from empresas.models import Empresa
+from .models import PerfilAdmin
+from .constants import MODULOS_DISPONIBLES  
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def lista_admins_empresa(request, slug):
+    empresa = get_object_or_404(Empresa, slug=slug)
+    
+    perfiles = PerfilAdmin.objects.select_related('usuario').all()
+    admins_data = []
+    
+    for perfil in perfiles:
+        permisos_empresa = perfil.permisos.get(slug, [])
+        if permisos_empresa:  # Solo incluir si tiene al menos un permiso para esta empresa
+            admins_data.append({
+                'usuario': perfil.usuario,
+                'permisos': permisos_empresa,
+                'perfil_id': perfil.id,
+            })
+    
+    context = {
+        'slug': slug,
+        'empresa': empresa,
+        'admins_data': admins_data,
+        'modulos_disponibles': MODULOS_DISPONIBLES,
+    }
+    return render(request, 'admin_ssr/lista_admins.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def editar_permisos_admin(request, slug, user_id):
+    empresa = get_object_or_404(Empresa, slug=slug)
+    usuario = get_object_or_404(User, id=user_id)
+    perfil, created = PerfilAdmin.objects.get_or_create(usuario=usuario)
+
+    if request.method == 'POST':
+        permisos_seleccionados = request.POST.getlist('permisos')
+        perfil.set_permisos_empresa(slug, permisos_seleccionados)
+        messages.success(request, f'Permisos actualizados para {usuario.username}')
+        return redirect('lista_admins_empresa', slug=slug)
+
+    permisos_actuales = perfil.get_permisos_empresa(slug)
+    context = {
+        'slug': slug,
+        'empresa': empresa,
+        'usuario_admin': usuario,
+        'permisos_actuales': permisos_actuales,
+        'modulos_disponibles': MODULOS_DISPONIBLES,
+    }
+    return render(request, 'admin_ssr/editar_permisos.html', context)

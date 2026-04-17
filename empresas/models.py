@@ -330,3 +330,202 @@ class Produccion(models.Model):
 
     def __str__(self):
         return f"{self.empresa.nombre} - {self.fecha} - {self.volumen} m³"
+
+# En alguna app como admin_ssr/models.py
+from django.db import models
+from django.contrib.auth.models import User
+from empresas.models import Empresa
+
+class PermisoAdmin(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='permisos_admin')
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='permisos_admin')
+    
+    # Módulos disponibles
+    puede_ver_panel = models.BooleanField(default=True, verbose_name="Ver Panel")
+    puede_gestionar_clientes = models.BooleanField(default=False, verbose_name="Gestionar Clientes")
+    puede_gestionar_lecturas = models.BooleanField(default=False, verbose_name="Gestionar Lecturas")
+    puede_gestionar_boletas = models.BooleanField(default=False, verbose_name="Gestionar Boletas")
+    puede_gestionar_inventario = models.BooleanField(default=False, verbose_name="Gestionar Inventario")
+    puede_gestionar_contabilidad = models.BooleanField(default=False, verbose_name="Ver Contabilidad")
+    puede_ver_informes = models.BooleanField(default=False, verbose_name="Ver Informes")
+    puede_configurar_app = models.BooleanField(default=False, verbose_name="Configurar App Móvil")
+    
+    class Meta:
+        unique_together = ('usuario', 'empresa')
+        verbose_name = "Permiso de Administrador"
+        verbose_name_plural = "Permisos de Administradores"
+    
+    def __str__(self):
+        return f"{self.usuario.username} - {self.empresa.nombre}"
+    
+from django.db import models
+from django.contrib.auth.models import User
+
+class Permiso(models.Model):
+    """
+    Permisos específicos para administradores de empresas.
+    """
+    codigo = models.CharField(max_length=50, unique=True)
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['codigo']
+
+    def __str__(self):
+        return self.nombre
+
+class AdminEmpresa(models.Model):
+    """
+    Relación entre un User y una Empresa con permisos asignados.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='admin_empresas')
+    empresa = models.ForeignKey('Empresa', on_delete=models.CASCADE, related_name='administradores')
+    permisos = models.ManyToManyField(Permiso, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'empresa')
+        verbose_name = "Administrador de Empresa"
+        verbose_name_plural = "Administradores de Empresas"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.empresa.nombre}"
+
+# admin_ssr/models.py
+from django.db import models
+from django.contrib.auth.models import User
+
+class PerfilAdmin(models.Model):
+    """
+    Perfil de administrador de empresa con permisos basados en módulos.
+    El campo 'permisos' almacena un diccionario:
+    {
+        "empresa_slug1": ["inventario", "clientes", ...],
+        "empresa_slug2": ["lecturas", ...]
+    }
+    """
+    usuario = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='perfil_admin',
+        verbose_name="Usuario"
+    )
+    
+    # Almacena los permisos por empresa en formato JSON
+    permisos = models.JSONField(
+        default=dict, 
+        blank=True,
+        help_text="Diccionario con slug de empresa como clave y lista de permisos como valor"
+    )
+    
+    # Metadatos
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de creación"
+    )
+    ultima_modificacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última modificación"
+    )
+    
+    class Meta:
+        verbose_name = "Perfil de Administrador"
+        verbose_name_plural = "Perfiles de Administradores"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"Perfil de {self.usuario.get_full_name() or self.usuario.username}"
+    
+    # --- Métodos para gestión de permisos ---
+    
+    def tiene_permiso(self, empresa_slug, permiso):
+        """
+        Verifica si el usuario tiene un permiso específico para una empresa.
+        Los superusuarios tienen todos los permisos.
+        """
+        if self.usuario.is_superuser:
+            return True
+        
+        permisos_empresa = self.permisos.get(empresa_slug, [])
+        return permiso in permisos_empresa
+    
+    def tiene_acceso_empresa(self, empresa_slug):
+        """
+        Verifica si el usuario tiene al menos un permiso en la empresa.
+        Útil para determinar si puede ver la empresa en el listado.
+        """
+        if self.usuario.is_superuser:
+            return True
+        
+        permisos_empresa = self.permisos.get(empresa_slug, [])
+        return len(permisos_empresa) > 0
+    
+    def get_permisos_empresa(self, empresa_slug):
+        """
+        Obtiene la lista de permisos para una empresa específica.
+        """
+        return self.permisos.get(empresa_slug, [])
+    
+    def set_permisos_empresa(self, empresa_slug, lista_permisos):
+        """
+        Establece o actualiza los permisos para una empresa específica.
+        Si la lista está vacía, elimina la entrada para esa empresa.
+        """
+        permisos_actuales = self.permisos.copy()
+        if lista_permisos:
+            permisos_actuales[empresa_slug] = lista_permisos
+        else:
+            # Si no hay permisos, eliminar la clave para mantener limpio el JSON
+            permisos_actuales.pop(empresa_slug, None)
+        
+        self.permisos = permisos_actuales
+        self.save(update_fields=['permisos', 'ultima_modificacion'])
+    
+    def agregar_permiso(self, empresa_slug, permiso):
+        """
+        Agrega un permiso individual a una empresa.
+        """
+        permisos_actuales = self.permisos.copy()
+        if empresa_slug not in permisos_actuales:
+            permisos_actuales[empresa_slug] = []
+        if permiso not in permisos_actuales[empresa_slug]:
+            permisos_actuales[empresa_slug].append(permiso)
+            self.permisos = permisos_actuales
+            self.save(update_fields=['permisos', 'ultima_modificacion'])
+            return True
+        return False
+    
+    def remover_permiso(self, empresa_slug, permiso):
+        """
+        Elimina un permiso individual de una empresa.
+        """
+        permisos_actuales = self.permisos.copy()
+        if empresa_slug in permisos_actuales and permiso in permisos_actuales[empresa_slug]:
+            permisos_actuales[empresa_slug].remove(permiso)
+            if not permisos_actuales[empresa_slug]:
+                del permisos_actuales[empresa_slug]
+            self.permisos = permisos_actuales
+            self.save(update_fields=['permisos', 'ultima_modificacion'])
+            return True
+        return False
+    
+    def get_empresas_con_acceso(self):
+        """
+        Retorna una lista de slugs de empresas a las que el usuario tiene acceso.
+        Para superusuarios, retorna lista vacía (se asume acceso a todas).
+        """
+        if self.usuario.is_superuser:
+            return []
+        return list(self.permisos.keys())
+    
+    @classmethod
+    def crear_perfil(cls, usuario, permisos_iniciales=None):
+        """
+        Método de fábrica para crear un perfil con permisos iniciales.
+        """
+        perfil = cls.objects.create(usuario=usuario)
+        if permisos_iniciales:
+            perfil.permisos = permisos_iniciales
+            perfil.save()
+        return perfil

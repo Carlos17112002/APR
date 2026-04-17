@@ -206,7 +206,9 @@ from django.utils import timezone
 from empresas.models import Empresa
 from clientes.models import Cliente, Contrato
 from boletas.models import Boleta
+from empresas.decorators import permiso_requerido
 
+@permiso_requerido('clientes')
 def listado_clientes(request, alias):
     slug = alias
     db_alias = f'db_{slug}'
@@ -269,14 +271,17 @@ def listado_clientes(request, alias):
 # clientes/views.py - función detalle_cliente
 
 from django.shortcuts import render, get_object_or_404
-from django.db.models import Avg, Sum
+from django.db.models import Avg, Sum, Q
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 import json
+import os
+from django.conf import settings
+from decimal import Decimal
 
 from empresas.models import Empresa
-from clientes.models import Cliente, Contrato
+from clientes.models import Cliente, Contrato, CambioMedidor
 from lecturas.models import LecturaMovil
 from boletas.models import Boleta
 
@@ -285,31 +290,63 @@ def detalle_cliente(request, alias, cliente_id):
     empresa = get_object_or_404(Empresa, slug=alias)
     cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
 
-    # Obtener el contrato asociado (si no existe, será None)
+    # Contrato asociado
     try:
         contrato = cliente.contrato
     except Contrato.DoesNotExist:
         contrato = None
 
-    # ----- LECTURAS -----
+    # Última lectura con consumo válido (para precargar en el modal de cambio de medidor)
+    # Se toma cualquier lectura con consumo > 0, sin importar estado
+    ultima_lectura = LecturaMovil.objects.filter(
+        empresa_slug=alias,
+        cliente=cliente_id,
+        consumo__isnull=False,
+        consumo__gt=0
+    ).order_by('-fecha_lectura').first()
+
+    # Cambios de medidor
+    cambios_medidor_qs = CambioMedidor.objects.using(db_alias).filter(
+        cliente=cliente
+    ).order_by('-fecha_registro')
+
+    cambios_medidor = []
+    for cm in cambios_medidor_qs:
+        cambios_medidor.append({
+            'periodo': cm.periodo or '-',
+            'marca_retirado': cm.medidor_retirado_marca or '-',
+            'numero_retirado': cm.medidor_retirado_numero,
+            'ano_retirado': cm.medidor_retirado_anio or '-',
+            'fecha_lectura_anterior': cm.fecha_lectura_anterior.strftime('%d/%m/%Y') if cm.fecha_lectura_anterior else '-',
+            'lectura_anterior': float(cm.lectura_anterior) if cm.lectura_anterior else 0,
+            'lectura_retiro': float(cm.lectura_retiro),
+            'consumo': float(cm.consumo_final) if cm.consumo_final else 0,
+            'fecha_instalacion': cm.fecha_instalacion.strftime('%d/%m/%Y') if cm.fecha_instalacion else '-',
+            'numero_instalado': cm.medidor_nuevo_numero,
+            'lectura_inicial': float(cm.lectura_inicial),
+            'fecha_registro': cm.fecha_registro.strftime('%d/%m/%Y %H:%M') if cm.fecha_registro else '-',
+            'usuario': cm.usuario or '-',
+        })
+
+    # Lecturas del cliente (para tabla y gráfico)
     lecturas = LecturaMovil.objects.filter(
         empresa_slug=alias,
         cliente=cliente_id
     ).order_by('-fecha_lectura')
 
-    # ----- PAGOS -----
+    # Pagos (si existe el modelo)
     try:
         from pagos.models import Pago
         pagos = Pago.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
     except ImportError:
         pagos = []
 
-    # ----- ESTADÍSTICAS -----
-    consumo_promedio = lecturas.aggregate(Avg('consumo'))['consumo__avg'] or 0
+    # Estadísticas
+    consumo_promedio = lecturas.filter(consumo__isnull=False).aggregate(Avg('consumo'))['consumo__avg'] or 0
     total_pagado = pagos.aggregate(Sum('monto'))['monto__sum'] or 0 if pagos else 0
     deuda_actual = 0  # Ajusta según tu lógica
 
-    # ----- GRÁFICO DE CONSUMO -----
+    # Gráfico de consumo (últimos 6 meses por defecto)
     rango = request.GET.get('rango', '6m')
     hoy = timezone.now()
 
@@ -361,25 +398,31 @@ def detalle_cliente(request, alias, cliente_id):
             key = f"{anio_num}-{mes_num:02d}"
             consumos_grafico.append(consumo_dict.get(key, 0.0))
 
-    # ----- LECTURAS COMPLETAS PARA LA TABLA -----
+    # Construir lista de lecturas para la tabla
     lecturas_completas = []
     for lectura in lecturas:
+        # Asegurar que todos los campos existan
+        fecha_lectura_anterior = None
+        if hasattr(lectura, 'fecha_lectura_anterior') and lectura.fecha_lectura_anterior:
+            fecha_lectura_anterior = lectura.fecha_lectura_anterior
+
         lecturas_completas.append({
+            'id': lectura.id,
             'periodo': lectura.fecha_lectura.strftime('%m/%Y') if lectura.fecha_lectura else '',
-            'fecha_lectura_anterior': getattr(lectura, 'fecha_lectura_anterior', None),
-            'lectura_anterior': getattr(lectura, 'lectura_anterior', 0),
+            'fecha_lectura_anterior': fecha_lectura_anterior,
+            'lectura_anterior': float(lectura.lectura_anterior) if lectura.lectura_anterior else 0,
             'fecha_lectura_actual': lectura.fecha_lectura,
-            'lectura_actual': getattr(lectura, 'lectura_actual', 0),
-            'consumo': getattr(lectura, 'consumo', 0),
+            'lectura_actual': float(lectura.lectura_actual) if lectura.lectura_actual else 0,
+            'consumo': float(lectura.consumo) if lectura.consumo else 0,
             'cambio_medidor': getattr(lectura, 'cambio_medidor', False),
             'termino_medio': getattr(lectura, 'termino_medio', ''),
             'saldo_promedio_anterior': getattr(lectura, 'saldo_promedio_anterior', ''),
-            'consumo_facturado': getattr(lectura, 'consumo_facturado', getattr(lectura, 'consumo', 0)),
+            'consumo_facturado': float(getattr(lectura, 'consumo_facturado', lectura.consumo or 0)),
             'abono_proximo_periodo': getattr(lectura, 'abono_proximo_periodo', ''),
             'codigo_lectura': getattr(lectura, 'codigo_lectura', ''),
         })
 
-    # ----- DOCUMENTOS (BOLETAS) -----
+    # Documentos (boletas)
     boletas = Boleta.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_emision')
     documentos = []
     for b in boletas:
@@ -397,23 +440,23 @@ def detalle_cliente(request, alias, cliente_id):
             'usuario': '',
         })
 
-    # ----- OTRAS VARIABLES (listas vacías por ahora) -----
+    # Otras listas vacías (para mantener estructura)
     subsidios = []
     cargos_permanentes = []
     cargos = []
     descuentos = []
     convenios = []
     otros_ingresos = []
-    cambios_medidor = []
     historico_corte = []
     anulaciones_corte = []
 
-    # ----- CONTEXTO FINAL -----
     context = {
         'empresa': empresa,
         'slug': alias,
         'cliente': cliente,
-        'contrato': contrato,  # ← NUEVO: para mostrar datos del contrato
+        'contrato': contrato,
+        'ultima_lectura': ultima_lectura,
+        'cambios_medidor': cambios_medidor,
         'lecturas': lecturas,
         'pagos': pagos,
         'consumo_promedio': consumo_promedio,
@@ -430,7 +473,6 @@ def detalle_cliente(request, alias, cliente_id):
         'convenios': convenios,
         'lecturas_completas': lecturas_completas,
         'otros_ingresos': otros_ingresos,
-        'cambios_medidor': cambios_medidor,
         'historico_corte': historico_corte,
         'anulaciones_corte': anulaciones_corte,
     }
@@ -1775,3 +1817,115 @@ def exportar_socios_excel(request, alias):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     wb.save(response)
     return response
+
+from datetime import datetime
+from decimal import Decimal
+import os
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+
+@login_required
+@require_POST
+def registrar_cambio_medidor_ajax(request, alias, cliente_id):
+    db_alias = f'db_{alias}'
+    db_path = os.path.join(settings.BASES_DIR, f'{db_alias}.sqlite3')
+    if not os.path.exists(db_path):
+        return JsonResponse({'success': False, 'error': 'Base de datos no encontrada'}, status=404)
+
+    try:
+        from empresas.models import Empresa
+        from clientes.models import Cliente, CambioMedidor
+        from lecturas.models import LecturaMovil
+
+        empresa = get_object_or_404(Empresa, slug=alias)
+        cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+        # --- Obtener datos del POST ---
+        fecha_lectura_anterior_str = request.POST.get('fecha_lectura_anterior')
+        lectura_anterior_str = request.POST.get('lectura_anterior')
+
+        # --- Intentar obtener automáticamente de la última lectura si no se enviaron ---
+        ultima_lectura = None
+        if not fecha_lectura_anterior_str or not lectura_anterior_str:
+            ultima_lectura = LecturaMovil.objects.filter(
+                empresa_slug=alias,
+                cliente=cliente_id,
+                consumo__isnull=False,
+                consumo__gt=0          # Solo lecturas con consumo positivo
+            ).order_by('-fecha_lectura').first()
+
+            if ultima_lectura:
+                if not fecha_lectura_anterior_str:
+                    fecha_lectura_anterior_str = ultima_lectura.fecha_lectura.strftime('%Y-%m-%d')
+                if not lectura_anterior_str:
+                    lectura_anterior_str = str(ultima_lectura.lectura_actual)
+
+        # --- Validaciones ---
+        lectura_retiro_str = request.POST.get('lectura_retiro')
+        if not lectura_retiro_str:
+            return JsonResponse({'success': False, 'error': 'La lectura de retiro es obligatoria'}, status=400)
+
+        fecha_instalacion_str = request.POST.get('fecha_instalacion')
+        if not fecha_instalacion_str:
+            return JsonResponse({'success': False, 'error': 'Fecha de instalación requerida'})
+
+        # --- Conversión a tipos Python ---
+        # Fecha lectura anterior (puede ser None)
+        fecha_lectura_anterior = None
+        if fecha_lectura_anterior_str:
+            fecha_lectura_anterior = datetime.strptime(fecha_lectura_anterior_str, '%Y-%m-%d').date()
+
+        # Fecha instalación
+        fecha_instalacion = datetime.strptime(fecha_instalacion_str, '%Y-%m-%d').date()
+
+        # Lecturas a Decimal
+        lectura_anterior_dec = Decimal(lectura_anterior_str) if lectura_anterior_str else Decimal('0')
+        lectura_retiro_dec = Decimal(lectura_retiro_str)
+        lectura_inicial_dec = Decimal(request.POST.get('lectura_inicial', '0'))
+
+        # --- Crear registro ---
+        cambio = CambioMedidor.objects.using(db_alias).create(
+            cliente=cliente,
+            medidor_retirado_marca=request.POST.get('medidor_retirado_marca', ''),
+            medidor_retirado_numero=request.POST.get('medidor_retirado_numero', ''),
+            medidor_retirado_anio=request.POST.get('medidor_retirado_anio'),
+            fecha_lectura_anterior=fecha_lectura_anterior,
+            lectura_anterior=lectura_anterior_dec,
+            lectura_retiro=lectura_retiro_dec,
+            medidor_nuevo_marca=request.POST.get('medidor_nuevo_marca', ''),
+            medidor_nuevo_numero=request.POST.get('medidor_nuevo_numero', ''),
+            medidor_nuevo_anio=request.POST.get('medidor_nuevo_anio'),
+            fecha_instalacion=fecha_instalacion,
+            lectura_inicial=lectura_inicial_dec,
+            usuario=request.user.username if request.user.is_authenticated else 'Sistema'
+        )
+
+        # El método save() del modelo ya actualiza cliente.medidor y contrato
+
+        return JsonResponse({
+            'success': True,
+            'cambio': {
+                'id': cambio.id,
+                'periodo': cambio.periodo or '-',
+                'marca_retirado': cambio.medidor_retirado_marca or '-',
+                'numero_retirado': cambio.medidor_retirado_numero,
+                'ano_retirado': cambio.medidor_retirado_anio or '-',
+                'fecha_lectura_anterior': cambio.fecha_lectura_anterior.strftime('%d/%m/%Y') if cambio.fecha_lectura_anterior else '-',
+                'lectura_anterior': float(cambio.lectura_anterior) if cambio.lectura_anterior else 0,
+                'lectura_retiro': float(cambio.lectura_retiro),
+                'consumo': float(cambio.consumo_final) if cambio.consumo_final else 0,
+                'fecha_instalacion': cambio.fecha_instalacion.strftime('%d/%m/%Y'),
+                'numero_instalado': cambio.medidor_nuevo_numero,
+                'lectura_inicial': float(cambio.lectura_inicial),
+                'fecha_registro': cambio.fecha_registro.strftime('%d/%m/%Y %H:%M'),
+                'usuario': cambio.usuario or '-',
+            }
+        })
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

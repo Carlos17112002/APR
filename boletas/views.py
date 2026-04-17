@@ -5,7 +5,10 @@ from django.shortcuts import render
 from django.shortcuts import render, get_object_or_404
 from .models import Boleta
 from clientes.models import Cliente
+from empresas.decorators import permiso_requerido
 
+
+@permiso_requerido('boletas')
 def boletas_cliente_view(request, alias):
     alias_db = f'db_{alias}'
     cliente = get_object_or_404(Cliente.objects.using(alias_db), usuario_id=request.user.id)

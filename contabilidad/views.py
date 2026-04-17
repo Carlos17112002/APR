@@ -2,9 +2,10 @@ from django.shortcuts import render
 
 from django.db.models import Sum
 from django.utils import timezone
+from empresas.decorators import permiso_requerido
 
 
-
+@permiso_requerido('contabilidad')
 def panel_libro_sii(request, alias):
     # Placeholder: lógica para mostrar panel del libro SII
     return render(request, 'contabilidad/panel_libro_sii.html', {'alias': alias})

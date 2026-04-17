@@ -51,35 +51,6 @@
       transform: translateY(0);
     }
     
-    .btn-gradient::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 5px;
-      height: 5px;
-      background: rgba(255, 255, 255, 0.5);
-      opacity: 0;
-      border-radius: 100%;
-      transform: scale(1, 1) translate(-50%);
-      transform-origin: 50% 50%;
-    }
-    
-    .btn-gradient:focus:not(:active)::after {
-      animation: ripple 1s ease-out;
-    }
-    
-    @keyframes ripple {
-      0% {
-        transform: scale(0, 0);
-        opacity: 0.5;
-      }
-      100% {
-        transform: scale(20, 20);
-        opacity: 0;
-      }
-    }
-    
     .back-link {
       transition: all 0.3s ease;
       position: relative;
@@ -115,16 +86,45 @@
       margin-left: 8px;
     }
     
-    .slug-badge i {
-      margin-right: 6px;
-      font-size: 0.9em;
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      width: 1.2rem;
+      height: 1.2rem;
+      accent-color: #059669;
+    }
+    
+    .password-strength {
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      margin-top: 0.25rem;
+    }
+    
+    .password-strength-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s;
     }
   </style>
 </head>
 <body class="text-gray-800">
 
   <div class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-lg">
+    <div class="w-full max-w-2xl">
       <!-- Encabezado -->
       <div class="text-center mb-8">
         <div class="flex items-center justify-center mb-4">
@@ -145,14 +145,14 @@
 
       <!-- Formulario -->
       <div class="glass-card rounded-2xl p-8">
-        <form method="post" class="space-y-6">
+        <form method="post" id="crearAdminForm" class="space-y-6">
           {% csrf_token %}
           
           <!-- Campo Nombre -->
           <div class="space-y-2">
             <div class="flex items-center">
               <i class="fas fa-user text-emerald-600 mr-2"></i>
-              <label class="block text-sm font-semibold text-gray-700">Nombre Completo</label>
+              <label class="block text-sm font-semibold text-gray-700">Nombre Completo *</label>
             </div>
             <div class="relative">
               <input 
@@ -164,14 +164,13 @@
               >
               <i class="fas fa-user-circle absolute left-3 top-3.5 text-gray-400"></i>
             </div>
-            <p class="text-xs text-gray-500 mt-1">Nombre del nuevo administrador del sistema</p>
           </div>
 
           <!-- Campo Email -->
           <div class="space-y-2">
             <div class="flex items-center">
               <i class="fas fa-envelope text-emerald-600 mr-2"></i>
-              <label class="block text-sm font-semibold text-gray-700">Correo Electrónico</label>
+              <label class="block text-sm font-semibold text-gray-700">Correo Electrónico *</label>
             </div>
             <div class="relative">
               <input 
@@ -183,10 +182,98 @@
               >
               <i class="fas fa-at absolute left-3 top-3.5 text-gray-400"></i>
             </div>
-            <p class="text-xs text-gray-500 mt-1">Se enviarán las credenciales de acceso a este correo</p>
           </div>
 
-          <!-- Botones -->
+          <!-- Campo Nombre de Usuario -->
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <i class="fas fa-user-tag text-emerald-600 mr-2"></i>
+              <label class="block text-sm font-semibold text-gray-700">Nombre de Usuario *</label>
+            </div>
+            <div class="relative">
+              <input 
+                type="text" 
+                name="username" 
+                required 
+                class="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl input-focus focus:outline-none transition-all duration-300"
+                placeholder="usuario123"
+              >
+              <i class="fas fa-id-badge absolute left-3 top-3.5 text-gray-400"></i>
+            </div>
+          </div>
+
+          <!-- Campo Contraseña (manual) -->
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <i class="fas fa-lock text-emerald-600 mr-2"></i>
+              <label class="block text-sm font-semibold text-gray-700">Contraseña *</label>
+            </div>
+            <div class="relative">
+              <input 
+                type="password" 
+                name="password" 
+                id="passwordInput"
+                required 
+                class="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl input-focus focus:outline-none transition-all duration-300"
+                placeholder="********"
+              >
+              <i class="fas fa-key absolute left-3 top-3.5 text-gray-400"></i>
+              <button type="button" onclick="togglePassword()" class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600">
+                <i class="fas fa-eye" id="toggleIcon"></i>
+              </button>
+            </div>
+            <div class="password-strength">
+              <div id="strengthBar" class="password-strength-bar bg-red-500" style="width:0%"></div>
+            </div>
+            <p id="strengthText" class="text-xs text-gray-500 mt-1">Ingresa una contraseña segura</p>
+          </div>
+
+          <!-- Sección de Permisos (CORREGIDA) -->
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <i class="fas fa-shield-alt text-emerald-600 mr-2"></i>
+              <label class="block text-sm font-semibold text-gray-700">Permisos de Acceso</label>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <div class="checkbox-group">
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="clientes" id="perm_clientes" checked>
+                  <label for="perm_clientes" class="text-sm text-gray-700">Gestión de Clientes (ver, crear, editar)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="lecturas" id="perm_lecturas" checked>
+                  <label for="perm_lecturas" class="text-sm text-gray-700">Gestión de Lecturas (ver, registrar)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="boletas" id="perm_boletas" checked>
+                  <label for="perm_boletas" class="text-sm text-gray-700">Generación de Boletas</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="inventario" id="perm_inventario">
+                  <label for="perm_inventario" class="text-sm text-gray-700">Gestión de Inventario</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="contabilidad" id="perm_contabilidad">
+                  <label for="perm_contabilidad" class="text-sm text-gray-700">Acceso a Contabilidad</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="informes" id="perm_informes" checked>
+                  <label for="perm_informes" class="text-sm text-gray-700">Acceso a Informes</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="configuracion" id="perm_configuracion">
+                  <label for="perm_configuracion" class="text-sm text-gray-700">Configuración del Sistema</label>
+                </div>
+              </div>
+              <div class="mt-4 flex gap-2">
+                <button type="button" onclick="selectAllPerms(true)" class="text-xs text-emerald-600 hover:text-emerald-800">Seleccionar todos</button>
+                <span class="text-gray-300">|</span>
+                <button type="button" onclick="selectAllPerms(false)" class="text-xs text-emerald-600 hover:text-emerald-800">Deseleccionar todos</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones del formulario -->
           <div class="pt-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 border-t border-gray-100">
             <a 
               href="{% url 'dashboard_admin_ssr' %}" 
@@ -205,6 +292,13 @@
           </div>
         </form>
         
+        <!-- Botón Administradores (fuera del formulario) -->
+        <div class="mt-6 flex justify-end">
+          <a href="{% url 'lista_admins_empresa' slug=slug %}" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+            <i class="fas fa-users-cog"></i> Ver Administradores
+          </a>
+        </div>
+
         <!-- Nota informativa -->
         <div class="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-100">
           <div class="flex">
@@ -214,7 +308,7 @@
             <div class="ml-3">
               <h3 class="text-sm font-medium text-blue-800">Información importante</h3>
               <div class="mt-2 text-sm text-blue-700">
-                <p>El nuevo administrador recibirá un correo con las instrucciones para acceder al sistema y podrá gestionar todos los aspectos del proyecto <span class="font-semibold">{{ slug }}</span>.</p>
+                <p>El nuevo administrador tendrá acceso al proyecto <span class="font-semibold">{{ slug }}</span> con los permisos seleccionados. Podrá iniciar sesión con el nombre de usuario y contraseña que establezcas.</p>
               </div>
             </div>
           </div>
@@ -229,5 +323,57 @@
     </div>
   </div>
 
+  <script>
+    // Mostrar/ocultar contraseña
+    function togglePassword() {
+      const input = document.getElementById('passwordInput');
+      const icon = document.getElementById('toggleIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+    
+    // Medidor de fortaleza de contraseña
+    document.getElementById('passwordInput').addEventListener('input', function(e) {
+      const password = e.target.value;
+      const strengthBar = document.getElementById('strengthBar');
+      const strengthText = document.getElementById('strengthText');
+      
+      let strength = 0;
+      if (password.length >= 8) strength++;
+      if (password.match(/[a-z]+/)) strength++;
+      if (password.match(/[A-Z]+/)) strength++;
+      if (password.match(/[0-9]+/)) strength++;
+      if (password.match(/[$@#&!]+/)) strength++;
+      
+      let width = (strength / 5) * 100;
+      let color = 'bg-red-500';
+      let text = 'Débil';
+      
+      if (strength >= 4) {
+        color = 'bg-green-500';
+        text = 'Fuerte';
+      } else if (strength >= 2) {
+        color = 'bg-yellow-500';
+        text = 'Media';
+      }
+      
+      strengthBar.style.width = width + '%';
+      strengthBar.className = `password-strength-bar ${color}`;
+      strengthText.textContent = `Fortaleza: ${text}`;
+    });
+    
+    // Seleccionar/deseleccionar todos los permisos (CORREGIDO para usar 'permisos')
+    function selectAllPerms(select) {
+      const checkboxes = document.querySelectorAll('input[name="permisos"]');
+      checkboxes.forEach(cb => cb.checked = select);
+    }
+  </script>
 </body>
 </html>

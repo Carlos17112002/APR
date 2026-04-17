@@ -77,3 +77,72 @@ class Contrato(models.Model):
 
     def __str__(self):
         return f"Contrato de {self.cliente.nombre}"
+
+
+# clientes/models.py
+
+from django.db import models
+from django.utils import timezone
+from decimal import Decimal
+
+class CambioMedidor(models.Model):
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='cambios_medidor')
+    
+    # Medidor retirado
+    medidor_retirado_marca = models.CharField(max_length=100, blank=True, null=True)
+    medidor_retirado_numero = models.CharField(max_length=100)
+    medidor_retirado_anio = models.PositiveSmallIntegerField(blank=True, null=True)
+    
+    fecha_lectura_anterior = models.DateField(blank=True, null=True)
+    lectura_anterior = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    lectura_retiro = models.DecimalField(max_digits=10, decimal_places=2)
+    consumo_final = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    
+    # Medidor nuevo
+    medidor_nuevo_marca = models.CharField(max_length=100, blank=True, null=True)
+    medidor_nuevo_numero = models.CharField(max_length=100)
+    medidor_nuevo_anio = models.PositiveSmallIntegerField(blank=True, null=True)
+    fecha_instalacion = models.DateField()
+    lectura_inicial = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Auditoría
+    fecha_registro = models.DateTimeField(default=timezone.now)
+    usuario = models.CharField(max_length=100, blank=True, null=True)
+    periodo = models.CharField(max_length=7, blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-fecha_registro']
+        verbose_name = "Cambio de Medidor"
+        verbose_name_plural = "Cambios de Medidor"
+    
+    def save(self, *args, **kwargs):
+        # Calcular consumo automáticamente
+        if self.lectura_anterior is not None and self.lectura_retiro is not None:
+            self.consumo_final = self.lectura_retiro - self.lectura_anterior
+        
+        # Asignar período automáticamente
+        if self.fecha_instalacion and not self.periodo:
+            self.periodo = self.fecha_instalacion.strftime('%Y-%m')
+        
+        # Actualizar medidor en cliente
+        if self.medidor_nuevo_numero:
+            cliente = self.cliente
+            cliente.medidor = self.medidor_nuevo_numero
+            cliente.save(update_fields=['medidor'])
+            
+            # Actualizar también el contrato si existe
+            try:
+                contrato = cliente.contrato
+                if self.medidor_nuevo_marca:
+                    contrato.marca_medidor = self.medidor_nuevo_marca
+                contrato.numero_medidor = self.medidor_nuevo_numero
+                if self.medidor_nuevo_anio:
+                    contrato.ano_medidor = self.medidor_nuevo_anio
+                contrato.save(update_fields=['marca_medidor', 'numero_medidor', 'ano_medidor'])
+            except Exception:
+                pass  # Si no tiene contrato, simplemente se ignora
+        
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Cambio medidor {self.cliente.nombre} - {self.fecha_registro.strftime('%d/%m/%Y')}"

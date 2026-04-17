@@ -17,4 +17,5 @@ urlpatterns = [
     path('exportar-contratos-excel/', views.exportar_contratos_excel, name='exportar_contratos_excel'),
     path('informe-socios/', views.informe_socios, name='informe_socios_nuevo'),
     path('exportar-socios-excel/', views.exportar_socios_excel, name='exportar_socios_excel'),
+    path('clientes/<int:cliente_id>/cambio-medidor/ajax/',views.registrar_cambio_medidor_ajax, name='registrar_cambio_medidor_ajax'),
 ]

@@ -45,8 +45,10 @@ from django.db.models.functions import ExtractYear
 from empresas.models import Empresa
 from lecturas.models import LecturaMovil
 from clientes.models import Cliente
+from empresas.decorators import permiso_requerido
 
 @login_required
+@permiso_requerido('lecturas')
 def listado_lecturas_app(request, alias):
     """
     Vista para listar lecturas de la app móvil
