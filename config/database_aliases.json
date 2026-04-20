@@ -57,5 +57,25 @@
     ],
     "db_path": "C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_vaticano-apr.sqlite3",
     "fecha_creacion": "2026-03-23T12:15:16.969164+00:00"
+  },
+  "apr-prueba": {
+    "alias": "db_apr-prueba",
+    "nombre": "APR-PRUEBA",
+    "rut": "45.654.898-7",
+    "direccion": "PRUEBA, SECTOR PRUEBA",
+    "telefono": "441343123",
+    "celular": "4132131412",
+    "centros_costo": [
+      "PRUEBA"
+    ],
+    "sectores": [
+      "PRUEBA SUR",
+      "PRUEBA NORTE",
+      "PRUEBA OESTE",
+      "PRUEBA CENTRO",
+      "PRUEBA ESTE"
+    ],
+    "db_path": "C:\\Users\\javie\\OneDrive\\Documentos\\OneDrive\\Desktop\\SSR_ASESORA\\asesora_ssr\\bases\\db_apr-prueba.sqlite3",
+    "fecha_creacion": "2026-04-20T18:14:59.744310+00:00"
   }
 }

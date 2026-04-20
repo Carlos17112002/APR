@@ -108,75 +108,127 @@
                 <p class="text-gray-600">Seleccione el módulo que desea utilizar</p>
             </div>
 
-            <!-- Único módulo: Remuneraciones (tarjeta central con ancho limitado) -->
-            <a href="{% url 'panel_remuneraciones' alias=alias %}" 
-               class="glass-card block p-8 hover:bg-purple-50 border-2 border-purple-100 transition-all duration-300 group pulse-effect">
-                <div class="flex flex-col md:flex-row items-center gap-6">
-                    <!-- Icono principal -->
-                    <div class="bg-gradient-to-br from-purple-500 to-purple-700 text-white p-6 rounded-2xl shadow-lg transform group-hover:scale-105 transition-transform">
-                        <i class="fas fa-money-bill-wave text-4xl"></i>
-                    </div>
-                    
-                    <!-- Contenido -->
-                    <div class="flex-1 text-center md:text-left">
-                        <div class="flex items-center justify-center md:justify-start gap-3 mb-3">
-                            <h3 class="text-2xl font-bold text-gray-800">Módulo de Remuneraciones</h3>
-                            <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full">
-                                ÚNICO MÓDULO
-                            </span>
-                        </div>
-                        
-                        <p class="text-gray-600 mb-4">
-                            Sistema completo para la gestión de sueldos, liquidaciones, contratos y finiquitos de sus empleados.
-                        </p>
-                        
-                        <!-- Características -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                            <div class="flex items-center text-sm text-gray-700">
-                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                Cálculo de sueldos
-                            </div>
-                            <div class="flex items-center text-sm text-gray-700">
-                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                Generación de liquidaciones
-                            </div>
-                            <div class="flex items-center text-sm text-gray-700">
-                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                Contratos laborales
-                            </div>
-                            <div class="flex items-center text-sm text-gray-700">
-                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                Finiquitos digitales
-                            </div>
-                        </div>
-                        
-                        <!-- Badge de estado -->
-                        <div class="inline-flex items-center bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
-                            <i class="fas fa-circle text-xs mr-2"></i>
-                            Sistema activo y actualizado
-                        </div>
-                    </div>
-                    
-                    <!-- Flecha de acceso -->
-                    <div class="text-purple-600 text-2xl transform group-hover:translate-x-2 transition-transform">
-                        <i class="fas fa-arrow-right"></i>
-                    </div>
-                </div>
+            <!-- Contenedor de módulos: ahora dos tarjetas en columna (o grid si se prefiere) -->
+            <div class="space-y-6">
                 
-                <!-- Mensaje de ayuda -->
-                <div class="mt-6 pt-6 border-t border-gray-100 text-center">
-                    <p class="text-sm text-gray-500">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Haga clic en esta tarjeta para acceder al sistema completo de remuneraciones
-                    </p>
-                </div>
-            </a>
+                <!-- Módulo 1: Remuneraciones (activo) -->
+                <a href="{% url 'panel_remuneraciones' alias=alias %}" 
+                   class="glass-card block p-8 hover:bg-purple-50 border-2 border-purple-100 transition-all duration-300 group">
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <!-- Icono principal -->
+                        <div class="bg-gradient-to-br from-purple-500 to-purple-700 text-white p-6 rounded-2xl shadow-lg transform group-hover:scale-105 transition-transform">
+                            <i class="fas fa-money-bill-wave text-4xl"></i>
+                        </div>
+                        
+                        <!-- Contenido -->
+                        <div class="flex-1 text-center md:text-left">
+                            <div class="flex items-center justify-center md:justify-start gap-3 mb-3">
+                                <h3 class="text-2xl font-bold text-gray-800">Módulo de Remuneraciones</h3>
+                                <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full">
+                                    DISPONIBLE
+                                </span>
+                            </div>
+                            
+                            <p class="text-gray-600 mb-4">
+                                Sistema completo para la gestión de sueldos, liquidaciones, contratos y finiquitos de sus empleados.
+                            </p>
+                            
+                            <!-- Características -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                                <div class="flex items-center text-sm text-gray-700">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Cálculo de sueldos
+                                </div>
+                                <div class="flex items-center text-sm text-gray-700">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Generación de liquidaciones
+                                </div>
+                                <div class="flex items-center text-sm text-gray-700">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Contratos laborales
+                                </div>
+                                <div class="flex items-center text-sm text-gray-700">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Finiquitos digitales
+                                </div>
+                            </div>
+                            
+                            <!-- Badge de estado -->
+                            <div class="inline-flex items-center bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                                <i class="fas fa-circle text-xs mr-2"></i>
+                                Sistema activo y actualizado
+                            </div>
+                        </div>
+                        
+                        <!-- Flecha de acceso -->
+                        <div class="text-purple-600 text-2xl transform group-hover:translate-x-2 transition-transform">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
 
-            <!-- Mensaje informativo -->
-            <div class="mt-8 text-center">
-                <div class="inline-flex items-center bg-blue-50 text-blue-700 px-4 py-3 rounded-lg">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    <span class="text-sm">Este es el único módulo disponible en este momento</span>
+                <!-- Módulo 2: Sistema Contable (URL en blanco) -->
+                <a href="#" 
+                   class="glass-card block p-8 hover:bg-blue-50 border-2 border-blue-100 transition-all duration-300 group opacity-80 hover:opacity-100">
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <!-- Icono principal -->
+                        <div class="bg-gradient-to-br from-blue-500 to-blue-700 text-white p-6 rounded-2xl shadow-lg transform group-hover:scale-105 transition-transform">
+                            <i class="fas fa-calculator text-4xl"></i>
+                        </div>
+                        
+                        <!-- Contenido -->
+                        <div class="flex-1 text-center md:text-left">
+                            <div class="flex items-center justify-center md:justify-start gap-3 mb-3">
+                                <h3 class="text-2xl font-bold text-gray-800">Sistema Contable</h3>
+                                <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
+                                    PRÓXIMAMENTE
+                                </span>
+                            </div>
+                            
+                            <p class="text-gray-600 mb-4">
+                                Módulo contable completo para la gestión financiera, libros contables, balances y reportes fiscales.
+                            </p>
+                            
+                            <!-- Características (planificadas) -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                                <div class="flex items-center text-sm text-gray-700">
+                                    <i class="fas fa-clock text-yellow-500 mr-2"></i>
+                                    Libro diario y mayor
+                                </div>
+                                <div class="flex items-center text-sm text-gray-700">
+                                    <i class="fas fa-clock text-yellow-500 mr-2"></i>
+                                    Balance y estado de resultados
+                                </div>
+                                <div class="flex items-center text-sm text-gray-700">
+                                    <i class="fas fa-clock text-yellow-500 mr-2"></i>
+                                    Conciliación bancaria
+                                </div>
+                                <div class="flex items-center text-sm text-gray-700">
+                                    <i class="fas fa-clock text-yellow-500 mr-2"></i>
+                                    Reportes SII
+                                </div>
+                            </div>
+                            
+                            <!-- Badge de estado -->
+                            <div class="inline-flex items-center bg-yellow-50 text-yellow-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                                <i class="fas fa-hourglass-half text-xs mr-2"></i>
+                                En desarrollo - Disponible pronto
+                            </div>
+                        </div>
+                        
+                        <!-- Flecha de acceso (deshabilitada visualmente) -->
+                        <div class="text-gray-400 text-2xl transform group-hover:translate-x-2 transition-transform opacity-50">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Mensaje informativo (actualizado para dos módulos) -->
+            <div class="mt-10 text-center">
+                <div class="inline-flex items-center bg-blue-50 text-blue-700 px-5 py-3 rounded-lg">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <span class="text-sm">Actualmente hay un módulo disponible y otro en preparación</span>
                 </div>
             </div>
         </div>
@@ -191,26 +243,29 @@
     </footer>
 
     <script>
-        // Efecto hover mejorado
+        // Efecto hover mejorado para ambas tarjetas
         document.addEventListener('DOMContentLoaded', function() {
-            const moduleCard = document.querySelector('.glass-card');
-            if (moduleCard) {
-                moduleCard.addEventListener('mouseenter', function() {
+            const moduleCards = document.querySelectorAll('.glass-card');
+            moduleCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
                     this.style.transform = 'translateY(-8px)';
                 });
                 
-                moduleCard.addEventListener('mouseleave', function() {
+                card.addEventListener('mouseleave', function() {
                     this.style.transform = 'translateY(0)';
                 });
                 
-                // Agregar efecto de clic
-                moduleCard.addEventListener('click', function() {
+                card.addEventListener('click', function(e) {
+                    // Solo aplicar efecto visual si el enlace no es "#" (evitar recarga)
+                    if (this.getAttribute('href') === '#') {
+                        e.preventDefault();
+                    }
                     this.style.transform = 'scale(0.98)';
                     setTimeout(() => {
                         this.style.transform = 'scale(1)';
                     }, 150);
                 });
-            }
+            });
         });
     </script>
 
