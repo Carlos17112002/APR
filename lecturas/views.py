@@ -1914,29 +1914,116 @@ from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from empresas.models import Empresa
-from clientes.models import CambioMedidor, Cliente   # Asegurar que ambos modelos se importan
+from clientes.models import CambioMedidor, Cliente  
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from empresas.models import Empresa
+from clientes.models import Cliente
+from datetime import datetime
+import pytz
+
+def escribir_cabecera_estandar(ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, mes_anio=None):
+    """
+    Escribe la cabecera estándar en las primeras filas de la hoja Excel.
+    Retorna el número de la siguiente fila disponible para comenzar a escribir datos.
+    """
+    row = 1
+    font_normal = Font(name='Calibri', size=11)
+    font_bold = Font(name='Calibri', size=11, bold=True)
+    font_titulo = Font(name='Calibri', size=12, bold=True)
+    alignment_left = Alignment(horizontal='left', vertical='center')
+
+    # Fila 1: Nombre comité (mayúsculas, negrita)
+    cell = ws.cell(row=row, column=1, value=empresa.nombre.upper())
+    cell.font = font_bold
+    cell.alignment = alignment_left
+    row += 1
+
+    # Fila 2: RUT (si el modelo Empresa tiene campo rut, si no se omite o se pone fijo)
+    rut_empresa = getattr(empresa, 'rut', '') or ''
+    if rut_empresa:
+        cell = ws.cell(row=row, column=1, value=rut_empresa)
+        cell.font = font_normal
+        cell.alignment = alignment_left
+        row += 1
+
+    # Fila 3: Usuario
+    cell = ws.cell(row=row, column=1, value=f"Usuario: {usuario_nombre}")
+    cell.font = font_normal
+    cell.alignment = alignment_left
+    row += 1
+
+    # Fila 4: Fecha y hora
+    cell = ws.cell(row=row, column=1, value=fecha_hora)
+    cell.font = font_normal
+    cell.alignment = alignment_left
+    row += 1
+
+    # Fila 5: Título del reporte (mayúsculas, negrita)
+    cell = ws.cell(row=row, column=1, value=titulo_reporte.upper())
+    cell.font = font_titulo
+    cell.alignment = alignment_left
+    row += 1
+
+    # Fila 6: Mes y año (opcional)
+    if mes_anio:
+        cell = ws.cell(row=row, column=1, value=mes_anio.upper())
+        cell.font = font_normal
+        cell.alignment = alignment_left
+        row += 1
+
+    row += 2  # Dejar una fila en blanco antes de los datos
+
+    return row
+
 
 def reporte_cambio_medidor(request, alias):
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
 
-    # Obtener cambios desde la BD de la empresa, igual que en detalle_cliente
-    cambios = CambioMedidor.objects.using(db_alias).order_by('-fecha_registro')
+    user = request.user
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    santiago_tz = pytz.timezone('America/Santiago')
+    ahora = datetime.now(santiago_tz)
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
 
-    # Depuración: imprimir cantidad de registros en consola del servidor
+    meses_es = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+    mes_anio = f"{meses_es[ahora.month-1]} de {ahora.year}"
+
+    cambios = CambioMedidor.objects.using(db_alias).order_by('-fecha_registro')
     print(f"[DEBUG] Cambios encontrados en {db_alias}: {cambios.count()}")
 
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Cambios de Medidor"
+    ws.sheet_view.showGridLines = False
 
-    # Estilos
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
-    header_alignment = Alignment(horizontal='center', vertical='center')
-    cell_font = Font(size=10)
-    cell_alignment = Alignment(horizontal='left', vertical='center')
-    border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    titulo_reporte = "LISTADO DE CAMBIOS DE MEDIDOR"
+    fila_inicio_tabla = escribir_cabecera_estandar(
+        ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, mes_anio
+    )
+
+    # Estilos de tabla
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+    data_font = Font(name='Calibri', size=9)
+    data_alignment = Alignment(horizontal='left', vertical='center')
+    data_alignment_right = Alignment(horizontal='right', vertical='center')
+
+    full_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
+    )
+    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
 
     headers = [
         'Fecha Registro', 'Usuario', 'Periodo',
@@ -1948,17 +2035,17 @@ def reporte_cambio_medidor(request, alias):
     ]
 
     if cambios.exists():
-        # Escribir cabeceras
+        # Encabezados
         for col_idx, h in enumerate(headers, 1):
-            cell = ws.cell(1, col_idx, h)
+            cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=h)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
-            cell.border = border
+            cell.border = full_border
 
-        # Escribir datos
-        for row_idx, cambio in enumerate(cambios, 2):
-            cliente = cambio.cliente   # relación FK directa
+        # Datos
+        for row_idx, cambio in enumerate(cambios, start=fila_inicio_tabla + 1):
+            cliente = cambio.cliente
             row_data = [
                 cambio.fecha_registro.strftime('%d/%m/%Y %H:%M') if cambio.fecha_registro else '',
                 cambio.usuario or '',
@@ -1980,50 +2067,53 @@ def reporte_cambio_medidor(request, alias):
             ]
             for col_idx, val in enumerate(row_data, 1):
                 cell = ws.cell(row_idx, col_idx, val)
-                cell.font = cell_font
-                cell.alignment = cell_alignment
-                cell.border = border
-                if row_idx % 2 == 0:
-                    cell.fill = PatternFill(start_color='F9FAFB', fill_type='solid')
-
-            # Formato numérico en columnas de lecturas
-            for col in [10, 11, 12, 17]:
-                cell = ws.cell(row_idx, col)
-                if cell.value and isinstance(cell.value, (int, float)):
+                cell.font = data_font
+                cell.alignment = data_alignment_right if isinstance(val, (int, float)) else data_alignment
+                cell.border = full_border
+                if isinstance(val, (int, float)) and not isinstance(val, bool):
                     cell.number_format = '#,##0.00'
+                if row_idx % 2 == 0:
+                    cell.fill = alt_fill
 
         # Ajustar ancho de columnas
         for col_idx in range(1, len(headers) + 1):
-            max_len = 0
-            col_letter = get_column_letter(col_idx)
-            for row in range(1, ws.max_row + 1):
+            max_length = 0
+            for row in range(fila_inicio_tabla, ws.max_row + 1):
                 val = ws.cell(row, col_idx).value
                 if val:
-                    max_len = max(max_len, len(str(val)))
-            ws.column_dimensions[col_letter].width = min(max_len + 2, 50)
+                    max_length = max(max_length, len(str(val)))
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 45)
+
+        ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
     else:
-        # Sin datos: mostrar mensaje en el Excel
-        ws.merge_cells('A1:Q1')
-        cell = ws.cell(1, 1, f'No hay cambios de medidor registrados para {empresa.nombre}.')
+        ws.merge_cells(f'A{fila_inicio_tabla}:Q{fila_inicio_tabla}')
+        cell = ws.cell(fila_inicio_tabla, 1, f'No hay cambios de medidor registrados para {empresa.nombre}.')
         cell.font = Font(size=12, bold=True, color='FF0000')
         cell.alignment = Alignment(horizontal='center', vertical='center')
-        ws.row_dimensions[1].height = 30
+        ws.row_dimensions[fila_inicio_tabla].height = 30
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="cambio_medidor_{alias}.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="cambio_medidor_{alias}_{fecha_archivo}.xlsx"'
     wb.save(response)
     return response
 
 
 def reporte_consumo_12_meses(request, alias):
-    """
-    Excel report: monthly consumption for the last 12 months (aggregated per month).
-    """
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
 
-    hoy = datetime.now().date()
+    user = request.user
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    santiago_tz = pytz.timezone('America/Santiago')
+    ahora = datetime.now(santiago_tz)
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
+
+    # Rango de fechas para el título (últimos 12 meses)
+    hoy = ahora.date()
     fecha_inicio = hoy - timedelta(days=365)
+    meses_es = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+    rango_titulo = f"{meses_es[fecha_inicio.month-1]} {fecha_inicio.year} - {meses_es[hoy.month-1]} {hoy.year}"
 
     lecturas = LecturaMovil.objects.filter(
         empresa_slug=alias,
@@ -2035,58 +2125,85 @@ def reporte_consumo_12_meses(request, alias):
         total_consumo=Sum('consumo')
     ).order_by('mes')
 
-    # Generar últimos 12 meses (aunque no tengan datos)
-    meses_espanol = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-                     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    # Preparar datos para los últimos 12 meses (incluyendo ceros)
+    meses_abbr = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     data = []
     for i in range(11, -1, -1):
         fecha = hoy - timedelta(days=30 * i)
         mes_num = fecha.month
         anio = fecha.year
-        mes_nombre = meses_espanol[mes_num - 1]
         key = f"{anio}-{mes_num:02d}"
         total = next((item['total_consumo'] for item in lecturas if item['mes'].strftime('%Y-%m') == key), 0)
-        data.append({'mes': f"{mes_nombre} {anio}", 'total': total})
+        data.append({'mes': f"{meses_abbr[mes_num-1]} {anio}", 'total': total})
 
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Consumo 12 Meses"
+    ws.sheet_view.showGridLines = False
 
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
-    cell_font = Font(size=10)
-    border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    titulo_reporte = "CONSUMO ÚLTIMOS 12 MESES"
+    fila_inicio_tabla = escribir_cabecera_estandar(
+        ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, rango_titulo.upper()
+    )
 
-    ws.cell(1, 1, 'Mes').font = header_font
-    ws.cell(1, 1).fill = header_fill
-    ws.cell(1, 1).border = border
-    ws.cell(1, 2, 'Consumo (m³)').font = header_font
-    ws.cell(1, 2).fill = header_fill
-    ws.cell(1, 2).border = border
+    # Estilos
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center')
 
-    for idx, item in enumerate(data, start=2):
-        ws.cell(idx, 1, item['mes']).border = border
-        ws.cell(idx, 2, item['total']).border = border
-        ws.cell(idx, 2).number_format = '#,##0.00'
-        if idx % 2 == 0:
-            ws.cell(idx, 1).fill = PatternFill(start_color='F9FAFB', fill_type='solid')
-            ws.cell(idx, 2).fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+    data_font = Font(name='Calibri', size=9)
+    data_alignment = Alignment(horizontal='left', vertical='center')
+    data_alignment_right = Alignment(horizontal='right', vertical='center')
+
+    full_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
+    )
+    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+
+    # Encabezados
+    headers = ['Mes', 'Consumo (m³)']
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = full_border
+
+    # Datos
+    for row_idx, item in enumerate(data, start=fila_inicio_tabla + 1):
+        cell_mes = ws.cell(row=row_idx, column=1, value=item['mes'])
+        cell_cons = ws.cell(row=row_idx, column=2, value=item['total'])
+        for cell in (cell_mes, cell_cons):
+            cell.font = data_font
+            cell.alignment = data_alignment_right if isinstance(cell.value, (int, float)) else data_alignment
+            cell.border = full_border
+            if row_idx % 2 == 0:
+                cell.fill = alt_fill
+        cell_cons.number_format = '#,##0.00'
 
     ws.column_dimensions['A'].width = 15
-    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['B'].width = 18
+    ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="consumo_12_meses_{alias}.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="consumo_12_meses_{alias}_{fecha_archivo}.xlsx"'
     wb.save(response)
     return response
 
 
 def reporte_consumo_anual(request, alias):
-    """
-    Excel report: annual consumption summary (per year).
-    """
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
+
+    user = request.user
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    santiago_tz = pytz.timezone('America/Santiago')
+    ahora = datetime.now(santiago_tz)
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
 
     lecturas = LecturaMovil.objects.filter(
         empresa_slug=alias,
@@ -2097,122 +2214,178 @@ def reporte_consumo_anual(request, alias):
         total_consumo=Sum('consumo')
     ).order_by('anio')
 
+    # Rango de años disponibles para el subtítulo
+    anios_disponibles = [item['anio'].year for item in lecturas if item['anio']]
+    if anios_disponibles:
+        rango_anios = f"{min(anios_disponibles)} - {max(anios_disponibles)}"
+    else:
+        rango_anios = "Sin datos"
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Consumo Anual"
+    ws.sheet_view.showGridLines = False
 
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
-    cell_font = Font(size=10)
-    border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    titulo_reporte = "RESUMEN CONSUMO ANUAL"
+    fila_inicio_tabla = escribir_cabecera_estandar(
+        ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, rango_anios.upper()
+    )
 
-    ws.cell(1, 1, 'Año').font = header_font
-    ws.cell(1, 1).fill = header_fill
-    ws.cell(1, 1).border = border
-    ws.cell(1, 2, 'Consumo Total (m³)').font = header_font
-    ws.cell(1, 2).fill = header_fill
-    ws.cell(1, 2).border = border
+    # Estilos
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center')
 
-    for idx, item in enumerate(lecturas, start=2):
+    data_font = Font(name='Calibri', size=9)
+    data_alignment = Alignment(horizontal='center', vertical='center')
+    data_alignment_right = Alignment(horizontal='right', vertical='center')
+
+    full_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
+    )
+    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+
+    headers = ['Año', 'Consumo Total (m³)']
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = full_border
+
+    for row_idx, item in enumerate(lecturas, start=fila_inicio_tabla + 1):
         anio = item['anio'].year if item['anio'] else ''
-        ws.cell(idx, 1, anio).border = border
-        ws.cell(idx, 2, item['total_consumo']).border = border
-        ws.cell(idx, 2).number_format = '#,##0.00'
-        if idx % 2 == 0:
-            ws.cell(idx, 1).fill = PatternFill(start_color='F9FAFB', fill_type='solid')
-            ws.cell(idx, 2).fill = PatternFill(start_color='F9FAFB', fill_type='solid')
+        cell_anio = ws.cell(row=row_idx, column=1, value=anio)
+        cell_cons = ws.cell(row=row_idx, column=2, value=item['total_consumo'])
+        cell_anio.font = data_font
+        cell_anio.alignment = data_alignment
+        cell_anio.border = full_border
+        cell_cons.font = data_font
+        cell_cons.alignment = data_alignment_right
+        cell_cons.border = full_border
+        cell_cons.number_format = '#,##0.00'
+        if row_idx % 2 == 0:
+            cell_anio.fill = alt_fill
+            cell_cons.fill = alt_fill
 
     ws.column_dimensions['A'].width = 12
-    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['B'].width = 18
+    ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="consumo_anual_{alias}.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="consumo_anual_{alias}_{fecha_archivo}.xlsx"'
     wb.save(response)
     return response
 
 
 def reporte_lecturas_por_periodo(request, alias):
-    """
-    Excel report: readings for a selected date range.
-    """
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
 
     if request.method == 'POST':
         fecha_inicio = request.POST.get('fecha_inicio')
         fecha_fin = request.POST.get('fecha_fin')
-        if fecha_inicio and fecha_fin:
-            fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+        if not (fecha_inicio and fecha_fin):
+            return render(request, 'informes/reporte_periodo.html', {'empresa': empresa, 'slug': alias})
 
-            lecturas = LecturaMovil.objects.filter(
-                empresa_slug=alias,
-                fecha_lectura__range=[fecha_inicio, fecha_fin],
-                consumo__isnull=False
-            ).order_by('fecha_lectura')
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
 
-            # Obtener clientes desde la BD de la empresa
-            client_ids = list(set(lecturas.values_list('cliente', flat=True)))
-            if client_ids:
-                clientes = Cliente.objects.using(db_alias).filter(id__in=client_ids)
-                cliente_dict = {c.id: c for c in clientes}
-            else:
-                cliente_dict = {}
+        user = request.user
+        usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+        santiago_tz = pytz.timezone('America/Santiago')
+        ahora = datetime.now(santiago_tz)
+        fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
+        fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
 
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.title = "Lecturas por Periodo"
+        lecturas = LecturaMovil.objects.filter(
+            empresa_slug=alias,
+            fecha_lectura__range=[fecha_inicio, fecha_fin],
+            consumo__isnull=False
+        ).order_by('fecha_lectura')
 
-            header_font = Font(bold=True, color='FFFFFF')
-            header_fill = PatternFill(start_color='059669', end_color='059669', fill_type='solid')
-            header_alignment = Alignment(horizontal='center', vertical='center')
-            cell_font = Font(size=10)
-            cell_alignment = Alignment(horizontal='left', vertical='center')
-            border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        # Clientes desde la BD de la empresa
+        client_ids = list(set(lecturas.values_list('cliente', flat=True)))
+        if client_ids:
+            clientes = Cliente.objects.using(db_alias).filter(id__in=client_ids)
+            cliente_dict = {c.id: c for c in clientes}
+        else:
+            cliente_dict = {}
 
-            headers = ['Fecha', 'Cliente', 'RUT', 'Lectura Actual (m³)', 'Consumo (m³)', 'Estado', 'Usuario']
-            for col_idx, h in enumerate(headers, 1):
-                cell = ws.cell(1, col_idx, h)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = header_alignment
-                cell.border = border
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Lecturas por Periodo"
+        ws.sheet_view.showGridLines = False
 
-            for row_idx, lectura in enumerate(lecturas, 2):
-                cliente = cliente_dict.get(lectura.cliente)
-                row_data = [
-                    lectura.fecha_lectura.strftime('%d/%m/%Y'),
-                    cliente.nombre if cliente else '',
-                    cliente.rut if cliente else '',
-                    lectura.lectura_actual,
-                    lectura.consumo,
-                    lectura.estado,
-                    lectura.usuario_app,
-                ]
-                for col_idx, val in enumerate(row_data, 1):
-                    cell = ws.cell(row_idx, col_idx, val)
-                    cell.font = cell_font
-                    cell.alignment = cell_alignment
-                    cell.border = border
-                    if row_idx % 2 == 0:
-                        cell.fill = PatternFill(start_color='F9FAFB', fill_type='solid')
-                if lectura.consumo:
-                    ws.cell(row_idx, 5).number_format = '#,##0.00'
-                    ws.cell(row_idx, 4).number_format = '#,##0.00'
+        rango_fechas = f"{fecha_inicio.strftime('%d/%m/%Y')} AL {fecha_fin.strftime('%d/%m/%Y')}"
+        titulo_reporte = "LECTURAS POR PERIODO"
+        fila_inicio_tabla = escribir_cabecera_estandar(
+            ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, rango_fechas.upper()
+        )
 
-            # Ajustar columnas
-            for col_idx in range(1, len(headers)+1):
-                max_len = 0
-                col_letter = get_column_letter(col_idx)
-                for row in range(1, ws.max_row+1):
-                    val = ws.cell(row, col_idx).value
-                    if val:
-                        max_len = max(max_len, len(str(val)))
-                ws.column_dimensions[col_letter].width = min(max_len+2, 40)
+        # Estilos
+        header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+        header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+        header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
-            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            response['Content-Disposition'] = f'attachment; filename="lecturas_periodo_{alias}.xlsx"'
-            wb.save(response)
-            return response
+        data_font = Font(name='Calibri', size=9)
+        data_alignment = Alignment(horizontal='left', vertical='center')
+        data_alignment_right = Alignment(horizontal='right', vertical='center')
+
+        full_border = Border(
+            left=Side(style='thin', color='000000'),
+            right=Side(style='thin', color='000000'),
+            top=Side(style='thin', color='000000'),
+            bottom=Side(style='thin', color='000000')
+        )
+        alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+
+        headers = ['Fecha', 'Cliente', 'RUT', 'Lectura Actual (m³)', 'Consumo (m³)', 'Estado', 'Usuario']
+        for col_idx, h in enumerate(headers, 1):
+            cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=h)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = full_border
+
+        for row_idx, lectura in enumerate(lecturas, start=fila_inicio_tabla + 1):
+            cliente = cliente_dict.get(lectura.cliente)
+            row_data = [
+                lectura.fecha_lectura.strftime('%d/%m/%Y'),
+                cliente.nombre if cliente else '',
+                cliente.rut if cliente else '',
+                float(lectura.lectura_actual) if lectura.lectura_actual else '',
+                float(lectura.consumo) if lectura.consumo else '',
+                lectura.estado,
+                lectura.usuario_app or '',
+            ]
+            for col_idx, val in enumerate(row_data, 1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=val)
+                cell.font = data_font
+                cell.alignment = data_alignment_right if isinstance(val, (int, float)) else data_alignment
+                cell.border = full_border
+                if isinstance(val, (int, float)) and not isinstance(val, bool):
+                    cell.number_format = '#,##0.00'
+                if row_idx % 2 == 0:
+                    cell.fill = alt_fill
+
+        # Ajustar ancho de columnas
+        for col_idx in range(1, len(headers) + 1):
+            max_length = 0
+            for row in range(fila_inicio_tabla, ws.max_row + 1):
+                val = ws.cell(row, col_idx).value
+                if val:
+                    max_length = max(max_length, len(str(val)))
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 40)
+
+        ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="lecturas_periodo_{alias}_{fecha_archivo}.xlsx"'
+        wb.save(response)
+        return response
 
     return render(request, 'informes/reporte_periodo.html', {'empresa': empresa, 'slug': alias})

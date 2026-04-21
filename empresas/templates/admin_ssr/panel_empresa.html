@@ -308,6 +308,14 @@
                 <a href="{% url 'reporte_lecturas_periodo' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
                   <i class="fas fa-calendar-week w-5 text-emerald-600"></i> Lecturas por Periodo
                 </a>
+
+                <!-- Nueva sección: Informes de Inventario -->
+                <div class="border-t border-gray-200 my-2"></div>
+                <div class="px-4 py-1 text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Informes de Inventario</div>
+                
+                <a href="{% url 'reporte_inventario_excel' slug=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                  <i class="fas fa-box-open w-5 text-emerald-600"></i> Inventario
+                </a>
               </div>
             </div>
           </div>

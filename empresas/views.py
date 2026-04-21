@@ -637,6 +637,9 @@ def api_consumo_por_sector(request, slug):
         print("Error en api_consumo_por_sector:", traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
 
+from empresas.decorators import permiso_requerido
+
+@permiso_requerido('produccion')
 def agregar_produccion(request, slug):
     """
     Vista para registrar una nueva producción desde el modal del panel.
@@ -1904,6 +1907,9 @@ def api_listar_producciones(request, slug):
         })
     return JsonResponse(data, safe=False)
 
+from empresas.decorators import permiso_requerido
+
+@permiso_requerido('produccion')
 def api_detalle_produccion(request, slug, produccion_id):
     empresa = get_object_or_404(Empresa, slug=slug)
     produccion = get_object_or_404(Produccion, id=produccion_id, empresa=empresa)
@@ -1922,6 +1928,7 @@ import json
 
 @require_POST
 @csrf_exempt
+@permiso_requerido('produccion')
 def editar_produccion(request, slug, produccion_id):
     empresa = get_object_or_404(Empresa, slug=slug)
     produccion = get_object_or_404(Produccion, id=produccion_id, empresa=empresa)

@@ -1232,7 +1232,70 @@ def mapa_clientes(request, alias):
     }
     return render(request, 'clientes/mapa_clientes.html', context)
 
-# clientes/views.py
+# admin_ssr/views.py (o donde tengas las vistas de informes)
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from empresas.models import Empresa
+from clientes.models import Cliente
+from datetime import datetime
+import pytz
+
+def escribir_cabecera_estandar(ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, mes_anio=None):
+    """
+    Escribe la cabecera estándar en las primeras filas de la hoja Excel.
+    Retorna el número de la siguiente fila disponible para comenzar a escribir datos.
+    """
+    row = 1
+    font_normal = Font(name='Calibri', size=11)
+    font_bold = Font(name='Calibri', size=11, bold=True)
+    font_titulo = Font(name='Calibri', size=12, bold=True)
+    alignment_left = Alignment(horizontal='left', vertical='center')
+
+    # Fila 1: Nombre comité (mayúsculas, negrita)
+    cell = ws.cell(row=row, column=1, value=empresa.nombre.upper())
+    cell.font = font_bold
+    cell.alignment = alignment_left
+    row += 1
+
+    # Fila 2: RUT (si el modelo Empresa tiene campo rut, si no se omite o se pone fijo)
+    rut_empresa = getattr(empresa, 'rut', '') or ''
+    if rut_empresa:
+        cell = ws.cell(row=row, column=1, value=rut_empresa)
+        cell.font = font_normal
+        cell.alignment = alignment_left
+        row += 1
+
+    # Fila 3: Usuario
+    cell = ws.cell(row=row, column=1, value=f"Usuario: {usuario_nombre}")
+    cell.font = font_normal
+    cell.alignment = alignment_left
+    row += 1
+
+    # Fila 4: Fecha y hora
+    cell = ws.cell(row=row, column=1, value=fecha_hora)
+    cell.font = font_normal
+    cell.alignment = alignment_left
+    row += 1
+
+    # Fila 5: Título del reporte (mayúsculas, negrita)
+    cell = ws.cell(row=row, column=1, value=titulo_reporte.upper())
+    cell.font = font_titulo
+    cell.alignment = alignment_left
+    row += 1
+
+    # Fila 6: Mes y año (opcional)
+    if mes_anio:
+        cell = ws.cell(row=row, column=1, value=mes_anio.upper())
+        cell.font = font_normal
+        cell.alignment = alignment_left
+        row += 1
+
+    row += 2  # Dejar una fila en blanco antes de los datos
+
+    return row
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, NamedStyle
@@ -1245,98 +1308,61 @@ from datetime import datetime
 import pytz
 
 def exportar_contratos_excel(request, alias):
-    """
-    Exporta todos los contratos a Excel con diseño profesional.
-    El encabezado (título, usuario, fecha) aparece en la parte superior izquierda.
-    """
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
 
-    # --- Información de usuario y fecha ---
     user = request.user
-    usuario = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
     santiago_tz = pytz.timezone('America/Santiago')
     ahora = datetime.now(santiago_tz)
-    fecha_descarga = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
     fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
 
-    # --- Parámetros de ordenamiento ---
+    meses_es = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+    mes_anio = f"{meses_es[ahora.month-1]} de {ahora.year}"
+
     order_by = request.GET.get('order_by', 'apellido_paterno')
     direction = request.GET.get('direction', 'asc')
     if direction == 'desc':
         order_by = f'-{order_by}'
-
     allowed_fields = ['apellido_paterno', 'fecha_incorporacion', 'sector']
     if order_by.lstrip('-') not in allowed_fields:
         order_by = 'apellido_paterno'
 
-    # --- Datos: todos los clientes con su contrato ---
     clientes = Cliente.objects.using(db_alias).select_related('contrato').order_by(order_by)
-    total_registros = clientes.count()
 
-    # --- Crear libro y hoja ---
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Contratos"
 
-    # --- Definir estilos ---
-    # Título principal
-    titulo_font = Font(name='Calibri', size=14, bold=True, color='1F4E79')
-    titulo_alignment = Alignment(horizontal='left', vertical='center')
-    
-    # Información de descarga
-    info_font = Font(name='Calibri', size=10, italic=True, color='7F8C8D')
-    info_alignment = Alignment(horizontal='left', vertical='center')
-    
-    # Resumen
-    resumen_font = Font(name='Calibri', size=10, bold=True, color='2C3E50')
-    resumen_alignment = Alignment(horizontal='left', vertical='center')
-    
-    # Encabezados de tabla
-    header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+    # Ocultar líneas de cuadrícula para un aspecto más limpio
+    ws.sheet_view.showGridLines = False
+
+    titulo_reporte = "LISTADO DE CONTRATOS"
+    fila_inicio_tabla = escribir_cabecera_estandar(
+        ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, mes_anio
+    )
+
+    # --- Estilos de tabla (tradicional) ---
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
     header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
     header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    header_border = Border(
-        left=Side(style='thin', color='FFFFFF'),
-        right=Side(style='thin', color='FFFFFF'),
-        top=Side(style='thin', color='FFFFFF'),
-        bottom=Side(style='thin', color='FFFFFF')
-    )
-    
-    # Celdas de datos
-    data_font = Font(name='Calibri', size=10)
+
+    data_font = Font(name='Calibri', size=9)
     data_alignment = Alignment(horizontal='left', vertical='center')
-    data_border = Border(
-        left=Side(style='thin', color='D0D3D4'),
-        right=Side(style='thin', color='D0D3D4'),
-        top=Side(style='thin', color='D0D3D4'),
-        bottom=Side(style='thin', color='D0D3D4')
+    data_alignment_right = Alignment(horizontal='right', vertical='center')
+
+    # Bordes completos (clásico)
+    full_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
     )
-    
-    # Filas alternadas
-    alt_fill = PatternFill(start_color='F9F9F9', end_color='F9F9F9', fill_type='solid')
-    
-    # Números
-    number_alignment = Alignment(horizontal='right', vertical='center')
-    number_format = '#,##0.00'
 
-    # --- Escribir encabezado en la parte superior izquierda (sin fusionar) ---
-    # Fila 1: Título
-    ws['A1'] = f"REPORTE DE CONTRATOS - {empresa.nombre.upper()}"
-    ws['A1'].font = titulo_font
-    ws['A1'].alignment = titulo_alignment
+    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
 
-    # Fila 2: Usuario y fecha
-    ws['A2'] = f"Descargado por: {usuario}  |  Fecha: {fecha_descarga}"
-    ws['A2'].font = info_font
-    ws['A2'].alignment = info_alignment
-
-    # Fila 3: Total de registros
-    ws['A3'] = f"Total de contratos registrados: {total_registros}"
-    ws['A3'].font = resumen_font
-    ws['A3'].alignment = resumen_alignment
-
-    # --- Encabezados de la tabla (fila 4) ---
+    # --- Encabezados ---
     headers = [
         'Número', 'Sector', 'Ruta', 'Dirección', 'Comuna', 'Ciudad', 'Rol',
         'Tipo Cliente', 'Contrato', 'Servicio', 'RUT', 'Nombre', 'Apellido Paterno',
@@ -1349,14 +1375,14 @@ def exportar_contratos_excel(request, alias):
     ]
 
     for col_idx, header in enumerate(headers, start=1):
-        cell = ws.cell(row=4, column=col_idx, value=header)
+        cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = header_alignment
-        cell.border = header_border
+        cell.border = full_border
 
-    # --- Datos (desde fila 5) ---
-    for row_idx, cliente in enumerate(clientes, start=5):
+    # --- Datos ---
+    for row_idx, cliente in enumerate(clientes, start=fila_inicio_tabla + 1):
         contrato = getattr(cliente, 'contrato', None)
 
         row_data = [
@@ -1407,35 +1433,31 @@ def exportar_contratos_excel(request, alias):
         for col_idx, value in enumerate(row_data, start=1):
             cell = ws.cell(row=row_idx, column=col_idx, value=value)
             cell.font = data_font
-            cell.alignment = data_alignment
-            cell.border = data_border
+            cell.alignment = data_alignment_right if isinstance(value, (int, float)) else data_alignment
+            cell.border = full_border
             if isinstance(value, (int, float)) and not isinstance(value, bool):
-                cell.alignment = number_alignment
-                cell.number_format = number_format
+                cell.number_format = '#,##0.00'
             if row_idx % 2 == 0:
                 cell.fill = alt_fill
 
-    # --- Ajustar ancho de columnas ---
+    # Ajustar ancho de columnas
     for col_idx in range(1, len(headers) + 1):
         max_length = 0
-        column_letter = get_column_letter(col_idx)
-        for row in range(4, ws.max_row + 1):
+        for row in range(fila_inicio_tabla, ws.max_row + 1):
             cell_value = ws.cell(row, col_idx).value
             if cell_value:
                 max_length = max(max_length, len(str(cell_value)))
-        adjusted_width = min(max_length + 3, 50)
-        ws.column_dimensions[column_letter].width = adjusted_width
+        adjusted_width = min(max_length + 4, 50)
+        ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
 
-    # --- Congelar paneles (fila 4 como cabecera visible) ---
-    ws.freeze_panes = 'A5'
+    # Congelar paneles
+    ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
 
-    # --- Pie de página (opcional, alineado a la izquierda) ---
+    # Pie de página
     last_row = ws.max_row + 1
-    ws[f'A{last_row}'] = f"Reporte generado automáticamente el {ahora.strftime('%d/%m/%Y %H:%M:%S')} - Sistema SSR"
+    ws[f'A{last_row}'] = f"Reporte generado el {ahora.strftime('%d/%m/%Y %H:%M:%S')}"
     ws[f'A{last_row}'].font = Font(name='Calibri', size=8, italic=True, color='7F8C8D')
-    ws[f'A{last_row}'].alignment = Alignment(horizontal='left', vertical='center')
 
-    # --- Respuesta HTTP ---
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     filename = f"contratos_{alias}_{fecha_archivo}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -1650,23 +1672,19 @@ from datetime import datetime
 import pytz
 
 def exportar_socios_excel(request, alias):
-    """
-    Exporta a Excel la lista de TODOS los clientes (sin filtrar por socio)
-    con diseño profesional. El encabezado (título, usuario, fecha, total)
-    aparece en la parte superior izquierda.
-    """
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
 
-    # --- Información del usuario y fecha ---
     user = request.user
-    usuario = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
     santiago_tz = pytz.timezone('America/Santiago')
     ahora = datetime.now(santiago_tz)
-    fecha_descarga = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
     fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
 
-    # --- Parámetros de ordenamiento ---
+    meses_es = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+    mes_anio = f"{meses_es[ahora.month-1]} de {ahora.year}"
+
     order_by = request.GET.get('order_by', 'apellido_paterno')
     direction = request.GET.get('direction', 'asc')
     if direction == 'desc':
@@ -1676,69 +1694,39 @@ def exportar_socios_excel(request, alias):
     if order_by.lstrip('-') not in allowed_fields:
         order_by = 'apellido_paterno'
 
-    # --- Datos: todos los clientes con su contrato ---
     clientes = Cliente.objects.using(db_alias).select_related('contrato').order_by(order_by)
-    total_clientes = clientes.count()
 
-    # --- Crear libro y hoja ---
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Clientes"
+    ws.title = "Socios"
 
-    # --- Estilos ---
-    # Título principal
-    titulo_font = Font(name='Calibri', size=14, bold=True, color='1F4E79')
-    titulo_alignment = Alignment(horizontal='left', vertical='center')
-    
-    # Información de descarga
-    info_font = Font(name='Calibri', size=10, italic=True, color='7F8C8D')
-    info_alignment = Alignment(horizontal='left', vertical='center')
-    
-    # Resumen
-    resumen_font = Font(name='Calibri', size=10, bold=True, color='2C3E50')
-    resumen_alignment = Alignment(horizontal='left', vertical='center')
-    
-    # Encabezados de tabla
-    header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+    # Ocultar líneas de cuadrícula
+    ws.sheet_view.showGridLines = False
+
+    titulo_reporte = "LISTADO DE SOCIOS"
+    fila_inicio_tabla = escribir_cabecera_estandar(
+        ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, mes_anio
+    )
+
+    # --- Estilos de tabla (tradicional) ---
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
     header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
     header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    header_border = Border(
-        left=Side(style='thin', color='FFFFFF'),
-        right=Side(style='thin', color='FFFFFF'),
-        top=Side(style='thin', color='FFFFFF'),
-        bottom=Side(style='thin', color='FFFFFF')
-    )
-    
-    # Datos normales
-    data_font = Font(name='Calibri', size=10)
+
+    data_font = Font(name='Calibri', size=9)
     data_alignment = Alignment(horizontal='left', vertical='center')
-    data_border = Border(
-        left=Side(style='thin', color='D0D3D4'),
-        right=Side(style='thin', color='D0D3D4'),
-        top=Side(style='thin', color='D0D3D4'),
-        bottom=Side(style='thin', color='D0D3D4')
+    data_alignment_right = Alignment(horizontal='right', vertical='center')
+
+    full_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
     )
-    
-    # Fila alternada
-    alt_fill = PatternFill(start_color='F9F9F9', end_color='F9F9F9', fill_type='solid')
-    
-    # --- Escribir encabezado en la parte superior izquierda ---
-    # Fila 1: Título
-    ws['A1'] = f"LISTADO DE SOCIOS - {empresa.nombre.upper()}"
-    ws['A1'].font = titulo_font
-    ws['A1'].alignment = titulo_alignment
 
-    # Fila 2: Usuario y fecha
-    ws['A2'] = f"Descargado por: {usuario}  |  Fecha: {fecha_descarga}"
-    ws['A2'].font = info_font
-    ws['A2'].alignment = info_alignment
+    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
 
-    # Fila 3: Total de registros
-    ws['A3'] = f"Total de socios: {total_clientes}"
-    ws['A3'].font = resumen_font
-    ws['A3'].alignment = resumen_alignment
-
-    # --- Encabezados de la tabla (fila 4) ---
+    # --- Encabezados ---
     headers = [
         'Sector', 'Ruta', 'N° Libro', 'Contrato', 'RUT',
         'Nombre', 'Apellido Paterno', 'Apellido Materno',
@@ -1747,17 +1735,16 @@ def exportar_socios_excel(request, alias):
     ]
 
     for col_idx, header in enumerate(headers, start=1):
-        cell = ws.cell(row=4, column=col_idx, value=header)
+        cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = header_alignment
-        cell.border = header_border
+        cell.border = full_border
 
-    # --- Datos (desde fila 5) ---
-    for row_idx, cliente in enumerate(clientes, start=5):
+    # --- Datos ---
+    for row_idx, cliente in enumerate(clientes, start=fila_inicio_tabla + 1):
         contrato = cliente.contrato if hasattr(cliente, 'contrato') else None
 
-        # Nombre completo
         nombre_completo = cliente.nombre or ''
         if cliente.apellido_paterno:
             nombre_completo += ' ' + cliente.apellido_paterno
@@ -1786,34 +1773,33 @@ def exportar_socios_excel(request, alias):
         for col_idx, value in enumerate(row_data, start=1):
             cell = ws.cell(row=row_idx, column=col_idx, value=value)
             cell.font = data_font
-            cell.alignment = data_alignment
-            cell.border = data_border
+            cell.alignment = data_alignment_right if isinstance(value, (int, float)) else data_alignment
+            cell.border = full_border
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                cell.number_format = '#,##0.00'
             if row_idx % 2 == 0:
                 cell.fill = alt_fill
 
-    # --- Ajustar ancho de columnas ---
+    # Ajustar ancho de columnas
     for col_idx in range(1, len(headers) + 1):
         max_length = 0
-        column_letter = get_column_letter(col_idx)
-        for row in range(4, ws.max_row + 1):
+        for row in range(fila_inicio_tabla, ws.max_row + 1):
             cell_value = ws.cell(row, col_idx).value
             if cell_value:
                 max_length = max(max_length, len(str(cell_value)))
-        adjusted_width = min(max_length + 3, 50)
-        ws.column_dimensions[column_letter].width = adjusted_width
+        adjusted_width = min(max_length + 4, 50)
+        ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
 
-    # --- Congelar paneles: mantener visibles las filas 1-4 ---
-    ws.freeze_panes = 'A5'
+    # Congelar paneles
+    ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
 
-    # --- Pie de página (opcional, alineado a la izquierda) ---
+    # Pie de página
     last_row = ws.max_row + 1
-    ws[f'A{last_row}'] = f"Reporte generado automáticamente el {ahora.strftime('%d/%m/%Y %H:%M:%S')} - Sistema SSR"
+    ws[f'A{last_row}'] = f"Reporte generado el {ahora.strftime('%d/%m/%Y %H:%M:%S')}"
     ws[f'A{last_row}'].font = Font(name='Calibri', size=8, italic=True, color='7F8C8D')
-    ws[f'A{last_row}'].alignment = Alignment(horizontal='left', vertical='center')
 
-    # --- Respuesta HTTP ---
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    filename = f"clientes_{alias}_{fecha_archivo}.xlsx"
+    filename = f"socios_{alias}_{fecha_archivo}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     wb.save(response)
     return response
