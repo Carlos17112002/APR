@@ -7,8 +7,13 @@ from empresas.decorators import permiso_requerido
 
 @permiso_requerido('contabilidad')
 def panel_libro_sii(request, alias):
-    # Placeholder: lógica para mostrar panel del libro SII
-    return render(request, 'contabilidad/panel_libro_sii.html', {'alias': alias})
+    nombre_usuario = request.user.get_full_name() or request.user.username or 'Administrador'
+    
+    context = {
+        'alias': alias,
+        'usuario': {'nombre': nombre_usuario},
+    }
+    return render(request, 'contabilidad/panel_libro_sii.html', context)
 
 
 
