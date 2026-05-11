@@ -12,6 +12,10 @@ def login_ssr(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
         remember_me = request.POST.get('remember_me')
+        
+        if not request.session.session_key:
+            request.session.create()
+            
         user = authenticate(request, username=username, password=password)
 
         if user:
