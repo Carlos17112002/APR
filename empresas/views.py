@@ -1,9 +1,4 @@
 from django.shortcuts import render
-
-# Create your views here.
-# empresas/views.py
-
-from django.shortcuts import render
 from empresas.models import Empresa
 from empresas.multiempresa import registrar_alias
 from django.conf import settings
@@ -16,7 +11,7 @@ def dashboard_admin_ssr(request):
 
     for empresa in empresas:
         slug = empresa.slug
-        registrar_alias(slug)  # registra alias si falta
+        registrar_alias(slug) 
 
         estado = {
             'base_creada': True,

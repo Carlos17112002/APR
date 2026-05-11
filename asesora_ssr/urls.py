@@ -64,7 +64,7 @@ urlpatterns = [
     path('boletas/', include('boletas.urls')),
     path('contabilidad/', include('contabilidad.urls')),
     path('trabajadores/', include('trabajadores.urls')),
-    path('informes/', include('informes.urls')),
+    # path('informes/', include('informes.urls')),
     path('ssr-tools/', include('ssr_tools.urls')),
 ]
 

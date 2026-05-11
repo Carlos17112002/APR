@@ -93,10 +93,12 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
+                {% if 'editar_cliente' in permisos_usuario %}
                     <a href="{% url 'editar_cliente' alias=slug cliente_id=cliente.id %}" 
-                       class="bg-white text-emerald-700 hover:bg-gray-100 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
+                    class="bg-white text-emerald-700 hover:bg-gray-100 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center">
                         <i class="fas fa-edit mr-2"></i> Editar
                     </a>
+                {% endif %}
                 </div>
             </div>
         </div>
@@ -328,7 +330,15 @@
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
                     <h2 class="text-xl font-semibold text-gray-900">Subsidios</h2>
-                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ subsidios|length }} registro(s)</span>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ subsidios|length }} registro(s)</span>
+                        {% if 'subsidio' in permisos_usuario %}
+                            <button onclick="abrirModalSubsidio()" 
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                                <i class="fas fa-plus mr-2"></i> Nuevo
+                            </button>
+                        {% endif %}
+                    </div>
                 </div>
                 {% if subsidios %}
                 <div class="overflow-x-auto">
@@ -348,7 +358,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Encuesta</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
+                        <tbody id="tablaSubsidiosBody" class="divide-y divide-gray-200">
                             {% for s in subsidios %}
                             <tr class="table-row-hover">
                                 <td class="px-6 py-4">{{ s.subsidio }}</td>
@@ -361,14 +371,14 @@
                                 <td class="px-6 py-4">{{ s.fecha_decreto|date:"d/m/Y" }}</td>
                                 <td class="px-6 py-4">{{ s.fecha_inicio|date:"d/m/Y" }}</td>
                                 <td class="px-6 py-4">{{ s.fecha_vencimiento|date:"d/m/Y" }}</td>
-                                <td class="px-6 py-4">{{ s.fecha_encuesta|date:"d/m/Y" }}</td>
+                                <td class="px-6 py-4">{{ s.fecha_encuesta|date:"d/m/Y"|default:"-" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 {% else %}
-                <div class="text-center py-12">
+                <div id="sinSubsidiosPlaceholder" class="text-center py-12">
                     <i class="fas fa-hand-holding-usd text-4xl text-gray-300 mb-4"></i>
                     <p class="text-gray-500">No hay subsidios registrados.</p>
                 </div>
@@ -384,8 +394,16 @@
                     <button id="subtabCargos" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" onclick="switchSubTab('Cargos')">Cargos</button>
                     <button id="subtabDescuentos" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" onclick="switchSubTab('Descuentos')">Descuentos</button>
                 </div>
+
                 <!-- Cargos Permanentes -->
                 <div id="subcontentCargosPermanentes" class="overflow-x-auto">
+                    <div class="flex justify-end p-3">
+                    {% if 'cargo_permanente' in permisos_usuario %}
+                        <button onclick="abrirModalCargoPermanente()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nuevo
+                        </button>
+                    {% endif %}
+                    </div>
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -398,14 +416,14 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
+                        <tbody id="tablaCargosPermanentesBody" class="divide-y divide-gray-200">
                             {% if cargos_permanentes %}
                                 {% for cp in cargos_permanentes %}
                                 <tr class="table-row-hover">
                                     <td class="px-6 py-4">{{ cp.fecha|date:"d/m/Y" }}</td>
                                     <td class="px-6 py-4">{{ cp.codigo }}</td>
                                     <td class="px-6 py-4">{{ cp.descripcion }}</td>
-                                    <td class="px-6 py-4">${{ cp.monto|intcomma }}</td>
+                                    <td class="px-6 py-4">${{ cp.monto|floatformat:0|intcomma }}</td>
                                     <td class="px-6 py-4">{{ cp.facturable|yesno:"Sí,No" }}</td>
                                     <td class="px-6 py-4">{{ cp.periodo }}</td>
                                     <td class="px-6 py-4">{{ cp.usuario }}</td>
@@ -417,8 +435,16 @@
                         </tbody>
                     </table>
                 </div>
+
                 <!-- Cargos -->
                 <div id="subcontentCargos" class="overflow-x-auto hidden">
+                    <div class="flex justify-end p-3">
+                    {% if 'cargo' in permisos_usuario %}
+                        <button onclick="abrirModalCargo()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nuevo
+                        </button>
+                    {% endif %}
+                    </div>
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -431,14 +457,14 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
+                        <tbody id="tablaCargosBody" class="divide-y divide-gray-200">
                             {% if cargos %}
                                 {% for c in cargos %}
                                 <tr class="table-row-hover">
                                     <td class="px-6 py-4">{{ c.fecha|date:"d/m/Y" }}</td>
                                     <td class="px-6 py-4">{{ c.codigo }}</td>
                                     <td class="px-6 py-4">{{ c.descripcion }}</td>
-                                    <td class="px-6 py-4">${{ c.monto|intcomma }}</td>
+                                    <td class="px-6 py-4">${{ c.monto|floatformat:0|intcomma }}</td>
                                     <td class="px-6 py-4">{{ c.facturable|yesno:"Sí,No" }}</td>
                                     <td class="px-6 py-4">{{ c.periodo }}</td>
                                     <td class="px-6 py-4">{{ c.usuario }}</td>
@@ -450,8 +476,16 @@
                         </tbody>
                     </table>
                 </div>
+
                 <!-- Descuentos -->
                 <div id="subcontentDescuentos" class="overflow-x-auto hidden">
+                    <div class="flex justify-end p-3">
+                    {% if 'descuento' in permisos_usuario %}
+                        <button onclick="abrirModalDescuento()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nuevo
+                        </button>
+                    {% endif %}
+                    </div>
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -464,14 +498,14 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
+                        <tbody id="tablaDescuentosBody" class="divide-y divide-gray-200">
                             {% if descuentos %}
                                 {% for d in descuentos %}
                                 <tr class="table-row-hover">
                                     <td class="px-6 py-4">{{ d.fecha|date:"d/m/Y" }}</td>
                                     <td class="px-6 py-4">{{ d.codigo }}</td>
                                     <td class="px-6 py-4">{{ d.descripcion }}</td>
-                                    <td class="px-6 py-4">${{ d.monto|intcomma }}</td>
+                                    <td class="px-6 py-4">${{ d.monto|floatformat:0|intcomma }}</td>
                                     <td class="px-6 py-4">{{ d.facturable|yesno:"Sí,No" }}</td>
                                     <td class="px-6 py-4">{{ d.periodo }}</td>
                                     <td class="px-6 py-4">{{ d.usuario }}</td>
@@ -491,7 +525,14 @@
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
                     <h2 class="text-xl font-semibold text-gray-900">Convenios</h2>
-                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ convenios|length }} registro(s)</span>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ convenios|length }} registro(s)</span>
+                    {% if 'convenio' in permisos_usuario %}
+                        <button onclick="abrirModalConvenio()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nuevo
+                        </button>
+                    {% endif %}
+                    </div>
                 </div>
                 {% if convenios %}
                 <div class="overflow-x-auto">
@@ -552,10 +593,12 @@
                         <h2 class="text-xl font-semibold text-gray-900">Lecturas</h2>
                         <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm inline-block mt-1">{{ lecturas_completas|length }} registro(s)</span>
                     </div>
-                    <button onclick="abrirModalLectura()" 
-                            class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Nueva Lectura
-                    </button>
+                    {% if 'lectura' in permisos_usuario %}
+                        <button onclick="abrirModalLectura()" 
+                                class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nueva Lectura
+                        </button>
+                    {% endif %}
                 </div>
                 {% if lecturas_completas %}
                 <div class="overflow-x-auto">
@@ -610,7 +653,14 @@
             <div class="bg-white rounded-xl card-shadow overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
                     <h2 class="text-xl font-semibold text-gray-900">Otros Ingresos</h2>
-                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ otros_ingresos|length }} registro(s)</span>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ otros_ingresos|length }} registro(s)</span>
+                    {% if 'otro_ingreso' in permisos_usuario %}
+                        <button onclick="abrirModalOtroIngreso()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nuevo
+                        </button>
+                    {% endif %}
+                    </div>
                 </div>
                 {% if otros_ingresos %}
                 <div class="overflow-x-auto">
@@ -654,10 +704,12 @@
                         <h2 class="text-xl font-semibold text-gray-900">Cambios de Medidor</h2>
                         <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm">{{ cambios_medidor|length }} registro(s)</span>
                     </div>
-                    <button onclick="abrirModalCambioMedidor()" 
-                            class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
-                        <i class="fas fa-exchange-alt mr-2"></i> Registrar Cambio
-                    </button>
+                    {% if 'cambio_medidor' in permisos_usuario %}
+                        <button onclick="abrirModalCambioMedidor()" 
+                                class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center">
+                            <i class="fas fa-exchange-alt mr-2"></i> Registrar Cambio
+                        </button>
+                    {% endif %}
                 </div>
                 {% if cambios_medidor %}
                 <div class="overflow-x-auto">
@@ -694,7 +746,7 @@
                                 <td class="px-6 py-4">{{ cm.consumo|floatformat:0 }}</td>
                                 <td class="px-6 py-4">{{ cm.fecha_instalacion }}</td>
                                 <td class="px-6 py-4">{{ cm.numero_instalado }}</td>
-                                <td class="px-6 py-4">{{ cm.lectura_inicial|floatformat:2 }}</td>
+                                <td class="px-6 py-4">{{ cm.lectura_inicial|floatformat:0 }}</td>
                                 <td class="px-6 py-4">{{ cm.fecha_registro }}</td>
                                 <td class="px-6 py-4">{{ cm.usuario }}</td>
                             </tr>
@@ -717,6 +769,11 @@
                 <div class="px-6 py-5 border-b border-gray-200 flex flex-wrap gap-2">
                     <button id="subtabHistoricoCorte" class="px-4 py-2 rounded-lg text-sm font-medium subtab-active" onclick="switchSubTabCorte('historico')">Histórico Corte y Reposición</button>
                     <button id="subtabAnulaciones" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" onclick="switchSubTabCorte('anulaciones')">Anulaciones Corte</button>
+                    {% if 'corte' in permisos_usuario %}
+                        <button onclick="abrirModalCorte()" class="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                            <i class="fas fa-plus mr-1"></i> Nuevo Corte
+                        </button>
+                    {% endif %}
                 </div>
                 <!-- Histórico Corte y Reposición -->
                 <div id="subcontentHistoricoCorte" class="overflow-x-auto">
@@ -737,7 +794,7 @@
                                 <tr class="table-row-hover">
                                     <td class="px-6 py-4">{{ hc.fecha_corte|date:"d/m/Y" }}</td>
                                     <td class="px-6 py-4">{{ hc.operador_corte }}</td>
-                                    <td class="px-6 py-4">{{ hc.lectura_corte|floatformat:2 }}</td>
+                                    <td class="px-6 py-4">{{ hc.lectura_corte|floatformat:0 }}</td>
                                     <td class="px-6 py-4">{{ hc.tipo_corte }}</td>
                                     <td class="px-6 py-4">{{ hc.fecha_reposicion|date:"d/m/Y"|default:"-" }}</td>
                                     <td class="px-6 py-4">{{ hc.operador_reposicion|default:"-" }}</td>
@@ -768,7 +825,7 @@
                                 <tr class="table-row-hover">
                                     <td class="px-6 py-4">{{ an.fecha_corte|date:"d/m/Y" }}</td>
                                     <td class="px-6 py-4">{{ an.operador_corte }}</td>
-                                    <td class="px-6 py-4">{{ an.lectura_corte|floatformat:2 }}</td>
+                                    <td class="px-6 py-4">{{ an.lectura_corte|floatformat:0 }}</td>
                                     <td class="px-6 py-4">{{ an.tipo_corte }}</td>
                                     <td class="px-6 py-4">{{ an.fecha_anulacion|date:"d/m/Y" }}</td>
                                     <td class="px-6 py-4">{{ an.usuario }}</td>
@@ -835,6 +892,290 @@
                                 class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center">
                             <i class="fas fa-save mr-2"></i> Guardar Lectura
                         </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Subsidio -->
+    <div id="modalSubsidio" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg modal-content max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Nuevo Subsidio</h3>
+                    <button onclick="cerrarModalSubsidio()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="formSubsidio">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Subsidio *</label>
+                            <input type="text" name="subsidio" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Municipalidad *</label>
+                            <input type="text" name="municipalidad" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">N° Decreto *</label>
+                            <input type="text" name="numero_decreto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tramo *</label>
+                            <input type="text" name="tramo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">RUT Beneficiario *</label>
+                            <input type="text" name="rut_beneficiario" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Beneficiario *</label>
+                            <input type="text" name="beneficiario" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Vivienda</label>
+                            <input type="text" name="vivienda" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Decreto *</label>
+                            <input type="date" name="fecha_decreto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio *</label>
+                            <input type="date" name="fecha_inicio" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Vencimiento *</label>
+                            <input type="date" name="fecha_vencimiento" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Encuesta</label>
+                            <input type="date" name="fecha_encuesta" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalSubsidio()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" id="btnGuardarSubsidio" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cargo Permanente -->
+    <div id="modalCargoPermanente" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Nuevo Cargo Permanente</h3>
+                    <button onclick="cerrarModalCargoPermanente()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <form id="formCargoPermanente">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                            <input type="date" name="fecha" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+                            <input type="text" name="codigo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+                            <input type="text" name="descripcion" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+                            <input type="number" step="0.01" name="monto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Periodo *</label>
+                            <input type="text" name="periodo" required placeholder="YYYY-MM" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="facturable" id="facturable_cp" checked class="h-4 w-4 text-emerald-600">
+                            <label for="facturable_cp" class="ml-2 text-sm text-gray-700">Facturable</label>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalCargoPermanente()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" id="btnGuardarCargoPermanente" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cargo -->
+    <div id="modalCargo" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Nuevo Cargo</h3>
+                    <button onclick="cerrarModalCargo()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <form id="formCargo">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                            <input type="date" name="fecha" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+                            <input type="text" name="codigo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+                            <input type="text" name="descripcion" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+                            <input type="number" step="0.01" name="monto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Periodo *</label>
+                            <input type="text" name="periodo" required placeholder="YYYY-MM" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="facturable" id="facturable_c" checked class="h-4 w-4 text-emerald-600">
+                            <label for="facturable_c" class="ml-2 text-sm text-gray-700">Facturable</label>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalCargo()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" id="btnGuardarCargo" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Descuento -->
+    <div id="modalDescuento" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Nuevo Descuento</h3>
+                    <button onclick="cerrarModalDescuento()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <form id="formDescuento">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                            <input type="date" name="fecha" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+                            <input type="text" name="codigo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+                            <input type="text" name="descripcion" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+                            <input type="number" step="0.01" name="monto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Periodo *</label>
+                            <input type="text" name="periodo" required placeholder="YYYY-MM" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="facturable" id="facturable_d" checked class="h-4 w-4 text-emerald-600">
+                            <label for="facturable_d" class="ml-2 text-sm text-gray-700">Facturable</label>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalDescuento()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" id="btnGuardarDescuento" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalConvenio" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Nuevo Convenio</h3>
+                    <button onclick="cerrarModalConvenio()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <form id="formConvenio">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <div class="space-y-4">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Convenio *</label><input type="text" name="convenio" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label><input type="text" name="descripcion" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label><input type="date" name="fecha_convenio" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Total Cuotas *</label><input type="number" name="total_cuotas" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Monto *</label><input type="number" step="0.01" name="monto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div class="flex items-center"><input type="checkbox" name="facturable" id="facturable_conv" checked class="h-4 w-4 text-emerald-600"><label for="facturable_conv" class="ml-2 text-sm text-gray-700">Facturable</label></div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalConvenio()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" id="btnGuardarConvenio" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalOtroIngreso" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Nuevo Ingreso</h3>
+                    <button onclick="cerrarModalOtroIngreso()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <form id="formOtroIngreso">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <div class="space-y-4">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Concepto *</label><input type="text" name="concepto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Documento</label><input type="text" name="documento" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Fecha Pago *</label><input type="date" name="fecha_pago" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Monto *</label><input type="number" step="0.01" name="monto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Comprobante</label><input type="text" name="comprobante" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalOtroIngreso()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" id="btnGuardarOtroIngreso" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalCorte" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Nuevo Corte</h3>
+                    <button onclick="cerrarModalCorte()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <form id="formCorte">
+                    {% csrf_token %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <div class="space-y-4">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Fecha Corte *</label><input type="date" name="fecha_corte" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Operador *</label><input type="text" name="operador_corte" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Lectura Corte *</label><input type="number" step="0.01" name="lectura_corte" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo Corte *</label><input type="text" name="tipo_corte" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="cerrarModalCorte()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" id="btnGuardarCorte" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Guardar</button>
                     </div>
                 </form>
             </div>
@@ -1265,6 +1606,272 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
+        // ----- Modal Subsidio -----
+        function abrirModalSubsidio() {
+            document.getElementById('modalSubsidio').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function cerrarModalSubsidio() {
+            document.getElementById('modalSubsidio').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formSubsidio').reset();
+        }
+        document.getElementById('formSubsidio').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarSubsidio');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+            const formData = new FormData(this);
+            const url = "{% url 'crear_subsidio_ajax' alias=slug cliente_id=cliente.id %}";
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalSubsidio();
+                    mostrarToast('Subsidio registrado correctamente', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => { mostrarToast('Error de conexión', 'error'); console.error(error); })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save mr-2"></i> Guardar';
+            });
+        });
+        
+        // ----- Cargo Permanente -----
+        function abrirModalCargoPermanente() {
+            document.getElementById('modalCargoPermanente').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function cerrarModalCargoPermanente() {
+            document.getElementById('modalCargoPermanente').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formCargoPermanente').reset();
+        }
+        document.getElementById('formCargoPermanente').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarCargoPermanente');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+            const formData = new FormData(this);
+            fetch("{% url 'crear_cargo_permanente_ajax' alias=slug cliente_id=cliente.id %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalCargoPermanente();
+                    mostrarToast('Cargo permanente registrado', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => { mostrarToast('Error de conexión', 'error'); })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar';
+            });
+        });
+
+        // ----- Cargo -----
+        function abrirModalCargo() {
+            document.getElementById('modalCargo').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function cerrarModalCargo() {
+            document.getElementById('modalCargo').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formCargo').reset();
+        }
+        document.getElementById('formCargo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarCargo');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+            const formData = new FormData(this);
+            fetch("{% url 'crear_cargo_ajax' alias=slug cliente_id=cliente.id %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalCargo();
+                    mostrarToast('Cargo registrado', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => { mostrarToast('Error de conexión', 'error'); })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar';
+            });
+        });
+
+        // ----- Descuento -----
+        function abrirModalDescuento() {
+            document.getElementById('modalDescuento').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function cerrarModalDescuento() {
+            document.getElementById('modalDescuento').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formDescuento').reset();
+        }
+        document.getElementById('formDescuento').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarDescuento');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+            const formData = new FormData(this);
+            fetch("{% url 'crear_descuento_ajax' alias=slug cliente_id=cliente.id %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalDescuento();
+                    mostrarToast('Descuento registrado', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => { mostrarToast('Error de conexión', 'error'); })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar';
+            });
+        });
+
+        // ----- Modal Convenio -----
+        function abrirModalConvenio() {
+            document.getElementById('modalConvenio').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function cerrarModalConvenio() {
+            document.getElementById('modalConvenio').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formConvenio').reset();
+        }
+        document.getElementById('formConvenio').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarConvenio');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+            const formData = new FormData(this);
+            fetch("{% url 'crear_convenio_ajax' alias=slug cliente_id=cliente.id %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalConvenio();
+                    mostrarToast('Convenio registrado', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => { mostrarToast('Error de conexión', 'error'); })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar';
+            });
+        });
+
+        // ----- Modal Otro Ingreso -----
+        function abrirModalOtroIngreso() {
+            document.getElementById('modalOtroIngreso').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function cerrarModalOtroIngreso() {
+            document.getElementById('modalOtroIngreso').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formOtroIngreso').reset();
+        }
+        document.getElementById('formOtroIngreso').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarOtroIngreso');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+            const formData = new FormData(this);
+            fetch("{% url 'crear_otro_ingreso_ajax' alias=slug cliente_id=cliente.id %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalOtroIngreso();
+                    mostrarToast('Ingreso registrado', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => { mostrarToast('Error de conexión', 'error'); })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar';
+            });
+        });
+
+        // ----- Modal Corte -----
+        function abrirModalCorte() {
+            document.getElementById('modalCorte').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function cerrarModalCorte() {
+            document.getElementById('modalCorte').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('formCorte').reset();
+        }
+        document.getElementById('formCorte').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarCorte');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+            const formData = new FormData(this);
+            fetch("{% url 'crear_corte_reposicion_ajax' alias=slug cliente_id=cliente.id %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalCorte();
+                    mostrarToast('Corte registrado', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    mostrarToast('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => { mostrarToast('Error de conexión', 'error'); })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar';
+            });
+        });
 
         // Cerrar modales al hacer clic fuera
         window.addEventListener('click', function(e) {
@@ -1273,6 +1880,8 @@
             if (e.target === modalLectura) cerrarModalLectura();
             if (e.target === modalCambio) cerrarModalCambioMedidor();
         });
+
+
     </script>
 </body>
 </html>

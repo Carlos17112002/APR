@@ -1,0 +1,41 @@
+{
+  "app_name": "SSR APR-PRUEBA",
+  "empresa_nombre": "APR-PRUEBA",
+  "empresa_slug": "apr-prueba",
+  "version": "1.0.0",
+  "primary_color": "#1E40AF",
+  "secondary_color": "#DC2626",
+  "base_url": "http://localhost:8000/api/apr-prueba/",
+  "api_key": "4736020dab74191ea83168a563002c92f05201acf19c567420e4f8052cf7876f",
+  "sectores": [
+    "PRUEBA ESTE",
+    "PRUEBA NORTE",
+    "PRUEBA CENTRO",
+    "PRUEBA OESTE",
+    "PRUEBA SUR"
+  ],
+  "habilitar_mapa": true,
+  "habilitar_offline": true,
+  "sincronizacion_auto": true,
+  "validar_gps": true,
+  "mensaje_bienvenida": "Bienvenido a la app de lecturas",
+  "mostrar_logo": true,
+  "intervalo_sincronizacion": 5,
+  "max_lecturas_pendientes": 100,
+  "clientes": [
+    {
+      "id": 1,
+      "codigo": "21.231.234-1",
+      "nombre": "prueba prueba ",
+      "rut": "21.231.234-1",
+      "direccion": "PRUEBA, SECTOR PRUEBA",
+      "telefono": "999999999",
+      "email": "prueba@gmail.com",
+      "numero_medidor": "MED-PRUEBA",
+      "sector": "PRUEBA NORTE",
+      "latitud": -34.257783966839966,
+      "longitud": -70.83407592930598,
+      "estado": "Activo"
+    }
+  ]
+}

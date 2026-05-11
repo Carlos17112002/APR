@@ -146,3 +146,186 @@ class CambioMedidor(models.Model):
     
     def __str__(self):
         return f"Cambio medidor {self.cliente.nombre} - {self.fecha_registro.strftime('%d/%m/%Y')}"
+    
+# clientes/models.py
+
+from django.db import models
+from django.utils import timezone
+
+
+# -----------------------------------------------------------------------------
+# 1. SUBSIDIOS
+# -----------------------------------------------------------------------------
+class Subsidio(models.Model):
+    """Registro de subsidio de agua potable asociado a un cliente."""
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='subsidios')
+
+    # Campos de la tabla
+    subsidio = models.CharField(max_length=100)
+    municipalidad = models.CharField(max_length=100)
+    numero_decreto = models.CharField(max_length=50)
+    tramo = models.CharField(max_length=50)
+    rut_beneficiario = models.CharField(max_length=12)
+    beneficiario = models.CharField(max_length=200)
+    vivienda = models.CharField(max_length=200, blank=True)
+    fecha_decreto = models.DateField()
+    fecha_inicio = models.DateField()
+    fecha_vencimiento = models.DateField()
+    fecha_encuesta = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_inicio']
+        verbose_name = "Subsidio"
+        verbose_name_plural = "Subsidios"
+
+    def __str__(self):
+        return f"Subsidio {self.numero_decreto} - {self.cliente.nombre}"
+
+
+# -----------------------------------------------------------------------------
+# 2. CARGOS PERMANENTES
+# -----------------------------------------------------------------------------
+class CargoPermanente(models.Model):
+    """Cargo recurrente asociado a un cliente (ej: mantención, administración)."""
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='cargos_permanentes')
+
+    fecha = models.DateField()
+    codigo = models.CharField(max_length=20)
+    descripcion = models.CharField(max_length=200)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    facturable = models.BooleanField(default=True)
+    periodo = models.CharField(max_length=7, help_text="Formato YYYY-MM")
+    usuario = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name = "Cargo Permanente"
+        verbose_name_plural = "Cargos Permanentes"
+
+    def __str__(self):
+        return f"{self.codigo} - {self.descripcion} - ${self.monto}"
+
+
+# -----------------------------------------------------------------------------
+# 3. CARGOS
+# -----------------------------------------------------------------------------
+class Cargo(models.Model):
+    """Cargo puntual asociado a un cliente."""
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='cargos')
+
+    fecha = models.DateField()
+    codigo = models.CharField(max_length=20)
+    descripcion = models.CharField(max_length=200)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    facturable = models.BooleanField(default=True)
+    periodo = models.CharField(max_length=7, help_text="Formato YYYY-MM")
+    usuario = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name = "Cargo"
+        verbose_name_plural = "Cargos"
+
+    def __str__(self):
+        return f"{self.codigo} - {self.descripcion} - ${self.monto}"
+
+
+# -----------------------------------------------------------------------------
+# 4. DESCUENTOS
+# -----------------------------------------------------------------------------
+class Descuento(models.Model):
+    """Descuento aplicado a un cliente."""
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='descuentos')
+
+    fecha = models.DateField()
+    codigo = models.CharField(max_length=20)
+    descripcion = models.CharField(max_length=200)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    facturable = models.BooleanField(default=True)
+    periodo = models.CharField(max_length=7, help_text="Formato YYYY-MM")
+    usuario = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name = "Descuento"
+        verbose_name_plural = "Descuentos"
+
+    def __str__(self):
+        return f"{self.codigo} - {self.descripcion} - ${self.monto}"
+
+
+# -----------------------------------------------------------------------------
+# 5. CONVENIOS
+# -----------------------------------------------------------------------------
+class Convenio(models.Model):
+    """Convenio de pago asociado a un cliente."""
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='convenios')
+
+    convenio = models.CharField(max_length=100)
+    descripcion = models.CharField(max_length=200, blank=True)
+    fecha_convenio = models.DateField()
+    total_cuotas = models.PositiveIntegerField()
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    facturable = models.BooleanField(default=True)
+    usuario = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_convenio']
+        verbose_name = "Convenio"
+        verbose_name_plural = "Convenios"
+
+    def __str__(self):
+        return f"Convenio {self.convenio} - {self.cliente.nombre}"
+
+
+# -----------------------------------------------------------------------------
+# 6. OTROS INGRESOS
+# -----------------------------------------------------------------------------
+class OtroIngreso(models.Model):
+    """Ingreso adicional no contemplado en boletas normales."""
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='otros_ingresos')
+
+    concepto = models.CharField(max_length=200)
+    documento = models.CharField(max_length=50, blank=True)
+    fecha_pago = models.DateField()
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    comprobante = models.CharField(max_length=50, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_pago']
+        verbose_name = "Otro Ingreso"
+        verbose_name_plural = "Otros Ingresos"
+
+    def __str__(self):
+        return f"{self.concepto} - ${self.monto}"
+
+
+# -----------------------------------------------------------------------------
+# 7. CORTE Y REPOSICIÓN
+# -----------------------------------------------------------------------------
+class CorteReposicion(models.Model):
+    """Registro de corte de suministro y su eventual reposición."""
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='cortes_reposiciones')
+
+    fecha_corte = models.DateField()
+    operador_corte = models.CharField(max_length=100)
+    lectura_corte = models.DecimalField(max_digits=10, decimal_places=2)
+    tipo_corte = models.CharField(max_length=50)
+
+    fecha_reposicion = models.DateField(null=True, blank=True)
+    operador_reposicion = models.CharField(max_length=100, blank=True)
+
+    # Para anulaciones (si se anula, se puede marcar este campo y registrar usuario/fecha)
+    anulado = models.BooleanField(default=False)
+    fecha_anulacion = models.DateTimeField(null=True, blank=True)
+    usuario_anulacion = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_corte']
+        verbose_name = "Corte y Reposición"
+        verbose_name_plural = "Cortes y Reposiciones"
+
+    def __str__(self):
+        estado = "Anulado" if self.anulado else ("Repuesto" if self.fecha_reposicion else "Cortado")
+        return f"Corte {self.fecha_corte} - {self.cliente.nombre} ({estado})"
+

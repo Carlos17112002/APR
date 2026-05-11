@@ -2280,19 +2280,95 @@ def reporte_consumo_anual(request, alias):
     wb.save(response)
     return response
 
+from clientes.models import Contrato
+
+# lecturas/views.py
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from datetime import datetime
+import pytz
+from empresas.models import Empresa
+from clientes.models import Cliente, Contrato
+from lecturas.models import LecturaMovil
+
+# Para PDF (opcional, solo si quieres usarlo)
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+
+def escribir_cabecera_estandar(ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, subtitulo=None):
+    """
+    Escribe la cabecera estándar en la hoja Excel.
+    Retorna el número de la siguiente fila disponible (donde empezará la tabla).
+    """
+    row = 1
+    font_normal = Font(name='Calibri', size=11)
+    font_bold = Font(name='Calibri', size=11, bold=True)
+    font_titulo = Font(name='Calibri', size=12, bold=True)
+    alignment_left = Alignment(horizontal='left', vertical='center')
+
+    # Fila 1: Nombre comité
+    ws.cell(row=row, column=1, value=empresa.nombre.upper()).font = font_bold
+    ws.cell(row=row, column=1).alignment = alignment_left
+    row += 1
+
+    # Fila 2: RUT (si existe)
+    rut_empresa = getattr(empresa, 'rut', '') or ''
+    if rut_empresa:
+        ws.cell(row=row, column=1, value=rut_empresa).font = font_normal
+        ws.cell(row=row, column=1).alignment = alignment_left
+        row += 1
+
+    # Fila 3: Usuario
+    ws.cell(row=row, column=1, value=f"Usuario: {usuario_nombre}").font = font_normal
+    ws.cell(row=row, column=1).alignment = alignment_left
+    row += 1
+
+    # Fila 4: Fecha y hora
+    ws.cell(row=row, column=1, value=fecha_hora).font = font_normal
+    ws.cell(row=row, column=1).alignment = alignment_left
+    row += 1
+
+    # Fila 5: Título del reporte
+    ws.cell(row=row, column=1, value=titulo_reporte.upper()).font = font_titulo
+    ws.cell(row=row, column=1).alignment = alignment_left
+    row += 1
+
+    # Fila 6: Subtítulo (opcional)
+    if subtitulo:
+        ws.cell(row=row, column=1, value=subtitulo.upper()).font = font_normal
+        ws.cell(row=row, column=1).alignment = alignment_left
+        row += 1
+
+    # Dejar una fila en blanco antes de la tabla
+    row += 1
+
+    return row
 
 def reporte_lecturas_por_periodo(request, alias):
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
 
     if request.method == 'POST':
-        fecha_inicio = request.POST.get('fecha_inicio')
-        fecha_fin = request.POST.get('fecha_fin')
-        if not (fecha_inicio and fecha_fin):
+        fecha_inicio_str = request.POST.get('fecha_inicio')
+        fecha_fin_str = request.POST.get('fecha_fin')
+        nombre_socio = request.POST.get('nombre_socio', '').strip()
+        numero_contrato = request.POST.get('numero_contrato', '').strip()
+        es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.POST.get('ajax') == '1'
+
+        if not (fecha_inicio_str and fecha_fin_str):
+            if es_ajax:
+                return JsonResponse({'success': False, 'error': 'Fechas requeridas'})
             return render(request, 'informes/reporte_periodo.html', {'empresa': empresa, 'slug': alias})
 
-        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+        fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
 
         user = request.user
         usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
@@ -2301,62 +2377,125 @@ def reporte_lecturas_por_periodo(request, alias):
         fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
         fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
 
+        # Obtener lecturas del período
         lecturas = LecturaMovil.objects.filter(
             empresa_slug=alias,
             fecha_lectura__range=[fecha_inicio, fecha_fin],
             consumo__isnull=False
         ).order_by('fecha_lectura')
 
-        # Clientes desde la BD de la empresa
+        # Clientes y contratos
         client_ids = list(set(lecturas.values_list('cliente', flat=True)))
+        cliente_dict = {}
+        contratos_dict = {}
         if client_ids:
             clientes = Cliente.objects.using(db_alias).filter(id__in=client_ids)
             cliente_dict = {c.id: c for c in clientes}
-        else:
-            cliente_dict = {}
+            contratos = Contrato.objects.using(db_alias).filter(cliente_id__in=client_ids)
+            contratos_dict = {c.cliente_id: c for c in contratos}
 
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Lecturas por Periodo"
-        ws.sheet_view.showGridLines = False
-
-        rango_fechas = f"{fecha_inicio.strftime('%d/%m/%Y')} AL {fecha_fin.strftime('%d/%m/%Y')}"
-        titulo_reporte = "LECTURAS POR PERIODO"
-        fila_inicio_tabla = escribir_cabecera_estandar(
-            ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, rango_fechas.upper()
-        )
-
-        # Estilos
-        header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
-        header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
-        header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-
-        data_font = Font(name='Calibri', size=9)
-        data_alignment = Alignment(horizontal='left', vertical='center')
-        data_alignment_right = Alignment(horizontal='right', vertical='center')
-
-        full_border = Border(
-            left=Side(style='thin', color='000000'),
-            right=Side(style='thin', color='000000'),
-            top=Side(style='thin', color='000000'),
-            bottom=Side(style='thin', color='000000')
-        )
-        alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
-
-        headers = ['Fecha', 'Cliente', 'RUT', 'Lectura Actual (m³)', 'Consumo (m³)', 'Estado', 'Usuario']
-        for col_idx, h in enumerate(headers, 1):
-            cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=h)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = header_alignment
-            cell.border = full_border
-
-        for row_idx, lectura in enumerate(lecturas, start=fila_inicio_tabla + 1):
+        # Filtrar manualmente
+        lecturas_filtradas = []
+        for lectura in lecturas:
             cliente = cliente_dict.get(lectura.cliente)
+            if not cliente:
+                continue
+
+            # Filtro por nombre de socio
+            if nombre_socio:
+                nombre_completo = f"{cliente.nombre} {cliente.apellido_paterno} {cliente.apellido_materno}".lower()
+                if nombre_socio.lower() not in nombre_completo:
+                    continue
+
+            # Filtro por número de contrato (exacto)
+            if numero_contrato:
+                contrato = contratos_dict.get(cliente.id)
+                if not contrato or not contrato.numero_contrato:
+                    continue
+                if contrato.numero_contrato.strip() != numero_contrato.strip():
+                    continue
+
+            lecturas_filtradas.append(lectura)
+
+        # Si es AJAX, devolver JSON para el PDF
+        if es_ajax:
+            data_lecturas = []
+            for lectura in lecturas_filtradas:
+                cliente = cliente_dict.get(lectura.cliente)
+                contrato = contratos_dict.get(lectura.cliente) if cliente else None
+                data_lecturas.append({
+                    'fecha': lectura.fecha_lectura.strftime('%d/%m/%Y'),
+                    'cliente': cliente.nombre if cliente else '',
+                    'rut': cliente.rut if cliente else '',
+                    'contrato': contrato.numero_contrato if contrato else '',
+                    'lectura_actual': float(lectura.lectura_actual) if lectura.lectura_actual else 0,
+                    'consumo': float(lectura.consumo) if lectura.consumo else 0,
+                    'estado': lectura.estado,
+                    'usuario': lectura.usuario_app or '',
+                })
+            return JsonResponse({'success': True, 'lecturas': data_lecturas})
+
+        # Si no es AJAX, generar Excel (comportamiento original)
+        return generar_excel_lecturas(
+            empresa, usuario_nombre, fecha_hora, fecha_archivo,
+            fecha_inicio, fecha_fin, nombre_socio, numero_contrato,
+            lecturas_filtradas, cliente_dict, contratos_dict
+        )
+
+    return render(request, 'informes/reporte_periodo.html', {'empresa': empresa, 'slug': alias})
+
+
+def generar_excel_lecturas(empresa, usuario_nombre, fecha_hora, fecha_archivo,
+                           fecha_inicio, fecha_fin, nombre_socio, numero_contrato,
+                           lecturas_filtradas, cliente_dict, contratos_dict):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Lecturas por Periodo"
+    ws.sheet_view.showGridLines = False
+
+    subtitulo = f"{fecha_inicio.strftime('%d/%m/%Y')} AL {fecha_fin.strftime('%d/%m/%Y')}"
+    if nombre_socio:
+        subtitulo += f" | Socio: {nombre_socio}"
+    if numero_contrato:
+        subtitulo += f" | Contrato: {numero_contrato}"
+
+    titulo_reporte = "LECTURAS POR PERIODO"
+    fila_inicio_tabla = escribir_cabecera_estandar(
+        ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, subtitulo.upper()
+    )
+
+    # Estilos
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    data_font = Font(name='Calibri', size=9)
+    data_alignment = Alignment(horizontal='left', vertical='center')
+    data_alignment_right = Alignment(horizontal='right', vertical='center')
+    full_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
+    )
+    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+
+    headers = ['Fecha', 'Cliente', 'RUT', 'N° Contrato', 'Lectura Actual (m³)', 'Consumo (m³)', 'Estado', 'Usuario']
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = full_border
+
+    if lecturas_filtradas:
+        for row_idx, lectura in enumerate(lecturas_filtradas, start=fila_inicio_tabla + 1):
+            cliente = cliente_dict.get(lectura.cliente)
+            contrato = contratos_dict.get(lectura.cliente) if cliente else None
             row_data = [
                 lectura.fecha_lectura.strftime('%d/%m/%Y'),
                 cliente.nombre if cliente else '',
                 cliente.rut if cliente else '',
+                contrato.numero_contrato if contrato else '',
                 float(lectura.lectura_actual) if lectura.lectura_actual else '',
                 float(lectura.consumo) if lectura.consumo else '',
                 lectura.estado,
@@ -2371,21 +2510,89 @@ def reporte_lecturas_por_periodo(request, alias):
                     cell.number_format = '#,##0.00'
                 if row_idx % 2 == 0:
                     cell.fill = alt_fill
+    else:
+        ws.merge_cells(f'A{fila_inicio_tabla}:H{fila_inicio_tabla}')
+        cell = ws.cell(fila_inicio_tabla, 1, 'No hay lecturas que coincidan con los filtros seleccionados.')
+        cell.font = Font(size=12, bold=True, color='FF0000')
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[fila_inicio_tabla].height = 30
 
-        # Ajustar ancho de columnas
-        for col_idx in range(1, len(headers) + 1):
-            max_length = 0
-            for row in range(fila_inicio_tabla, ws.max_row + 1):
-                val = ws.cell(row, col_idx).value
-                if val:
-                    max_length = max(max_length, len(str(val)))
-            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 40)
+    # Ajustar ancho de columnas
+    for col_idx in range(1, len(headers) + 1):
+        max_length = 0
+        for row in range(fila_inicio_tabla, ws.max_row + 1):
+            val = ws.cell(row, col_idx).value
+            if val:
+                max_length = max(max_length, len(str(val)))
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 40)
 
-        ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
+    ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
 
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="lecturas_periodo_{alias}_{fecha_archivo}.xlsx"'
-        wb.save(response)
-        return response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="lecturas_periodo_{empresa.slug}_{fecha_archivo}.xlsx"'
+    wb.save(response)
+    return response
 
-    return render(request, 'informes/reporte_periodo.html', {'empresa': empresa, 'slug': alias})
+
+def generar_pdf_lecturas(empresa, usuario_nombre, fecha_hora,
+                         fecha_inicio, fecha_fin, nombre_socio, numero_contrato,
+                         lecturas_filtradas, cliente_dict, contratos_dict):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="lecturas_periodo_{empresa.slug}.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=landscape(A4),
+                            rightMargin=30, leftMargin=30,
+                            topMargin=30, bottomMargin=30)
+    styles = getSampleStyleSheet()
+    style_title = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=14, alignment=1, spaceAfter=10)
+    style_subtitle = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=10, alignment=1, spaceAfter=20)
+    style_table_header = ParagraphStyle('Header', parent=styles['Normal'], fontSize=9, alignment=1, textColor=colors.white)
+    style_table_cell = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=8)
+
+    story = []
+    story.append(Paragraph(f"LECTURAS POR PERIODO - {empresa.nombre.upper()}", style_title))
+    subtitulo = f"{fecha_inicio.strftime('%d/%m/%Y')} al {fecha_fin.strftime('%d/%m/%Y')}"
+    if nombre_socio:
+        subtitulo += f" | Socio: {nombre_socio}"
+    if numero_contrato:
+        subtitulo += f" | Contrato: {numero_contrato}"
+    story.append(Paragraph(subtitulo, style_subtitle))
+    story.append(Paragraph(f"Generado por: {usuario_nombre} | {fecha_hora}", styles['Normal']))
+    story.append(Spacer(1, 0.2*inch))
+
+    # Tabla
+    headers = ['Fecha', 'Cliente', 'RUT', 'N° Contrato', 'Lectura Actual', 'Consumo', 'Estado', 'Usuario']
+    data = [headers]
+    for lectura in lecturas_filtradas:
+        cliente = cliente_dict.get(lectura.cliente)
+        contrato = contratos_dict.get(lectura.cliente) if cliente else None
+        data.append([
+            lectura.fecha_lectura.strftime('%d/%m/%Y'),
+            cliente.nombre if cliente else '',
+            cliente.rut if cliente else '',
+            contrato.numero_contrato if contrato else '',
+            f"{lectura.lectura_actual:.2f}" if lectura.lectura_actual else '',
+            f"{lectura.consumo:.2f}" if lectura.consumo else '',
+            lectura.estado,
+            lectura.usuario_app or '',
+        ])
+
+    if not lecturas_filtradas:
+        data.append(['', 'No hay datos para los filtros seleccionados', '', '', '', '', '', ''])
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2E75B6')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 9),
+        ('FONTSIZE', (0,1), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F2F2F2')]),
+    ]))
+    story.append(table)
+
+    doc.build(story)
+    return response

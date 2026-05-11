@@ -90,7 +90,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      max-height: 300px;
+      max-height: 400px;
       overflow-y: auto;
       padding-right: 0.5rem;
     }
@@ -228,7 +228,7 @@
             <p id="strengthText" class="text-xs text-gray-500 mt-1">Ingresa una contraseña segura</p>
           </div>
 
-          <!-- Sección de Permisos (CORREGIDA) -->
+          <!-- SECCIÓN DE PERMISOS (actualizada) -->
           <div class="space-y-2">
             <div class="flex items-center">
               <i class="fas fa-shield-alt text-emerald-600 mr-2"></i>
@@ -236,6 +236,8 @@
             </div>
             <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
               <div class="checkbox-group">
+                <!-- MÓDULOS GENERALES -->
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Módulos</p>
                 <div class="checkbox-item">
                   <input type="checkbox" name="permisos" value="clientes" id="perm_clientes" checked>
                   <label for="perm_clientes" class="text-sm text-gray-700">Gestión de Clientes (ver, crear, editar)</label>
@@ -258,7 +260,7 @@
                 </div>
                 <div class="checkbox-item">
                   <input type="checkbox" name="permisos" value="produccion" id="perm_produccion">
-                  <label for="perm_produccion" class="text-sm text-gray-700">Gestión de Produccion</label>
+                  <label for="perm_produccion" class="text-sm text-gray-700">Gestión de Producción</label>
                 </div>
                 <div class="checkbox-item">
                   <input type="checkbox" name="permisos" value="informes" id="perm_informes" checked>
@@ -267,6 +269,63 @@
                 <div class="checkbox-item">
                   <input type="checkbox" name="permisos" value="configuracion" id="perm_configuracion">
                   <label for="perm_configuracion" class="text-sm text-gray-700">Configuración del Sistema</label>
+                </div>
+
+                <!-- SEPARADOR -->
+                <hr class="my-3 border-gray-300">
+
+                <!-- ACCIONES SOBRE CLIENTES -->
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Acciones en ficha de cliente
+                  <span class="text-gray-400 font-normal">(requiere módulo "Gestión de Clientes")</span>
+                </p>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="crear_cliente" id="perm_crear_cliente">
+                  <label for="perm_crear_cliente" class="text-sm text-gray-700">Crear nuevos clientes</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="editar_cliente" id="perm_editar_cliente">
+                  <label for="perm_editar_cliente" class="text-sm text-gray-700">Editar datos del cliente</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="subsidio" id="perm_subsidio">
+                  <label for="perm_subsidio" class="text-sm text-gray-700">Agregar subsidio</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="cargo_permanente" id="perm_cargo_permanente">
+                  <label for="perm_cargo_permanente" class="text-sm text-gray-700">Agregar cargo permanente</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="cargo" id="perm_cargo">
+                  <label for="perm_cargo" class="text-sm text-gray-700">Agregar cargo</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="descuento" id="perm_descuento">
+                  <label for="perm_descuento" class="text-sm text-gray-700">Agregar descuento</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="convenio" id="perm_convenio">
+                  <label for="perm_convenio" class="text-sm text-gray-700">Agregar convenio</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="lectura" id="perm_lectura">
+                  <label for="perm_lectura" class="text-sm text-gray-700">Registrar lectura</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="cambio_medidor" id="perm_cambio_medidor">
+                  <label for="perm_cambio_medidor" class="text-sm text-gray-700">Registrar cambio de medidor</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="otro_ingreso" id="perm_otro_ingreso">
+                  <label for="perm_otro_ingreso" class="text-sm text-gray-700">Agregar otro ingreso</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="corte" id="perm_corte">
+                  <label for="perm_corte" class="text-sm text-gray-700">Registrar corte</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="permisos" value="descargar_contrato" id="perm_descargar_contrato">
+                  <label for="perm_descargar_contrato" class="text-sm text-gray-700">Descargar contrato (PDF)</label>
                 </div>
               </div>
               <div class="mt-4 flex gap-2">
@@ -373,7 +432,7 @@
       strengthText.textContent = `Fortaleza: ${text}`;
     });
     
-    // Seleccionar/deseleccionar todos los permisos (CORREGIDO para usar 'permisos')
+    // Seleccionar/deseleccionar todos los permisos
     function selectAllPerms(select) {
       const checkboxes = document.querySelectorAll('input[name="permisos"]');
       checkboxes.forEach(cb => cb.checked = select);

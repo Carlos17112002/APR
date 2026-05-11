@@ -10,6 +10,7 @@ from django.core.exceptions import FieldError
 
 from clientes.models import Cliente
 from empresas.models import Empresa
+from empresas.decorators import permiso_requerido
 
 # ============================================================================
 # VISTAS PARA GESTIÓN DE CLIENTES (sin autenticación)
@@ -39,6 +40,7 @@ def obtener_proximo_numero_contrato(alias_db):
             continue
     return str(max_num + 1)
 
+@permiso_requerido('crear_cliente')
 def crear_cliente(request, alias):
     slug = alias
     alias_db = f'db_{slug}'
@@ -257,6 +259,15 @@ def listado_clientes(request, alias):
         cliente.numero_contrato = contrato.numero_contrato if contrato else ''
 
     clientes_con_email = clientes.exclude(email='').count()
+    
+    permisos_usuario = []
+    if request.user.is_authenticated:
+        try:
+            from empresas.models import PerfilAdmin
+            perfil = PerfilAdmin.objects.get(usuario=request.user)
+            permisos_usuario = perfil.permisos.get(alias, [])
+        except (PerfilAdmin.DoesNotExist, KeyError):
+            pass
 
     context = {
         'empresa': empresa,
@@ -265,10 +276,10 @@ def listado_clientes(request, alias):
         'sectores': sectores,
         'clientes_con_email': clientes_con_email,
         'filtro_numero_contrato': numero_contrato,  # para mantener el valor en el campo de búsqueda
+        'permisos_usuario' : permisos_usuario,
     }
     return render(request, 'listado_clientes.html', context)
 
-# clientes/views.py - función detalle_cliente
 
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Avg, Sum, Q
@@ -276,14 +287,16 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta, datetime
 import json
-import os
-from django.conf import settings
-from decimal import Decimal
 
 from empresas.models import Empresa
-from clientes.models import Cliente, Contrato, CambioMedidor
+from clientes.models import (
+    Cliente, Contrato, CambioMedidor,
+    Subsidio, CargoPermanente, Cargo, Descuento,
+    Convenio, OtroIngreso, CorteReposicion
+)
 from lecturas.models import LecturaMovil
 from boletas.models import Boleta
+
 
 def detalle_cliente(request, alias, cliente_id):
     db_alias = f'db_{alias}'
@@ -296,8 +309,7 @@ def detalle_cliente(request, alias, cliente_id):
     except Contrato.DoesNotExist:
         contrato = None
 
-    # Última lectura con consumo válido (para precargar en el modal de cambio de medidor)
-    # Se toma cualquier lectura con consumo > 0, sin importar estado
+    # Última lectura con consumo válido
     ultima_lectura = LecturaMovil.objects.filter(
         empresa_slug=alias,
         cliente=cliente_id,
@@ -317,24 +329,88 @@ def detalle_cliente(request, alias, cliente_id):
             'marca_retirado': cm.medidor_retirado_marca or '-',
             'numero_retirado': cm.medidor_retirado_numero,
             'ano_retirado': cm.medidor_retirado_anio or '-',
-            'fecha_lectura_anterior': cm.fecha_lectura_anterior.strftime('%d/%m/%Y') if cm.fecha_lectura_anterior else '-',
+            'fecha_lectura_anterior': cm.fecha_lectura_anterior,
             'lectura_anterior': float(cm.lectura_anterior) if cm.lectura_anterior else 0,
             'lectura_retiro': float(cm.lectura_retiro),
             'consumo': float(cm.consumo_final) if cm.consumo_final else 0,
-            'fecha_instalacion': cm.fecha_instalacion.strftime('%d/%m/%Y') if cm.fecha_instalacion else '-',
+            'fecha_instalacion': cm.fecha_instalacion,
             'numero_instalado': cm.medidor_nuevo_numero,
             'lectura_inicial': float(cm.lectura_inicial),
-            'fecha_registro': cm.fecha_registro.strftime('%d/%m/%Y %H:%M') if cm.fecha_registro else '-',
+            'fecha_registro': cm.fecha_registro,
             'usuario': cm.usuario or '-',
         })
 
-    # Lecturas del cliente (para tabla y gráfico)
+    # Lecturas (para tabla y gráfico)
     lecturas = LecturaMovil.objects.filter(
         empresa_slug=alias,
         cliente=cliente_id
     ).order_by('-fecha_lectura')
 
-    # Pagos (si existe el modelo)
+    # ---------------------------------------------------------------
+    # NUEVOS MODELOS
+    # ---------------------------------------------------------------
+    # Subsidios
+    subsidios_qs = Subsidio.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_inicio')
+    subsidios = list(subsidios_qs.values(
+        'subsidio', 'municipalidad', 'numero_decreto', 'tramo',
+        'rut_beneficiario', 'beneficiario', 'vivienda',
+        'fecha_decreto', 'fecha_inicio', 'fecha_vencimiento', 'fecha_encuesta'
+    ))
+
+    # Cargos Permanentes
+    cargos_permanentes_qs = CargoPermanente.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
+    cargos_permanentes = list(cargos_permanentes_qs.values(
+        'fecha', 'codigo', 'descripcion', 'monto', 'facturable', 'periodo', 'usuario'
+    ))
+
+    # Cargos
+    cargos_qs = Cargo.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
+    cargos = list(cargos_qs.values(
+        'fecha', 'codigo', 'descripcion', 'monto', 'facturable', 'periodo', 'usuario'
+    ))
+
+    # Descuentos
+    descuentos_qs = Descuento.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
+    descuentos = list(descuentos_qs.values(
+        'fecha', 'codigo', 'descripcion', 'monto', 'facturable', 'periodo', 'usuario'
+    ))
+
+    # Convenios
+    convenios_qs = Convenio.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_convenio')
+    convenios = list(convenios_qs.values(
+        'convenio', 'descripcion', 'fecha_convenio', 'total_cuotas',
+        'monto', 'facturable', 'usuario'
+    ))
+
+    # Otros Ingresos
+    otros_ingresos_qs = OtroIngreso.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_pago')
+    otros_ingresos = list(otros_ingresos_qs.values(
+        'concepto', 'documento', 'fecha_pago', 'monto', 'comprobante'
+    ))
+
+    # Corte y Reposición
+    corte_qs = CorteReposicion.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha_corte')
+    historico_corte = []
+    anulaciones_corte = []
+    for c in corte_qs:
+        item = {
+            'fecha_corte': c.fecha_corte,
+            'operador_corte': c.operador_corte,
+            'lectura_corte': float(c.lectura_corte),
+            'tipo_corte': c.tipo_corte,
+            'fecha_reposicion': c.fecha_reposicion,
+            'operador_reposicion': c.operador_reposicion,
+            'anulado': c.anulado,
+            'fecha_anulacion': c.fecha_anulacion,
+            'usuario': c.usuario_anulacion or '',
+        }
+        if c.anulado:
+            anulaciones_corte.append(item)
+        else:
+            historico_corte.append(item)
+
+    # ---------------------------------------------------------------
+    # Pagos (si existe)
     try:
         from pagos.models import Pago
         pagos = Pago.objects.using(db_alias).filter(cliente=cliente).order_by('-fecha')
@@ -346,7 +422,7 @@ def detalle_cliente(request, alias, cliente_id):
     total_pagado = pagos.aggregate(Sum('monto'))['monto__sum'] or 0 if pagos else 0
     deuda_actual = 0  # Ajusta según tu lógica
 
-    # Gráfico de consumo (últimos 6 meses por defecto)
+    # Gráfico de consumo (últimos 6 meses)
     rango = request.GET.get('rango', '6m')
     hoy = timezone.now()
 
@@ -354,7 +430,7 @@ def detalle_cliente(request, alias, cliente_id):
         fecha_inicio = hoy - timedelta(days=180)
     elif rango == '1y':
         fecha_inicio = hoy - timedelta(days=365)
-    else:  # 'all'
+    else:
         fecha_inicio = None
 
     lecturas_historico = LecturaMovil.objects.filter(
@@ -398,14 +474,10 @@ def detalle_cliente(request, alias, cliente_id):
             key = f"{anio_num}-{mes_num:02d}"
             consumos_grafico.append(consumo_dict.get(key, 0.0))
 
-    # Construir lista de lecturas para la tabla
+    # Lecturas para tabla
     lecturas_completas = []
     for lectura in lecturas:
-        # Asegurar que todos los campos existan
-        fecha_lectura_anterior = None
-        if hasattr(lectura, 'fecha_lectura_anterior') and lectura.fecha_lectura_anterior:
-            fecha_lectura_anterior = lectura.fecha_lectura_anterior
-
+        fecha_lectura_anterior = getattr(lectura, 'fecha_lectura_anterior', None)
         lecturas_completas.append({
             'id': lectura.id,
             'periodo': lectura.fecha_lectura.strftime('%m/%Y') if lectura.fecha_lectura else '',
@@ -439,16 +511,14 @@ def detalle_cliente(request, alias, cliente_id):
             'traza': '',
             'usuario': '',
         })
-
-    # Otras listas vacías (para mantener estructura)
-    subsidios = []
-    cargos_permanentes = []
-    cargos = []
-    descuentos = []
-    convenios = []
-    otros_ingresos = []
-    historico_corte = []
-    anulaciones_corte = []
+    permisos_usuario = []
+    if request.user.is_authenticated:
+        try:
+            from empresas.models import PerfilAdmin
+            perfil = PerfilAdmin.objects.get(usuario=request.user)
+            permisos_usuario = perfil.permisos.get(alias, [])
+        except (PerfilAdmin.DoesNotExist, KeyError):
+            pass
 
     context = {
         'empresa': empresa,
@@ -466,21 +536,27 @@ def detalle_cliente(request, alias, cliente_id):
         'consumos_grafico': json.dumps(consumos_grafico),
         'rango_seleccionado': rango,
         'documentos': documentos,
+
+        # NUEVOS CONTEXTOS
         'subsidios': subsidios,
         'cargos_permanentes': cargos_permanentes,
         'cargos': cargos,
         'descuentos': descuentos,
         'convenios': convenios,
-        'lecturas_completas': lecturas_completas,
         'otros_ingresos': otros_ingresos,
         'historico_corte': historico_corte,
         'anulaciones_corte': anulaciones_corte,
+
+        # Variables existentes que ya tenías
+        'lecturas_completas': lecturas_completas,
+        'permisos_usuario': permisos_usuario,
     }
     return render(request, 'clientes/detalle_cliente.html', context)
 
 
 from django.db.models import Q, Max
 
+@permiso_requerido('editar_cliente')
 def editar_cliente(request, alias, cliente_id):
     db_alias = f'db_{alias}'
     empresa = get_object_or_404(Empresa, slug=alias)
@@ -1297,173 +1373,6 @@ def escribir_cabecera_estandar(ws, empresa, usuario_nombre, fecha_hora, titulo_r
 
     return row
 
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, NamedStyle
-from openpyxl.utils import get_column_letter
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from empresas.models import Empresa
-from clientes.models import Cliente
-from datetime import datetime
-import pytz
-
-def exportar_contratos_excel(request, alias):
-    db_alias = f'db_{alias}'
-    empresa = get_object_or_404(Empresa, slug=alias)
-
-    user = request.user
-    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
-    santiago_tz = pytz.timezone('America/Santiago')
-    ahora = datetime.now(santiago_tz)
-    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
-    fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
-
-    meses_es = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
-    mes_anio = f"{meses_es[ahora.month-1]} de {ahora.year}"
-
-    order_by = request.GET.get('order_by', 'apellido_paterno')
-    direction = request.GET.get('direction', 'asc')
-    if direction == 'desc':
-        order_by = f'-{order_by}'
-    allowed_fields = ['apellido_paterno', 'fecha_incorporacion', 'sector']
-    if order_by.lstrip('-') not in allowed_fields:
-        order_by = 'apellido_paterno'
-
-    clientes = Cliente.objects.using(db_alias).select_related('contrato').order_by(order_by)
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Contratos"
-
-    # Ocultar líneas de cuadrícula para un aspecto más limpio
-    ws.sheet_view.showGridLines = False
-
-    titulo_reporte = "LISTADO DE CONTRATOS"
-    fila_inicio_tabla = escribir_cabecera_estandar(
-        ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, mes_anio
-    )
-
-    # --- Estilos de tabla (tradicional) ---
-    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
-    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
-    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-
-    data_font = Font(name='Calibri', size=9)
-    data_alignment = Alignment(horizontal='left', vertical='center')
-    data_alignment_right = Alignment(horizontal='right', vertical='center')
-
-    # Bordes completos (clásico)
-    full_border = Border(
-        left=Side(style='thin', color='000000'),
-        right=Side(style='thin', color='000000'),
-        top=Side(style='thin', color='000000'),
-        bottom=Side(style='thin', color='000000')
-    )
-
-    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
-
-    # --- Encabezados ---
-    headers = [
-        'Número', 'Sector', 'Ruta', 'Dirección', 'Comuna', 'Ciudad', 'Rol',
-        'Tipo Cliente', 'Contrato', 'Servicio', 'RUT', 'Nombre', 'Apellido Paterno',
-        'Apellido Materno', 'Sexo', 'Estado Civil', 'Fecha Nacimiento',
-        'Profesión / Oficio', 'Fecha Defunción', 'Fecha Contrato', 'Fecha Incorporación',
-        'Número Libro', 'Fono 1', 'Fono 2', 'Email Contacto', 'Email Recepción Documento',
-        'Tarifa', 'Diámetro', 'Tipo Servicio', 'Tipo SSR', 'Subsidio', 'Número Medidor',
-        'Marca Medidor', 'Año Medidor', 'Sello Medidor', 'Tipo Medidor',
-        'Código Unión Domiciliaria', 'UTM Norte', 'UTM Este', 'Documento', 'Razón Social', 'Socio'
-    ]
-
-    for col_idx, header in enumerate(headers, start=1):
-        cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=header)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = header_alignment
-        cell.border = full_border
-
-    # --- Datos ---
-    for row_idx, cliente in enumerate(clientes, start=fila_inicio_tabla + 1):
-        contrato = getattr(cliente, 'contrato', None)
-
-        row_data = [
-            cliente.id,
-            cliente.sector or '',
-            getattr(cliente, 'ruta', '') or '',
-            cliente.direccion or '',
-            getattr(contrato, 'comuna', '') or '',
-            getattr(contrato, 'ciudad', '') or '',
-            getattr(contrato, 'rol', '') or '',
-            contrato.tipo_cliente if contrato else '',
-            getattr(contrato, 'numero_contrato', '') or '',
-            getattr(contrato, 'servicio', '') or '',
-            cliente.rut or '',
-            cliente.nombre or '',
-            cliente.apellido_paterno or '',
-            cliente.apellido_materno or '',
-            cliente.sexo or '',
-            cliente.estado_civil or '',
-            cliente.fecha_nacimiento.strftime('%d/%m/%Y') if cliente.fecha_nacimiento else '',
-            cliente.profesion or '',
-            cliente.fecha_defuncion.strftime('%d/%m/%Y') if cliente.fecha_defuncion else '',
-            contrato.fecha_contrato.strftime('%d/%m/%Y') if contrato and contrato.fecha_contrato else '',
-            cliente.fecha_incorporacion.strftime('%d/%m/%Y') if cliente.fecha_incorporacion else '',
-            cliente.numero_libro or '',
-            cliente.telefono or '',
-            cliente.contacto2 or '',
-            cliente.email_contacto or '',
-            contrato.email_recepcion_documento if contrato else '',
-            contrato.tarifa if contrato else '',
-            contrato.diametro if contrato else '',
-            contrato.tipo_servicio if contrato else '',
-            contrato.tipo_servicio_ssr if contrato else '',
-            getattr(contrato, 'subsidio', '') or '',
-            cliente.medidor or '',
-            contrato.marca_medidor if contrato else '',
-            contrato.ano_medidor if contrato else '',
-            contrato.sello_medidor if contrato else '',
-            contrato.tipo_medidor if contrato else '',
-            contrato.codigo_union_domiciliaria if contrato else '',
-            contrato.utm_norte if contrato else '',
-            contrato.utm_este if contrato else '',
-            getattr(contrato, 'documento', '') or '',
-            getattr(cliente, 'razon_social', '') or '',
-            'Sí' if contrato and contrato.socio else 'No',
-        ]
-
-        for col_idx, value in enumerate(row_data, start=1):
-            cell = ws.cell(row=row_idx, column=col_idx, value=value)
-            cell.font = data_font
-            cell.alignment = data_alignment_right if isinstance(value, (int, float)) else data_alignment
-            cell.border = full_border
-            if isinstance(value, (int, float)) and not isinstance(value, bool):
-                cell.number_format = '#,##0.00'
-            if row_idx % 2 == 0:
-                cell.fill = alt_fill
-
-    # Ajustar ancho de columnas
-    for col_idx in range(1, len(headers) + 1):
-        max_length = 0
-        for row in range(fila_inicio_tabla, ws.max_row + 1):
-            cell_value = ws.cell(row, col_idx).value
-            if cell_value:
-                max_length = max(max_length, len(str(cell_value)))
-        adjusted_width = min(max_length + 4, 50)
-        ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
-
-    # Congelar paneles
-    ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
-
-    # Pie de página
-    last_row = ws.max_row + 1
-    ws[f'A{last_row}'] = f"Reporte generado el {ahora.strftime('%d/%m/%Y %H:%M:%S')}"
-    ws[f'A{last_row}'].font = Font(name='Calibri', size=8, italic=True, color='7F8C8D')
-
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    filename = f"contratos_{alias}_{fecha_archivo}.xlsx"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    wb.save(response)
-    return response
-
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib import colors
 from reportlab.lib.units import inch
@@ -1662,6 +1571,175 @@ def informe_socios(request, alias):
     })
 
 import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, NamedStyle
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from empresas.models import Empresa
+from clientes.models import Cliente
+from datetime import datetime
+import pytz
+
+def exportar_contratos_excel(request, alias):
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    user = request.user
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    santiago_tz = pytz.timezone('America/Santiago')
+    ahora = datetime.now(santiago_tz)
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
+
+    meses_es = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+    mes_anio = f"{meses_es[ahora.month-1]} de {ahora.year}"
+
+    order_by = request.GET.get('order_by', 'apellido_paterno')
+    direction = request.GET.get('direction', 'asc')
+    if direction == 'desc':
+        order_by = f'-{order_by}'
+    allowed_fields = ['apellido_paterno', 'fecha_incorporacion', 'sector']
+    if order_by.lstrip('-') not in allowed_fields:
+        order_by = 'apellido_paterno'
+
+    clientes = Cliente.objects.using(db_alias).select_related('contrato').order_by(order_by)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Contratos"
+
+    # Ocultar líneas de cuadrícula para un aspecto más limpio
+    ws.sheet_view.showGridLines = False
+
+    titulo_reporte = "LISTADO DE CONTRATOS"
+    fila_inicio_tabla = escribir_cabecera_estandar(
+        ws, empresa, usuario_nombre, fecha_hora, titulo_reporte, mes_anio
+    )
+
+    # --- Estilos de tabla (tradicional) ---
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+    data_font = Font(name='Calibri', size=9)
+    data_alignment = Alignment(horizontal='left', vertical='center')
+    data_alignment_right = Alignment(horizontal='right', vertical='center')
+
+    # Bordes completos (clásico)
+    full_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
+    )
+
+    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+
+    # --- Encabezados ---
+    headers = [
+        'Número', 'Sector', 'Ruta', 'Dirección', 'Comuna', 'Ciudad', 'Rol',
+        'Tipo Cliente', 'Contrato', 'Servicio', 'RUT', 'Nombre', 'Apellido Paterno',
+        'Apellido Materno', 'Sexo', 'Estado Civil', 'Fecha Nacimiento',
+        'Profesión / Oficio', 'Fecha Defunción', 'Fecha Contrato', 'Fecha Incorporación',
+        'Número Libro', 'Fono 1', 'Fono 2', 'Email Contacto', 'Email Recepción Documento',
+        'Tarifa', 'Diámetro', 'Tipo Servicio', 'Tipo SSR', 'Subsidio', 'Número Medidor',
+        'Marca Medidor', 'Año Medidor', 'Sello Medidor', 'Tipo Medidor',
+        'Código Unión Domiciliaria', 'UTM Norte', 'UTM Este', 'Documento', 'Razón Social', 'Socio'
+    ]
+
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = full_border
+
+    # --- Datos ---
+    for row_idx, cliente in enumerate(clientes, start=fila_inicio_tabla + 1):
+        contrato = getattr(cliente, 'contrato', None)
+
+        row_data = [
+            cliente.id,
+            cliente.sector or '',
+            getattr(cliente, 'ruta', '') or '',
+            cliente.direccion or '',
+            getattr(contrato, 'comuna', '') or '',
+            getattr(contrato, 'ciudad', '') or '',
+            getattr(contrato, 'rol', '') or '',
+            contrato.tipo_cliente if contrato else '',
+            getattr(contrato, 'numero_contrato', '') or '',
+            getattr(contrato, 'servicio', '') or '',
+            cliente.rut or '',
+            cliente.nombre or '',
+            cliente.apellido_paterno or '',
+            cliente.apellido_materno or '',
+            cliente.sexo or '',
+            cliente.estado_civil or '',
+            cliente.fecha_nacimiento.strftime('%d/%m/%Y') if cliente.fecha_nacimiento else '',
+            cliente.profesion or '',
+            cliente.fecha_defuncion.strftime('%d/%m/%Y') if cliente.fecha_defuncion else '',
+            contrato.fecha_contrato.strftime('%d/%m/%Y') if contrato and contrato.fecha_contrato else '',
+            cliente.fecha_incorporacion.strftime('%d/%m/%Y') if cliente.fecha_incorporacion else '',
+            cliente.numero_libro or '',
+            cliente.telefono or '',
+            cliente.contacto2 or '',
+            cliente.email_contacto or '',
+            contrato.email_recepcion_documento if contrato else '',
+            contrato.tarifa if contrato else '',
+            contrato.diametro if contrato else '',
+            contrato.tipo_servicio if contrato else '',
+            contrato.tipo_servicio_ssr if contrato else '',
+            getattr(contrato, 'subsidio', '') or '',
+            cliente.medidor or '',
+            contrato.marca_medidor if contrato else '',
+            contrato.ano_medidor if contrato else '',
+            contrato.sello_medidor if contrato else '',
+            contrato.tipo_medidor if contrato else '',
+            contrato.codigo_union_domiciliaria if contrato else '',
+            contrato.utm_norte if contrato else '',
+            contrato.utm_este if contrato else '',
+            getattr(contrato, 'documento', '') or '',
+            getattr(cliente, 'razon_social', '') or '',
+            'Sí' if contrato and contrato.socio else 'No',
+        ]
+
+        for col_idx, value in enumerate(row_data, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.font = data_font
+            cell.alignment = data_alignment_right if isinstance(value, (int, float)) else data_alignment
+            cell.border = full_border
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                cell.number_format = '#,##0.00'
+            if row_idx % 2 == 0:
+                cell.fill = alt_fill
+
+    # Ajustar ancho de columnas
+    for col_idx in range(1, len(headers) + 1):
+        max_length = 0
+        for row in range(fila_inicio_tabla, ws.max_row + 1):
+            cell_value = ws.cell(row, col_idx).value
+            if cell_value:
+                max_length = max(max_length, len(str(cell_value)))
+        adjusted_width = min(max_length + 4, 50)
+        ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
+
+    # Congelar paneles
+    ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
+
+    # Pie de página
+    last_row = ws.max_row + 1
+    ws[f'A{last_row}'] = f"Reporte generado el {ahora.strftime('%d/%m/%Y %H:%M:%S')}"
+    ws[f'A{last_row}'].font = Font(name='Calibri', size=8, italic=True, color='7F8C8D')
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"contratos_{alias}_{fecha_archivo}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
+
+
+import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
@@ -1815,6 +1893,7 @@ from django.shortcuts import get_object_or_404
 
 @login_required
 @require_POST
+@permiso_requerido('cambio_medidor')
 def registrar_cambio_medidor_ajax(request, alias, cliente_id):
     db_alias = f'db_{alias}'
     db_path = os.path.join(settings.BASES_DIR, f'{db_alias}.sqlite3')
@@ -1915,3 +1994,611 @@ def registrar_cambio_medidor_ajax(request, alias, cliente_id):
         import traceback
         print(traceback.format_exc())
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+import json
+
+# -------------------------------------------------------------------
+# 1. SUBSIDIO
+# -------------------------------------------------------------------
+@login_required
+@require_POST
+@permiso_requerido('subsidio') 
+def crear_subsidio_ajax(request, alias, cliente_id):
+    db_alias = f'db_{alias}'
+    cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+    try:
+        Subsidio.objects.using(db_alias).create(
+            cliente=cliente,
+            subsidio=request.POST.get('subsidio'),
+            municipalidad=request.POST.get('municipalidad'),
+            numero_decreto=request.POST.get('numero_decreto'),
+            tramo=request.POST.get('tramo'),
+            rut_beneficiario=request.POST.get('rut_beneficiario'),
+            beneficiario=request.POST.get('beneficiario'),
+            vivienda=request.POST.get('vivienda', ''),
+            fecha_decreto=request.POST.get('fecha_decreto'),
+            fecha_inicio=request.POST.get('fecha_inicio'),
+            fecha_vencimiento=request.POST.get('fecha_vencimiento'),
+            fecha_encuesta=request.POST.get('fecha_encuesta') or None,
+        )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+# -------------------------------------------------------------------
+# 2. CARGO PERMANENTE
+# -------------------------------------------------------------------
+@login_required
+@require_POST
+@permiso_requerido('cargo_permanente')
+def crear_cargo_permanente_ajax(request, alias, cliente_id):
+    db_alias = f'db_{alias}'
+    cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+    try:
+        CargoPermanente.objects.using(db_alias).create(
+            cliente=cliente,
+            fecha=request.POST.get('fecha'),
+            codigo=request.POST.get('codigo'),
+            descripcion=request.POST.get('descripcion'),
+            monto=request.POST.get('monto'),
+            facturable=request.POST.get('facturable') == 'on',
+            periodo=request.POST.get('periodo'),
+            usuario=request.user.username if request.user.is_authenticated else 'Sistema',
+        )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+# -------------------------------------------------------------------
+# 3. CARGO
+# -------------------------------------------------------------------
+@login_required
+@require_POST
+@permiso_requerido('cargo')
+def crear_cargo_ajax(request, alias, cliente_id):
+    db_alias = f'db_{alias}'
+    cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+    try:
+        Cargo.objects.using(db_alias).create(
+            cliente=cliente,
+            fecha=request.POST.get('fecha'),
+            codigo=request.POST.get('codigo'),
+            descripcion=request.POST.get('descripcion'),
+            monto=request.POST.get('monto'),
+            facturable=request.POST.get('facturable') == 'on',
+            periodo=request.POST.get('periodo'),
+            usuario=request.user.username if request.user.is_authenticated else 'Sistema',
+        )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+# -------------------------------------------------------------------
+# 4. DESCUENTO
+# -------------------------------------------------------------------
+@login_required
+@require_POST
+@permiso_requerido('descuento') 
+def crear_descuento_ajax(request, alias, cliente_id):
+    db_alias = f'db_{alias}'
+    cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+    try:
+        Descuento.objects.using(db_alias).create(
+            cliente=cliente,
+            fecha=request.POST.get('fecha'),
+            codigo=request.POST.get('codigo'),
+            descripcion=request.POST.get('descripcion'),
+            monto=request.POST.get('monto'),
+            facturable=request.POST.get('facturable') == 'on',
+            periodo=request.POST.get('periodo'),
+            usuario=request.user.username if request.user.is_authenticated else 'Sistema',
+        )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+# -------------------------------------------------------------------
+# 5. CONVENIO
+# -------------------------------------------------------------------
+@login_required
+@require_POST
+@permiso_requerido('convenio')
+def crear_convenio_ajax(request, alias, cliente_id):
+    db_alias = f'db_{alias}'
+    cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+    try:
+        Convenio.objects.using(db_alias).create(
+            cliente=cliente,
+            convenio=request.POST.get('convenio'),
+            descripcion=request.POST.get('descripcion', ''),
+            fecha_convenio=request.POST.get('fecha_convenio'),
+            total_cuotas=request.POST.get('total_cuotas'),
+            monto=request.POST.get('monto'),
+            facturable=request.POST.get('facturable') == 'on',
+            usuario=request.user.username if request.user.is_authenticated else 'Sistema',
+        )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+# -------------------------------------------------------------------
+# 6. OTRO INGRESO
+# -------------------------------------------------------------------
+@login_required
+@require_POST
+@permiso_requerido('otro_ingreso')
+def crear_otro_ingreso_ajax(request, alias, cliente_id):
+    db_alias = f'db_{alias}'
+    cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+    try:
+        OtroIngreso.objects.using(db_alias).create(
+            cliente=cliente,
+            concepto=request.POST.get('concepto'),
+            documento=request.POST.get('documento', ''),
+            fecha_pago=request.POST.get('fecha_pago'),
+            monto=request.POST.get('monto'),
+            comprobante=request.POST.get('comprobante', ''),
+        )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+# -------------------------------------------------------------------
+# 7. CORTE Y REPOSICIÓN
+# -------------------------------------------------------------------
+@login_required
+@require_POST
+@permiso_requerido('corte')
+def crear_corte_reposicion_ajax(request, alias, cliente_id):
+    db_alias = f'db_{alias}'
+    cliente = get_object_or_404(Cliente.objects.using(db_alias), id=cliente_id)
+
+    try:
+        CorteReposicion.objects.using(db_alias).create(
+            cliente=cliente,
+            fecha_corte=request.POST.get('fecha_corte'),
+            operador_corte=request.POST.get('operador_corte'),
+            lectura_corte=request.POST.get('lectura_corte'),
+            tipo_corte=request.POST.get('tipo_corte'),
+        )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from datetime import datetime
+import pytz
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+
+# Asegúrate de importar tus modelos
+from clientes.models import (
+    Subsidio, CargoPermanente, Cargo, Descuento,
+    Convenio, OtroIngreso, CorteReposicion
+)
+
+
+def generar_reporte_generico(request, alias, modelo, titulo, headers, campos, nombre_archivo):
+    """
+    Si no se especifica formato (?formato=), muestra página de selección.
+    Si se especifica, genera el archivo solicitado.
+    """
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+    
+    formato = request.GET.get('formato')          # ← ya no ponemos valor por defecto
+    
+
+    if not formato:
+        context = {
+            'empresa': empresa,
+            'slug': alias,
+            'titulo': titulo,
+            'nombre_archivo': nombre_archivo,
+            'url_base': request.path,              # la misma URL sin ?formato
+        }
+        return render(request, 'seleccionar_formato.html', context)
+    # ------------------------------------------------
+    
+
+    objetos = modelo.objects.using(db_alias).all().order_by('-id')
+    
+    user = request.user
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    santiago_tz = pytz.timezone('America/Santiago')
+    ahora = datetime.now(santiago_tz)
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
+    mes_anio = ahora.strftime('%B de %Y').upper()
+    
+    if formato == 'pdf':
+        return generar_pdf_generico(empresa, usuario_nombre, fecha_hora, titulo, mes_anio, headers, objetos, campos, nombre_archivo)
+    else:
+        return generar_excel_generico(empresa, usuario_nombre, fecha_hora, titulo, mes_anio, headers, objetos, campos, nombre_archivo, fecha_archivo)
+
+
+def generar_excel_generico(empresa, usuario_nombre, fecha_hora, titulo, subtitulo, headers, objetos, campos, nombre_archivo, fecha_archivo):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = nombre_archivo[:30]
+    ws.sheet_view.showGridLines = False
+
+    # Cabecera estándar
+    fila_inicio_tabla = escribir_cabecera_estandar(
+        ws, empresa, usuario_nombre, fecha_hora, titulo, subtitulo
+    )
+
+    # Estilos
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    data_font = Font(name='Calibri', size=9)
+    data_alignment = Alignment(horizontal='left', vertical='center')
+    data_alignment_right = Alignment(horizontal='right', vertical='center')
+    full_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
+    )
+    alt_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+
+    # Encabezados
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=fila_inicio_tabla, column=col_idx, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = full_border
+
+    # Datos
+    for row_idx, obj in enumerate(objetos, start=fila_inicio_tabla + 1):
+        for col_idx, campo in enumerate(campos, 1):
+            valor = getattr(obj, campo, '')
+            if isinstance(valor, datetime):
+                valor = valor.strftime('%d/%m/%Y')
+            elif isinstance(valor, bool):
+                valor = 'Sí' if valor else 'No'
+            cell = ws.cell(row=row_idx, column=col_idx, value=valor)
+            cell.font = data_font
+            cell.alignment = data_alignment_right if isinstance(valor, (int, float)) else data_alignment
+            cell.border = full_border
+            if isinstance(valor, (int, float)):
+                cell.number_format = '#,##0.00'
+            if row_idx % 2 == 0:
+                cell.fill = alt_fill
+
+    # Ajustar ancho de columnas
+    for col_idx in range(1, len(headers) + 1):
+        max_length = 0
+        for row in range(fila_inicio_tabla, ws.max_row + 1):
+            val = ws.cell(row, col_idx).value
+            if val:
+                max_length = max(max_length, len(str(val)))
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 50)
+
+    ws.freeze_panes = f'A{fila_inicio_tabla + 1}'
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}_{empresa.slug}_{fecha_archivo}.xlsx"'
+    wb.save(response)
+    return response
+
+
+def generar_pdf_generico(empresa, usuario_nombre, fecha_hora, titulo, subtitulo, headers, objetos, campos, nombre_archivo):
+    response = HttpResponse(content_type='application/pdf')
+    # Cambiar a 'attachment' para que descargue con nombre correcto
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}_{empresa.slug}.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=landscape(A4),
+                            rightMargin=30, leftMargin=30,
+                            topMargin=30, bottomMargin=30)
+    
+    # 🔥 Establecer metadatos del PDF (aparecerá como título de la pestaña)
+    doc.title = titulo
+
+    styles = getSampleStyleSheet()
+    style_title = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=14, alignment=1, spaceAfter=10)
+    style_subtitle = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=10, alignment=1, spaceAfter=20)
+
+    story = []
+    story.append(Paragraph(f"{titulo} - {empresa.nombre.upper()}", style_title))
+    story.append(Paragraph(subtitulo, style_subtitle))
+    story.append(Paragraph(f"Generado por: {usuario_nombre} | {fecha_hora}", styles['Normal']))
+    story.append(Spacer(1, 0.2*inch))
+
+    # Tabla (igual que antes)
+    data = [headers]
+    for obj in objetos:
+        fila = []
+        for campo in campos:
+            valor = getattr(obj, campo, '')
+            if isinstance(valor, datetime):
+                valor = valor.strftime('%d/%m/%Y')
+            elif isinstance(valor, bool):
+                valor = 'Sí' if valor else 'No'
+            fila.append(str(valor))
+        data.append(fila)
+
+    if not objetos:
+        data.append(['No hay registros para el período seleccionado'] + [''] * (len(headers)-1))
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2E75B6')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 9),
+        ('FONTSIZE', (0,1), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F2F2F2')]),
+    ]))
+    story.append(table)
+
+    doc.build(story)
+    return response
+
+def informe_subsidios(request, alias):
+    headers = ['Subsidio', 'Municipalidad', 'N° Decreto', 'Tramo', 'RUT Beneficiario', 'Beneficiario', 'Vivienda', 'Fecha Decreto', 'Fecha Inicio', 'Fecha Vencimiento', 'Fecha Encuesta']
+    campos = ['subsidio', 'municipalidad', 'numero_decreto', 'tramo', 'rut_beneficiario', 'beneficiario', 'vivienda', 'fecha_decreto', 'fecha_inicio', 'fecha_vencimiento', 'fecha_encuesta']
+    return generar_reporte_generico(request, alias, Subsidio, "LISTADO DE SUBSIDIOS", headers, campos, "subsidios")
+
+def informe_cargos_permanentes(request, alias):
+    headers = ['Fecha', 'Código', 'Descripción', 'Monto', 'Facturable', 'Periodo', 'Usuario']
+    campos = ['fecha', 'codigo', 'descripcion', 'monto', 'facturable', 'periodo', 'usuario']
+    return generar_reporte_generico(request, alias, CargoPermanente, "LISTADO DE CARGOS PERMANENTES", headers, campos, "cargos_permanentes")
+
+def informe_cargos(request, alias):
+    headers = ['Fecha', 'Código', 'Descripción', 'Monto', 'Facturable', 'Periodo', 'Usuario']
+    campos = ['fecha', 'codigo', 'descripcion', 'monto', 'facturable', 'periodo', 'usuario']
+    return generar_reporte_generico(request, alias, Cargo, "LISTADO DE CARGOS", headers, campos, "cargos")
+
+def informe_descuentos(request, alias):
+    headers = ['Fecha', 'Código', 'Descripción', 'Monto', 'Facturable', 'Periodo', 'Usuario']
+    campos = ['fecha', 'codigo', 'descripcion', 'monto', 'facturable', 'periodo', 'usuario']
+    return generar_reporte_generico(request, alias, Descuento, "LISTADO DE DESCUENTOS", headers, campos, "descuentos")
+
+def informe_convenios(request, alias):
+    headers = ['Convenio', 'Descripción', 'Fecha Convenio', 'Total Cuotas', 'Monto', 'Facturable', 'Usuario']
+    campos = ['convenio', 'descripcion', 'fecha_convenio', 'total_cuotas', 'monto', 'facturable', 'usuario']
+    return generar_reporte_generico(request, alias, Convenio, "LISTADO DE CONVENIOS", headers, campos, "convenios")
+
+def informe_otros_ingresos(request, alias):
+    headers = ['Concepto', 'Documento', 'Fecha Pago', 'Monto', 'Comprobante']
+    campos = ['concepto', 'documento', 'fecha_pago', 'monto', 'comprobante']
+    return generar_reporte_generico(request, alias, OtroIngreso, "LISTADO DE OTROS INGRESOS", headers, campos, "otros_ingresos")
+
+def informe_cortes(request, alias):
+    headers = ['Fecha Corte', 'Operador', 'Lectura Corte', 'Tipo Corte', 'Fecha Reposición', 'Operador Reposición', 'Anulado']
+    campos = ['fecha_corte', 'operador_corte', 'lectura_corte', 'tipo_corte', 'fecha_reposicion', 'operador_reposicion', 'anulado']
+    return generar_reporte_generico(request, alias, CorteReposicion, "LISTADO DE CORTES Y REPOSICIONES", headers, campos, "cortes")
+
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+
+def _build_pdf(titulo, empresa, usuario_nombre, fecha_hora, mes_anio,
+               headers, data_rows, filename):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    doc = SimpleDocTemplate(response, pagesize=landscape(A4),
+                            rightMargin=30, leftMargin=30,
+                            topMargin=30, bottomMargin=30)
+    doc.title = titulo   # metadato para el nombre en la pestaña
+
+    styles = getSampleStyleSheet()
+    style_title = ParagraphStyle('Title', parent=styles['Heading1'],
+                                 fontSize=14, alignment=1, spaceAfter=10)
+    style_subtitle = ParagraphStyle('Subtitle', parent=styles['Normal'],
+                                    fontSize=10, alignment=1, spaceAfter=20)
+    style_normal = styles['Normal']
+
+    story = []
+    story.append(Paragraph(f"{titulo} - {empresa.nombre.upper()}", style_title))
+    story.append(Paragraph(mes_anio, style_subtitle))
+    story.append(Paragraph(f"Generado por: {usuario_nombre} | {fecha_hora}", style_normal))
+    story.append(Spacer(1, 0.2*inch))
+
+    # Tabla
+    table_data = [headers] + data_rows
+    table = Table(table_data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2E75B6')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 9),
+        ('FONTSIZE', (0,1), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F2F2F2')]),
+    ]))
+    story.append(table)
+
+    doc.build(story)
+    return response
+
+def exportar_contratos_pdf(request, alias):
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    user = request.user
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    santiago_tz = pytz.timezone('America/Santiago')
+    ahora = datetime.now(santiago_tz)
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
+
+    meses_es = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+    mes_anio = f"{meses_es[ahora.month-1]} de {ahora.year}"
+
+    order_by = request.GET.get('order_by', 'apellido_paterno')
+    direction = request.GET.get('direction', 'asc')
+    if direction == 'desc':
+        order_by = f'-{order_by}'
+    allowed_fields = ['apellido_paterno', 'fecha_incorporacion', 'sector']
+    if order_by.lstrip('-') not in allowed_fields:
+        order_by = 'apellido_paterno'
+
+    clientes = Cliente.objects.using(db_alias).select_related('contrato').order_by(order_by)
+
+    # Cabeceras (las mismas que en Excel)
+    headers = [
+        'Número', 'Sector', 'Ruta', 'Dirección', 'Comuna', 'Ciudad', 'Rol',
+        'Tipo Cliente', 'Contrato', 'Servicio', 'RUT', 'Nombre', 'Apellido Paterno',
+        'Apellido Materno', 'Sexo', 'Estado Civil', 'Fecha Nacimiento',
+        'Profesión / Oficio', 'Fecha Defunción', 'Fecha Contrato', 'Fecha Incorporación',
+        'Número Libro', 'Fono 1', 'Fono 2', 'Email Contacto', 'Email Recepción Documento',
+        'Tarifa', 'Diámetro', 'Tipo Servicio', 'Tipo SSR', 'Subsidio', 'Número Medidor',
+        'Marca Medidor', 'Año Medidor', 'Sello Medidor', 'Tipo Medidor',
+        'Código Unión Domiciliaria', 'UTM Norte', 'UTM Este', 'Documento', 'Razón Social', 'Socio'
+    ]
+
+    data_rows = []
+    for cliente in clientes:
+        contrato = getattr(cliente, 'contrato', None)
+        row = [
+            cliente.id,
+            cliente.sector or '',
+            getattr(cliente, 'ruta', '') or '',
+            cliente.direccion or '',
+            getattr(contrato, 'comuna', '') or '',
+            getattr(contrato, 'ciudad', '') or '',
+            getattr(contrato, 'rol', '') or '',
+            contrato.tipo_cliente if contrato else '',
+            getattr(contrato, 'numero_contrato', '') or '',
+            getattr(contrato, 'servicio', '') or '',
+            cliente.rut or '',
+            cliente.nombre or '',
+            cliente.apellido_paterno or '',
+            cliente.apellido_materno or '',
+            cliente.sexo or '',
+            cliente.estado_civil or '',
+            cliente.fecha_nacimiento.strftime('%d/%m/%Y') if cliente.fecha_nacimiento else '',
+            cliente.profesion or '',
+            cliente.fecha_defuncion.strftime('%d/%m/%Y') if cliente.fecha_defuncion else '',
+            contrato.fecha_contrato.strftime('%d/%m/%Y') if contrato and contrato.fecha_contrato else '',
+            cliente.fecha_incorporacion.strftime('%d/%m/%Y') if cliente.fecha_incorporacion else '',
+            cliente.numero_libro or '',
+            cliente.telefono or '',
+            cliente.contacto2 or '',
+            cliente.email_contacto or '',
+            contrato.email_recepcion_documento if contrato else '',
+            contrato.tarifa if contrato else '',
+            contrato.diametro if contrato else '',
+            contrato.tipo_servicio if contrato else '',
+            contrato.tipo_servicio_ssr if contrato else '',
+            getattr(contrato, 'subsidio', '') or '',
+            cliente.medidor or '',
+            contrato.marca_medidor if contrato else '',
+            contrato.ano_medidor if contrato else '',
+            contrato.sello_medidor if contrato else '',
+            contrato.tipo_medidor if contrato else '',
+            contrato.codigo_union_domiciliaria if contrato else '',
+            contrato.utm_norte if contrato else '',
+            contrato.utm_este if contrato else '',
+            getattr(contrato, 'documento', '') or '',
+            getattr(cliente, 'razon_social', '') or '',
+            'Sí' if contrato and contrato.socio else 'No',
+        ]
+        data_rows.append(row)
+
+    titulo = "LISTADO DE CONTRATOS"
+    filename = f"contratos_{alias}_{fecha_archivo}.pdf"
+    return _build_pdf(titulo, empresa, usuario_nombre, fecha_hora, mes_anio,
+                      headers, data_rows, filename)
+
+def exportar_socios_pdf(request, alias):
+    db_alias = f'db_{alias}'
+    empresa = get_object_or_404(Empresa, slug=alias)
+
+    user = request.user
+    usuario_nombre = user.get_full_name() or user.username if user.is_authenticated else "Anónimo"
+    santiago_tz = pytz.timezone('America/Santiago')
+    ahora = datetime.now(santiago_tz)
+    fecha_hora = ahora.strftime('%d/%m/%Y %H:%M:%S')
+    fecha_archivo = ahora.strftime('%Y%m%d_%H%M%S')
+
+    meses_es = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+    mes_anio = f"{meses_es[ahora.month-1]} de {ahora.year}"
+
+    order_by = request.GET.get('order_by', 'apellido_paterno')
+    direction = request.GET.get('direction', 'asc')
+    if direction == 'desc':
+        order_by = f'-{order_by}'
+    allowed_fields = ['apellido_paterno', 'fecha_incorporacion', 'sector']
+    if order_by.lstrip('-') not in allowed_fields:
+        order_by = 'apellido_paterno'
+
+    clientes = Cliente.objects.using(db_alias).select_related('contrato').order_by(order_by)
+
+    headers = [
+        'Sector', 'Ruta', 'N° Libro', 'Contrato', 'RUT',
+        'Nombre', 'Apellido Paterno', 'Apellido Materno',
+        'Fec. Incorporación', 'Fec. Contrato', 'Sexo',
+        'Dirección Arranque', 'Dirección', 'Servicio', '¿Socio?'
+    ]
+
+    data_rows = []
+    for cliente in clientes:
+        contrato = cliente.contrato if hasattr(cliente, 'contrato') else None
+        nombre_completo = cliente.nombre or ''
+        if cliente.apellido_paterno:
+            nombre_completo += ' ' + cliente.apellido_paterno
+        if cliente.apellido_materno:
+            nombre_completo += ' ' + cliente.apellido_materno
+        nombre_completo = nombre_completo.strip() or '-'
+
+        row = [
+            cliente.sector or '',
+            getattr(cliente, 'ruta', '') or '',
+            cliente.numero_libro or '',
+            getattr(contrato, 'numero_contrato', '') if contrato else '',
+            cliente.rut or '',
+            nombre_completo,
+            cliente.apellido_paterno or '',
+            cliente.apellido_materno or '',
+            cliente.fecha_incorporacion.strftime('%d/%m/%Y') if cliente.fecha_incorporacion else '',
+            contrato.fecha_contrato.strftime('%d/%m/%Y') if contrato and contrato.fecha_contrato else '',
+            cliente.sexo or '',
+            contrato.direccion_arranque if contrato else '',
+            cliente.direccion or '',
+            contrato.servicio if contrato else '',
+            'Sí' if (contrato and contrato.socio) else 'No'
+        ]
+        data_rows.append(row)
+
+    titulo = "LISTADO DE SOCIOS"
+    filename = f"socios_{alias}_{fecha_archivo}.pdf"
+    return _build_pdf(titulo, empresa, usuario_nombre, fecha_hora, mes_anio,
+                      headers, data_rows, filename)

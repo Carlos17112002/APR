@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from empresas.models import Empresa
 from inventario.models import ItemInventario
-from empresas.decorators import permiso_requerido   # ✅ 导入正确
+from empresas.decorators import permiso_requerido  
 
 @login_required
 @permiso_requerido('inventario')

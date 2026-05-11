@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'apps_moviles',
     'corsheaders',
     'weasyprint',
+    'axes',
     
 ]
 
@@ -71,7 +72,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'asesora_ssr.urls'
@@ -94,6 +95,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'asesora_ssr.wsgi.application'
 
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',  # para bloqueo por username
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -236,3 +241,10 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# django-axes configuration
+AXES_FAILURE_LIMIT = 5          # intentos fallidos antes del bloqueo
+AXES_COOLOFF_TIME = 0.5         # 0.5 horas (30 minutos) de bloqueo
+AXES_LOCKOUT_PARAMETERS = ["username"] # bloquea por nombre de usuario
+AXES_RESET_ON_SUCCESS = True    # reinicia el conteo al iniciar sesión correctamente
+AXES_LOCKOUT_TEMPLATE = None    # usa el template por defecto de axes, puedes cambiarlo

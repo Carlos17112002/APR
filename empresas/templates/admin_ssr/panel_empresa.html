@@ -282,43 +282,72 @@
               <i class="fas fa-chart-bar text-xs group-hover:scale-110 transition-transform"></i> Informes
               <i class="fas fa-chevron-down text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
             </button>
-            <div id="informesMenu" class="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-gray-100 hidden z-30 transition-all duration-200">
-              <div class="py-2">
-                <div class="px-4 py-1.5 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200 mb-1">Informes Disponibles</div>
-                
-                <a href="{% url 'informe_contratos_socios' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-file-contract w-5 text-emerald-600"></i> Contratos
-                </a>
-                <a href="{% url 'informe_socios_nuevo' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-users w-5 text-emerald-600"></i> Socios
-                </a>
+            <div id="informesMenu" class="absolute right-0 mt-2 w-[36rem] bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-gray-100 hidden z-30 transition-all duration-200">
+              <div class="grid grid-cols-2 gap-0">
+                <!-- Columna Izquierda -->
+                <div class="py-2 border-r border-gray-200">
+                  <div class="px-4 py-1.5 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200 mb-1">Informes Disponibles</div>
+                  
+                  <a href="{% url 'informe_contratos_socios' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-file-contract w-5 text-emerald-600"></i> Contratos
+                  </a>
+                  <a href="{% url 'informe_socios_nuevo' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-users w-5 text-emerald-600"></i> Socios
+                  </a>
 
-                <div class="border-t border-gray-200 my-2"></div>
-                <div class="px-4 py-1 text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Informes de Lecturas</div>
+                  <div class="border-t border-gray-200 my-2"></div>
+                  <div class="px-4 py-1 text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Informes de Lecturas</div>
 
-                <a href="{% url 'reporte_cambio_medidor' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-exchange-alt w-5 text-emerald-600"></i> Cambio de Medidor
-                </a>
-                <a href="{% url 'reporte_consumo_12_meses' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-chart-line w-5 text-emerald-600"></i> Consumo 12 Meses
-                </a>
-                <a href="{% url 'reporte_consumo_anual' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-calendar-alt w-5 text-emerald-600"></i> Resumen Consumo Anual
-                </a>
-                <a href="{% url 'reporte_lecturas_periodo' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-calendar-week w-5 text-emerald-600"></i> Lecturas por Periodo
-                </a>
+                  <a href="{% url 'reporte_cambio_medidor' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-exchange-alt w-5 text-emerald-600"></i> Cambio de Medidor
+                  </a>
+                  <a href="{% url 'reporte_consumo_12_meses' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-chart-line w-5 text-emerald-600"></i> Consumo 12 Meses
+                  </a>
+                  <a href="{% url 'reporte_consumo_anual' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-calendar-alt w-5 text-emerald-600"></i> Resumen Consumo Anual
+                  </a>
+                  <a href="{% url 'reporte_lecturas_periodo' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-calendar-week w-5 text-emerald-600"></i> Lecturas por Periodo
+                  </a>
 
-                <!-- Nueva sección: Informes de Inventario -->
-                <div class="border-t border-gray-200 my-2"></div>
-                <div class="px-4 py-1 text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Informes de Inventario</div>
-                
-                <a href="{% url 'reporte_inventario_excel' slug=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
-                  <i class="fas fa-box-open w-5 text-emerald-600"></i> Inventario
-                </a>
+                  <!-- Informes de Inventario -->
+                  <div class="border-t border-gray-200 my-2"></div>
+                  <div class="px-4 py-1 text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Informes de Inventario</div>
+                  
+                  <a href="{% url 'reporte_inventario_excel' slug=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-box-open w-5 text-emerald-600"></i> Inventario
+                  </a>
+                </div>
+
+                <!-- Columna Derecha -->
+                <div class="py-2">
+                  <div class="px-4 py-1.5 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200 mb-1">Informes Administrativos</div>
+
+                  <a href="{% url 'informe_subsidios' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-hand-holding-usd w-5 text-emerald-600"></i> Subsidios
+                  </a>
+                  <a href="{% url 'informe_cargos_permanentes' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-plus-circle w-5 text-emerald-600"></i> Cargos Permanentes
+                  </a>
+                  <a href="{% url 'informe_cargos' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-plus-circle w-5 text-emerald-600"></i> Cargos
+                  </a>
+                  <a href="{% url 'informe_descuentos' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-minus-circle w-5 text-emerald-600"></i> Descuentos
+                  </a>
+                  <a href="{% url 'informe_convenios' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-handshake w-5 text-emerald-600"></i> Convenios
+                  </a>
+                  <a href="{% url 'informe_otros_ingresos' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-coins w-5 text-emerald-600"></i> Otros Ingresos
+                  </a>
+                  <a href="{% url 'informe_cortes' alias=slug %}" class="flex items-center px-4 py-2 text-sm text-gray-800 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200">
+                    <i class="fas fa-bolt w-5 text-emerald-600"></i> Cortes y Reposiciones
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
           {% endif %}
         </div>
 
@@ -1489,6 +1518,7 @@
       console.error(error);
     }
   }
+
 
   function cerrarModalEditarProduccion() {
     document.getElementById('modalEditarProduccion').classList.add('hidden');

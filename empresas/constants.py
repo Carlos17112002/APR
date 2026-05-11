@@ -8,3 +8,19 @@ MODULOS_DISPONIBLES = [
     ('app_movil', 'App Móvil', 'fa-mobile-alt'),
     ('produccion', 'Producción (Pozos)', 'fa-flask'),
 ]
+
+# admin_ssr/constants.py
+
+PERMISOS_CLIENTE = [
+    ('subsidio', 'Subsidio'),
+    ('cargo_permanente', 'Cargo Permanente'),
+    ('cargo', 'Cargo'),
+    ('descuento', 'Descuento'),
+    ('convenio', 'Convenio'),
+    ('lectura', 'Lectura'),
+    ('cambio_medidor', 'Cambio de Medidor'),
+    ('otro_ingreso', 'Otro Ingreso'),
+    ('corte', 'Corte y Reposición'),
+    ('editar_cliente', 'Editar Cliente'),
+    ('crear_cliente', 'Crear Cliente'),
+]
